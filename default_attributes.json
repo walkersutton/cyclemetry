@@ -1,0 +1,16 @@
+{
+  "defaults": {
+    "color": "#ffffff"
+  },
+  "course": {
+    "color": "#ffffff"
+  },
+  "power": {
+    "font_size": 10,
+    "color": [255, 0, 0] 
+  },
+  "speed": {
+    "font_size": 20,
+    "color": [255, 0, 0] 
+  }
+}
