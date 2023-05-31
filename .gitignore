@@ -1,0 +1,5 @@
+# generated files
+*.mp4
+
+# environments
+venv/
