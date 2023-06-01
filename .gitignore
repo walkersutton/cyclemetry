@@ -6,3 +6,6 @@ __pycache__/
 
 # environments
 venv/
+
+# dev
+scene_dir/
