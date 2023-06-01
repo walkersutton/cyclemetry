@@ -1,4 +1,10 @@
 {
+  "fps": 30,
+  "line_width": 4,
+  "line_height": 4,
+  "point_weight": 12,
+  "primary_color": "#ffffff",
+  "secondary_color": [255, 0, 0],
   "defaults": {
     "color": "#ffffff"
   },
