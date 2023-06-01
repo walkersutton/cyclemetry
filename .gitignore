@@ -8,4 +8,5 @@ __pycache__/
 venv/
 
 # dev
+*.gpx
 scene_dir/
