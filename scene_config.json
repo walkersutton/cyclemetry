@@ -1,0 +1,22 @@
+{
+  "global": {
+    "primary_color": "#ffffff",
+    "secondary_color": [255, 0, 0]
+  },
+  "video": {
+    "fps": 30
+  },
+  "course": {
+    "line_width": 4,
+    "line_height": 4,
+    "point_weight": 12
+  },
+  "power": {
+    "font_size": 10,
+    "color": [255, 0, 0]
+  },
+  "speed": {
+    "font_size": 20,
+    "color": [255, 0, 0]
+  }
+}

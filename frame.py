@@ -19,7 +19,7 @@ class Frame:
         self.power = power
         self.temperature = temperature
 
-    def draw_text(self, text="test", color=(255, 0, 0), x=28, y=36):
+    def draw_text(self, text, color, x, y):
         # TODO - fix default x,y,...
         # custom font can go here
         img = Image.open(self.filename)

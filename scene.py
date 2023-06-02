@@ -1,18 +1,10 @@
-import json
 import os
 
 import matplotlib.pyplot as plt
 from moviepy.editor import *
 
+from config import build_config
 from frame import Frame
-
-
-def scene_config(filename="scene_defaults.json"):
-    with open(filename, "r") as file:
-        return json.load(file)
-
-
-CONFIG = scene_config()
 
 
 class Scene:
@@ -32,10 +24,11 @@ class Scene:
             self.frames
         ):  # will probably need to multiply the # of frames by fps to smooth numbers
             for attribute in attributes:
-                # frame.draw_text(attribute)
+                # frame.draw_text(text, color, x, y) # this color might need to be a x3 tuple
                 pass
 
-    def export_video(self, auto_open=True, frame_duration=1, fps=CONFIG["fps"]):
+    def export_video(self, auto_open=True, frame_duration=1):
+        config = build_config("video")
         # TODO - transparent background
         # TODO - modify default frame_duration
         export_filename = "final.mp4"
@@ -44,7 +37,7 @@ class Scene:
             for frame in self.frames
         ]
         concatenate_videoclips(clips, method="compose").write_videofile(
-            export_filename, fps=fps
+            export_filename, fps=config["fps"]
         )
         if auto_open:
             os.system("open final.mp4")
@@ -53,8 +46,9 @@ class Scene:
 def build_frames(gpx, path, attributes):
     frames = []
     if "course" in attributes:
+        config = build_config("course")
         latitude, longitude = gpx.lat_lon()
-        plt.rcParams["lines.linewidth"] = CONFIG["line_width"]
+        plt.rcParams["lines.linewidth"] = config["line_width"]
         # plot connected line width plt.figure(figsize=(width, height))
         # todo - configure line color
         plt.axis("off")
@@ -67,10 +61,10 @@ def build_frames(gpx, path, attributes):
             scatter = plt.scatter(
                 x=[lon],
                 y=[lat],
-                color=CONFIG[
+                color=config[
                     "primary_color"
                 ],  # TODO - might need to do something about hex/tuple color conversions
-                s=CONFIG["point_weight"],
+                s=config["point_weight"],
             )
             plt.savefig(frame.filename, transparent=True)
             scatter.remove()
