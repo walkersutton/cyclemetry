@@ -32,6 +32,7 @@ if __name__ == "__main__":
     # TODO improve malformed argument handling
     try:
         filename = sys.argv[1]
+        # TODO - support passing template path
         render_overlay(filename)
     except Exception as e:
         print("command line arguments are malformed:", e)
