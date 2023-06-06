@@ -7,15 +7,16 @@ from scene import Scene
 
 
 def poll_attributes(valid_attributes):
-    questions = [
-        inquirer.Checkbox(
-            "attributes",
-            message="Select data to include:",
-            choices=sorted(valid_attributes),
-        ),
-    ]
-    answers = inquirer.prompt(questions)
-    return answers["attributes"]
+    # questions = [
+    #     inquirer.Checkbox(
+    #         "attributes",
+    #         message="Select data to include:",
+    #         choices=sorted(valid_attributes),
+    #     ),
+    # ]
+    # answers = inquirer.prompt(questions)
+    # return answers["attributes"]
+    return ["course"]
 
 
 def render_overlay(filename):

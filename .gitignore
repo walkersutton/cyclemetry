@@ -11,4 +11,4 @@ venv/
 
 # dev
 *.gpx
-scene_dir/
+tmp/

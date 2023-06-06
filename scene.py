@@ -11,7 +11,7 @@ from frame import Frame
 
 
 class Scene:
-    def __init__(self, gpx, attributes, path=f"{os.path.dirname(__file__)}/scene_dir"):
+    def __init__(self, gpx, attributes, path=f"{os.path.dirname(__file__)}/tmp"):
         self.gpx = gpx
         self.attributes = attributes
         self.path = path  # TODO use tmp dir/ tmp file instead of using folder
@@ -72,22 +72,30 @@ class Scene:
         #     fps=config["fps"],
         # )
 
+    # add multiprocessing here
     def build_frames(self):
+        # TODO should build all gpx lists here in one pass - parse attributes
         frames = []
         if "course" in self.attributes:
-            latitude, longitude = self.gpx.lat_lon()
+            self.gpx.set_lat_lon_ele()
             course_config = build_config("course")
             plt.rcParams["lines.linewidth"] = course_config["line_width"]
             # plot connected line width plt.figure(figsize=(width, height))
             # todo - configure line color
             plt.axis("off")
-            plt.plot(longitude, latitude)
-            num_seconds = len(latitude)
-            num_seconds = 5  # TODO - change after debugging
+            plt.plot(self.gpx.lon, self.gpx.lat)
+            num_seconds = len(self.gpx.lat)
+            num_seconds = 40  # TODO - change after debugging
             num_frames = num_seconds * self.video_config["fps"]
             self.set_frame_digits(num_frames)
+            print("building frames")
             for second in range(num_seconds):
-                lat, lon = latitude[second], longitude[second]
+                print(f"{second + 1}/{num_seconds}")
+                lat, lon, ele = (
+                    self.gpx.lat[second],
+                    self.gpx.lon[second],
+                    self.gpx.ele[second],
+                )
                 scatter = plt.scatter(
                     x=[lon],
                     y=[lat],
@@ -102,8 +110,10 @@ class Scene:
                         f"{self.path}/{str(second * self.video_config['fps'] + ii).zfill(self.frame_digits)}.png",
                         lat,
                         lon,
+                        ele,
                     )
                     plt.savefig(frame.filename, transparent=True)
+                    frame.draw_attributes(self.attributes)
                     frames.append(frame)
                 scatter.remove()
         else:

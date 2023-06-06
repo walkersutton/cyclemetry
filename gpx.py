@@ -12,12 +12,15 @@ class Gpx:
     def __init__(self, filename):
         self.gpx = gpxpy.parse(open(filename, "r"))
 
-    def lat_lon(self):
-        lat, lon = [], []
+    def set_lat_lon_ele(self):
+        lat, lon, ele = [], [], []
         for point in self.gpx.tracks[0].segments[0].points:
+            ele.append(point.elevation)
             lat.append(point.latitude)
             lon.append(point.longitude)
-        return lat, lon
+        self.ele = ele
+        self.lat = lat
+        self.lon = lon
 
     def existing_attributes(self):
         attributes = set()
