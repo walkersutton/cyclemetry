@@ -2,7 +2,7 @@ import json
 
 
 def build_config(attribute):
-    filename = "scene_config.json"
+    filename = "templates/default_scene.json"
     with open(filename, "r") as file:
         config = json.load(file)
     attrib_config = config[attribute]
