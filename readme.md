@@ -4,7 +4,7 @@
 ## Features
 * Live course tracking
 * Live elevation profile
-* Cadence, elevation, heartrate, power, speed, etc.
+* Cadence, elevation, grade, heartrate, power, speed, etc.
 * Supports metric and imperial units
 
 ## Templates
