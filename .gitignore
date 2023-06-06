@@ -3,6 +3,8 @@ __pycache__/
 
 # generated files
 *.mp4
+*.webp
+*.mov
 
 # environments
 venv/
