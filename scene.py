@@ -39,7 +39,10 @@ class Scene:
     def delete_frames(self):
         shutil.rmtree(self.path)
 
-    def export_video(self, output_file="out.mov"):
+    # warning: quicktime_compatible codec produces nearly x5 larger file
+    def export_video(self, output_file="out.mov", quicktime_compatible=False):
+        codec = "prores_ks" if quicktime_compatible else "png"
+        pixel_format = "yuva444p10le" if quicktime_compatible else "rgba"
         less_verbose = ["-loglevel", "warning"]
         subprocess.call(
             ["ffmpeg"]
@@ -52,14 +55,16 @@ class Scene:
                 "-i",
                 f"{self.path}/%0{self.frame_digits}d.png",
                 "-c:v",
-                "png",
+                codec,
                 "-pix_fmt",
-                "rgba",
+                pixel_format,
                 "-y",
                 output_file,
             ]
         )
         self.delete_frames()
+        if quicktime_compatible:
+            subprocess.call(["open", output_file])
         # TODO - try to not depend on ffmpeg subprocess call please
         # clips = [
         #     ImageClip(frame.filename, transparent=True).set_duration(frame_duration)
@@ -85,7 +90,7 @@ class Scene:
             plt.axis("off")
             plt.plot(self.gpx.lon, self.gpx.lat)
             num_seconds = len(self.gpx.lat)
-            num_seconds = 40  # TODO - change after debugging
+            num_seconds = 2  # TODO - change after debugging
             num_frames = num_seconds * self.video_config["fps"]
             self.set_frame_digits(num_frames)
             print("building frames")
