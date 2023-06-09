@@ -1,15 +1,36 @@
 {
   "global": {
     "primary_color": "#ffffff",
-    "secondary_color": [255, 0, 0]
+    "secondary_color": [255, 0, 0],
+    "primary_font": "Evogria.otf",
+    "secondary_font": "Furore.otf"
   },
-  "video": {
+  "scene": {
     "fps": 30
+  },
+  "cadence": {
   },
   "course": {
     "line_width": 4,
     "line_height": 4,
-    "point_weight": 12
+    "point_weight": 12,
+    "color": "#ffffff",
+    "x": 50,
+    "y": 50,
+    "font": "Evogria.otf"
+  },
+  "elevation": {
+    "profile": true,
+    "color": "#ffffff",
+    "font_size": 30,
+    "x": 5,
+    "y": 5,
+    "font": "Evogria.otf"
+  },
+  "heartrate": {
+    "font_size": 30,
+    "x": 200,
+    "y": 5
   },
   "power": {
     "font_size": 10,
@@ -18,5 +39,9 @@
   "speed": {
     "font_size": 20,
     "color": [255, 0, 0]
+  },
+  "time": {
+  },
+  "temperature": {
   }
 }

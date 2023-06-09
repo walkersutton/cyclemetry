@@ -2,6 +2,7 @@ import sys
 
 import inquirer
 
+import constant
 from gpx import Gpx
 from scene import Scene
 
@@ -16,7 +17,7 @@ def poll_attributes(valid_attributes):
     # ]
     # answers = inquirer.prompt(questions)
     # return answers["attributes"]
-    return ["course"]
+    return [constant.ATTR_COURSE, constant.ATTR_ELEVATION]
 
 
 def render_overlay(filename):
@@ -24,15 +25,11 @@ def render_overlay(filename):
     attributes = poll_attributes(gpx.existing_attributes())
     if attributes:
         scene = Scene(gpx, attributes)
-        # scene.draw_attributes() TODO
         scene.export_video()
 
 
 if __name__ == "__main__":
     # TODO improve malformed argument handling
-    try:
-        filename = sys.argv[1]
-        # TODO - support passing template path
-        render_overlay(filename)
-    except Exception as e:
-        print("command line arguments are malformed:", e)
+    # TODO - support passing template path
+    filename = sys.argv[1]
+    render_overlay(filename)

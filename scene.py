@@ -6,6 +6,7 @@ import subprocess
 import matplotlib.pyplot as plt
 from moviepy.editor import *
 
+import constant
 from config import build_config
 from frame import Frame
 
@@ -14,55 +15,70 @@ class Scene:
     def __init__(self, gpx, attributes, path=f"{os.path.dirname(__file__)}/tmp"):
         self.gpx = gpx
         self.attributes = attributes
+        self.gpx.parse_data(self.attributes)
         self.path = path  # TODO use tmp dir/ tmp file instead of using folder
-        os.makedirs(self.path)
-        self.video_config = build_config("video")
-        self.frame_digits = None  # set when building frames
-        self.frames = self.build_frames()
+        self.fps = build_config("scene")["fps"]
+        self.make_asset_directory()
+        self.config_scene()
+        self.build_frames()
+        self.build_configs()
+        self.build_assets()
+        self.paint_frames()
 
         # now_string = ''.join(str(datetime.now()).split())
         # frame_dir = f'{os.path.dirname(__file__)}/{now_string}'
 
-    def set_frame_digits(self, num_frames):
+    def paint_frames(self):
+        for frame in self.frames:
+            frame.draw_attributes(self.attributes, self.configs)
+
+    def build_configs(self):
+        configs = {}
+        for attribute in self.attributes:
+            configs[attribute] = build_config(attribute)
+        self.configs = configs
+
+    def config_scene(self):
+        self.seconds = len(
+            self.gpx.course
+        )  # probablly should make this time? i imagine all gpx has time attribute
+        self.seconds = 2  # TODO change after debugging
+        num_frames = self.seconds * self.fps
         self.frame_digits = int(math.log10(num_frames - 2)) + 1
 
-    def paint_frames(self, attributes):
-        for (
-            frame
-        ) in (
-            self.frames
-        ):  # will probably need to multiply the # of frames by fps to smooth numbers
-            for attribute in attributes:
-                # frame.draw_text(text, color, x, y) # this color might need to be a x3 tuple
-                pass
+    def delete_asset_directory(self):
+        if os.path.exists(self.path) and os.path.isdir(self.path):
+            shutil.rmtree(self.path)
 
-    def delete_frames(self):
-        shutil.rmtree(self.path)
+    def make_asset_directory(self):
+        if os.path.exists(self.path):
+            self.delete_asset_directory()
+        os.makedirs(self.path)
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
-    def export_video(self, output_file="out.mov", quicktime_compatible=False):
-        codec = "prores_ks" if quicktime_compatible else "png"
-        pixel_format = "yuva444p10le" if quicktime_compatible else "rgba"
+    def export_video(self, output_file="out.mov", quicktime_compatible=True):
         less_verbose = ["-loglevel", "warning"]
+        framerate = ["-r", str(self.fps)]
+        fmt = ["-f", "image2"]
+        input_files = ["-i", f"{self.path}/%0{self.frame_digits}d.png"]
+        codec = ["-c:v", "prores_ks"] if quicktime_compatible else ["-c:v", "png"]
+        pixel_format = (
+            ["-pix_fmt", "yuva444p10le"]
+            if quicktime_compatible
+            else ["-pix_fmt", "rgba"]
+        )
+        output = ["-y", output_file]
         subprocess.call(
             ["ffmpeg"]
             + less_verbose
-            + [
-                "-r",
-                str(self.video_config["fps"]),
-                "-f",
-                "image2",
-                "-i",
-                f"{self.path}/%0{self.frame_digits}d.png",
-                "-c:v",
-                codec,
-                "-pix_fmt",
-                pixel_format,
-                "-y",
-                output_file,
-            ]
+            + framerate
+            + fmt
+            + input_files
+            + codec
+            + pixel_format
+            + output
         )
-        self.delete_frames()
+        self.delete_asset_directory()
         if quicktime_compatible:
             subprocess.call(["open", output_file])
         # TODO - try to not depend on ffmpeg subprocess call please
@@ -77,51 +93,71 @@ class Scene:
         #     fps=config["fps"],
         # )
 
-    # add multiprocessing here
+    def frame_attribute_data(self, second: int):
+        attribute_data = {}
+        for attribute in self.attributes:
+            attribute_data[attribute] = getattr(self.gpx, attribute)[second]
+        return attribute_data
+
     def build_frames(self):
-        # TODO should build all gpx lists here in one pass - parse attributes
         frames = []
-        if "course" in self.attributes:
-            self.gpx.set_lat_lon_ele()
-            course_config = build_config("course")
-            plt.rcParams["lines.linewidth"] = course_config["line_width"]
-            # plot connected line width plt.figure(figsize=(width, height))
-            # todo - configure line color
-            plt.axis("off")
-            plt.plot(self.gpx.lon, self.gpx.lat)
-            num_seconds = len(self.gpx.lat)
-            num_seconds = 2  # TODO - change after debugging
-            num_frames = num_seconds * self.video_config["fps"]
-            self.set_frame_digits(num_frames)
-            print("building frames")
-            for second in range(num_seconds):
-                print(f"{second + 1}/{num_seconds}")
-                lat, lon, ele = (
-                    self.gpx.lat[second],
-                    self.gpx.lon[second],
-                    self.gpx.ele[second],
+        for second in range(self.seconds):
+            frame_data = self.frame_attribute_data(second)
+            for ii in range(self.fps):
+                frame = Frame(
+                    f"{self.path}/{str(second * self.fps + ii).zfill(self.frame_digits)}.png",
                 )
-                scatter = plt.scatter(
-                    x=[lon],
-                    y=[lat],
-                    color=course_config[
-                        "primary_color"
-                    ],  # TODO - might need to do something about hex/tuple color conversions
-                    s=course_config["point_weight"],
-                )
-                for ii in range(self.video_config["fps"]):
-                    # todo - put point on top of line - rather than below the line
-                    frame = Frame(
-                        f"{self.path}/{str(second * self.video_config['fps'] + ii).zfill(self.frame_digits)}.png",
-                        lat,
-                        lon,
-                        ele,
-                    )
-                    plt.savefig(frame.filename, transparent=True)
-                    frame.draw_attributes(self.attributes)
-                    frames.append(frame)
-                scatter.remove()
+                for attribute in self.attributes:
+                    setattr(frame, attribute, frame_data[attribute])
+                frames.append(frame)
+        self.frames = frames
+
+    def build_assets(self):
+        if constant.ATTR_COURSE in self.attributes:
+            self.build_course_assets()
         else:
-            # TODO build blank frames if don't want course
             pass
-        return frames
+            # self.build_blank_assets()
+        if (
+            constant.ATTR_ELEVATION in self.attributes
+            and self.configs[constant.ATTR_ELEVATION]["profile"]
+        ):
+            self.build_elevation_profile_assets()
+
+    def build_course_assets(self):
+        # TODO add multiprocessing here
+        self.attributes.remove(constant.ATTR_COURSE)
+        course_config = build_config("course")
+        plt.rcParams["lines.linewidth"] = course_config["line_width"]
+        # plot connected line width plt.figure(figsize=(width, height))
+        # todo - configure line color
+        plt.axis("off")
+        plt.plot(
+            [ele[1] for ele in self.gpx.course], [ele[0] for ele in self.gpx.course]
+        )
+        ii = 0
+        for frame in self.frames:
+            print(f"{ii + 1}/{len(self.frames)}")
+            ii += 1
+            lat, lon = frame.course
+            scatter = plt.scatter(
+                x=[lon],
+                y=[lat],
+                color=course_config[
+                    "primary_color"
+                ],  # TODO - might need to do something about hex/tuple color conversions
+                s=course_config["point_weight"],
+            )
+            plt.savefig(frame.filename, transparent=True)
+            scatter.remove()
+
+    def build_blank_assets(self):
+        # TODO add multiprocessing here
+        # build (fps * seconds) blank pngs
+        pass
+
+    def build_elevation_profile_assets(self):
+        # TODO add multiprocessing here
+        # TODO create pngs that represent profile of elevation over course
+        # draw these pngs in the frame draw method:56
+        pass

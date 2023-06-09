@@ -1,0 +1,8 @@
+ATTR_CADENCE = "cadence"
+ATTR_COURSE = "course"
+ATTR_ELEVATION = "elevation"
+ATTR_HEARTRATE = "heartrate"
+ATTR_POWER = "power"
+ATTR_SPEED = "speed"
+ATTR_TIME = "time"
+ATTR_TEMPERATURE = "temperature"
