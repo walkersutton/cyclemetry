@@ -5,6 +5,7 @@ import subprocess
 
 import matplotlib.pyplot as plt
 from moviepy.editor import *
+from PIL import Image
 
 import constant
 from config import build_config
@@ -40,9 +41,7 @@ class Scene:
         self.configs = configs
 
     def config_scene(self):
-        self.seconds = len(
-            self.gpx.course
-        )  # probablly should make this time? i imagine all gpx has time attribute
+        self.seconds = len(self.gpx.time)  # I am assuming all gpx files have time data
         self.seconds = 2  # TODO change after debugging
         num_frames = self.seconds * self.fps
         self.frame_digits = int(math.log10(num_frames - 2)) + 1
@@ -117,8 +116,7 @@ class Scene:
         if constant.ATTR_COURSE in self.attributes:
             self.build_course_assets()
         else:
-            pass
-            # self.build_blank_assets()
+            self.build_blank_assets()
         if (
             constant.ATTR_ELEVATION in self.attributes
             and self.configs[constant.ATTR_ELEVATION]["profile"]
@@ -129,9 +127,10 @@ class Scene:
         # TODO add multiprocessing here
         self.attributes.remove(constant.ATTR_COURSE)
         course_config = build_config("course")
+        scene = build_config("scene")  # TODO width height - do something with this
         plt.rcParams["lines.linewidth"] = course_config["line_width"]
         # plot connected line width plt.figure(figsize=(width, height))
-        # todo - configure line color
+        # TODO - configure line color
         plt.axis("off")
         plt.plot(
             [ele[1] for ele in self.gpx.course], [ele[0] for ele in self.gpx.course]
@@ -149,13 +148,18 @@ class Scene:
                 ],  # TODO - might need to do something about hex/tuple color conversions
                 s=course_config["point_weight"],
             )
+            # TODO - take course width/height into consideration
             plt.savefig(frame.filename, transparent=True)
             scatter.remove()
 
     def build_blank_assets(self):
         # TODO add multiprocessing here
-        # build (fps * seconds) blank pngs
-        pass
+        scene_config = build_config("scene")
+        img = Image.new(
+            mode="RGBA", size=(scene_config["width"], scene_config["height"])
+        )
+        for frame in self.frames:
+            img.save(frame.filename)
 
     def build_elevation_profile_assets(self):
         # TODO add multiprocessing here

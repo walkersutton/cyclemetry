@@ -11,7 +11,9 @@
     "suffix": ""
   },
   "scene": {
-    "fps": 30
+    "fps": 30,
+    "width": 720,
+    "height": 480
   },
   "cadence": {
     "x": 5,
