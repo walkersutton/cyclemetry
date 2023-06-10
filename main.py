@@ -18,18 +18,21 @@ def poll_attributes(valid_attributes):
     # answers = inquirer.prompt(questions)
     # return answers["attributes"]
     return [
-        constant.ATTR_CADENCE,
+        # constant.ATTR_CADENCE,
         constant.ATTR_COURSE,
         constant.ATTR_ELEVATION,
-        constant.ATTR_HEARTRATE,
-        constant.ATTR_POWER,
-        constant.ATTR_TEMPERATURE,
+        constant.ATTR_GRADIENT,
+        # constant.ATTR_HEARTRATE,
+        # constant.ATTR_POWER,
+        # constant.ATTR_SPEED,
+        # constant.ATTR_TEMPERATURE,
+        constant.ATTR_TIME,
     ]
 
 
 def render_overlay(filename):
     gpx = Gpx(filename)
-    attributes = poll_attributes(gpx.attributes)
+    attributes = poll_attributes(gpx.valid_attributes)
     if attributes:
         scene = Scene(gpx, attributes)
         scene.export_video()

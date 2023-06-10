@@ -1,6 +1,7 @@
 ATTR_CADENCE = "cadence"
 ATTR_COURSE = "course"
 ATTR_ELEVATION = "elevation"
+ATTR_GRADIENT = "gradient"
 ATTR_HEARTRATE = "heartrate"
 ATTR_POWER = "power"
 ATTR_SPEED = "speed"

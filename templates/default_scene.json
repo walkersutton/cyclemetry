@@ -7,7 +7,8 @@
     "color": "#ffffff",
     "font": "Evogria.otf",
     "font_size": 30,
-    "text_color": "#ffffff"
+    "text_color": "#ffffff",
+    "suffix": ""
   },
   "scene": {
     "fps": 30
@@ -34,6 +35,11 @@
     "y": 5,
     "suffix": " m"
   },
+  "gradient": {
+    "x": 5,
+    "y": 215,
+    "suffix": " %"
+  },
   "heartrate": {
     "font_size": 30,
     "x": 5,
@@ -46,10 +52,9 @@
     "suffix": " watts"
   },
   "speed": {
-    "font_size": 20,
     "x": 5,
     "y": 110,
-    "suffix": " kph"
+    "suffix": " m/s"
   },
   "temperature": {
     "x": 5,
@@ -58,6 +63,7 @@
   },
   "time": {
     "x": 5,
-    "y": 215
+    "y": 250,
+    "hours_offset": -7
   }
 }

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from PIL import Image, ImageDraw, ImageFont
 
 import constant
@@ -17,7 +19,12 @@ class Frame:
     def draw_attributes(self, attributes, configs):
         for attribute in attributes:
             config = configs[attribute]
-            value = str(getattr(self, attribute))
+            value = getattr(self, attribute)
+            if attribute == constant.ATTR_TIME:
+                # TODO - try to use timezone instead of offset
+                value += timedelta(hours=config["hours_offset"])
+                value = value.strftime("%H:%M:%S")
+            value = str(value)
             suffix = config["suffix"]
             if suffix:
                 value += suffix
