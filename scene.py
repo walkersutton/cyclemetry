@@ -23,13 +23,14 @@ class Scene:
         self.build_frames()
         self.build_configs()
         self.build_assets()
-        self.paint_frames()
+        self.draw_frames()
 
         # now_string = ''.join(str(datetime.now()).split())
         # frame_dir = f'{os.path.dirname(__file__)}/{now_string}'
 
-    def paint_frames(self):
-        for frame in self.frames:
+    def draw_frames(self):
+        for ii, frame in enumerate(self.frames):
+            print(f"{ii + 1}/{len(self.frames)}")
             frame.draw_attributes(self.attributes, self.configs)
 
     def build_configs(self):

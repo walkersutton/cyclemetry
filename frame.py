@@ -17,10 +17,15 @@ class Frame:
     def draw_attributes(self, attributes, configs):
         for attribute in attributes:
             config = configs[attribute]
-            value = getattr(self, attribute)
+            value = str(getattr(self, attribute))
+            suffix = config["suffix"]
+            if suffix:
+                value += suffix
+            # TODO need to consider units here - imperial vs metric
+            # do this in config
             self.draw_text(
-                str(value),
-                config["color"],
+                value,
+                config["text_color"],
                 config["x"],
                 config["y"],
                 config["font_size"],
