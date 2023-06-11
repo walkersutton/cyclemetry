@@ -58,7 +58,9 @@ class Scene:
         os.makedirs(self.path)
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
-    def export_video(self, output_file="out.mov", quicktime_compatible=True):
+    def export_video(self):
+        output_filename = self.configs["scene"]["output_filename"]
+        quicktime_compatible = self.configs["scene"]["quicktime_compatible"]
         less_verbose = ["-loglevel", "warning"]
         framerate = ["-r", str(self.fps)]
         fmt = ["-f", "image2"]
@@ -69,7 +71,7 @@ class Scene:
             if quicktime_compatible
             else ["-pix_fmt", "rgba"]
         )
-        output = ["-y", output_file]
+        output = ["-y", output_filename]
         subprocess.call(
             ["ffmpeg"]
             + less_verbose
@@ -82,7 +84,7 @@ class Scene:
         )
         self.delete_asset_directory()
         if quicktime_compatible:
-            subprocess.call(["open", output_file])
+            subprocess.call(["open", output_filename])
         # TODO - try to not depend on ffmpeg subprocess call please
         # clips = [
         #     ImageClip(frame.filename, transparent=True).set_duration(frame_duration)

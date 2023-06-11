@@ -202,7 +202,13 @@ def blank_template(filename="blank_template.json"):
         "color": "#ffffff",
     }
     blank_unit = {"x": 0, "y": 0, "hide": default_hide}
-    blank_scene = {"fps": 30, "height": 480, "width": 720}
+    blank_scene = {
+        "fps": 30,
+        "height": 480,
+        "width": 720,
+        "quicktime_compatible": True,
+        "output_filename": "out.mov",
+    }
     blank_time = {"hours_offset": 0, "format": "%H:%M:%S"}
     config = {}
     for attribute in constant.ALL_ATTRIBUTES:
