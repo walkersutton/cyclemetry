@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -9,8 +10,6 @@ from PIL import Image, ImageDraw, ImageFont
 import constant
 import scene
 from frame import Frame
-
-CONFIG_FRAME_FILENAME = "tmp.png"
 
 
 def raw_configs(filename):
@@ -50,14 +49,15 @@ def config_dicts(filename):
     return configs
 
 
-def demo_image(configs):
+def build_demo_frame(configs):
     test_data = {}
     for attribute in constant.ALL_ATTRIBUTES:
         test_data[attribute] = 50
     del test_data[constant.ATTR_COURSE]
     test_data[constant.ATTR_TIME] = datetime.now()
 
-    frame = Frame(CONFIG_FRAME_FILENAME)
+    demo_frame_filename = "demo_frame.png"
+    frame = Frame(demo_frame_filename)
     frame.attributes = list(test_data.keys())
 
     for attribute, value in test_data.items():
@@ -139,14 +139,15 @@ def modify_unit_props(attribute, unit, configs, config_filename):
 
 def show_frame(config_filename):
     configs = config_dicts(config_filename)
-    demo_image(configs)
-    subprocess.call(["open", CONFIG_FRAME_FILENAME])
+    demo_frame_filename = build_demo_frame(configs)
+    subprocess.call(["open", demo_frame_filename])
+    return demo_frame_filename
 
 
 def modify_template(config_filename):
     exit_choice = "*** exit ***"
     try:
-        show_frame(config_filename)
+        demo_frame_filename = show_frame(config_filename)
         while True:
             configs = raw_configs(config_filename)
             subprocess.call(
@@ -182,6 +183,14 @@ def modify_template(config_filename):
                     f'tell application "Preview" to close window {str(window_number)}',
                 ]
             )
+        try:
+            os.remove(demo_frame_filename)
+        except FileNotFoundError:
+            print(f"File {demo_Frame_filename} not found.")
+        except PermissionError:
+            print(f"Permission denied to delete {demo_frame_filename}.")
+        except Exception as e:
+            print(f"An error occurred while deleting {demo_frame_filename}: {str(e)}")
 
 
 def blank_template(filename="blank_template.json"):
@@ -239,9 +248,10 @@ def blank_template(filename="blank_template.json"):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if len(sys.argv) == 2:
         template_filename = sys.argv[1]
     else:
         template_filename = "blank_template.json"
         blank_template(template_filename)
+
     modify_template(template_filename)
