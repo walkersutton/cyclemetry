@@ -7,39 +7,18 @@ from gpx import Gpx
 from scene import Scene
 
 
-def poll_attributes(valid_attributes):
-    # questions = [
-    #     inquirer.Checkbox(
-    #         "attributes",
-    #         message="Select data to include:",
-    #         choices=sorted(valid_attributes),
-    #     ),
-    # ]
-    # answers = inquirer.prompt(questions)
-    # return answers["attributes"]
-    return [
-        # constant.ATTR_CADENCE,
-        constant.ATTR_COURSE,
-        constant.ATTR_ELEVATION,
-        constant.ATTR_GRADIENT,
-        # constant.ATTR_HEARTRATE,
-        # constant.ATTR_POWER,
-        # constant.ATTR_SPEED,
-        # constant.ATTR_TEMPERATURE,
-        constant.ATTR_TIME,
-    ]
-
-
-def render_overlay(filename):
-    gpx = Gpx(filename)
-    attributes = poll_attributes(gpx.valid_attributes)
-    if attributes:
-        scene = Scene(gpx, attributes)
-        scene.export_video()
+def render_overlay(gpx_filename, template_filename):
+    gpx = Gpx(gpx_filename)
+    scene = Scene(gpx, gpx.valid_attributes, template_filename)
+    scene.export_video()
 
 
 if __name__ == "__main__":
     # TODO improve malformed argument handling
     # TODO - support passing template path - probably need to refactor config
-    filename = sys.argv[1]
-    render_overlay(filename)
+    # gpx_filename = sys.argv[1]
+    # template_filename = sys.argv[2]
+    gpx_filename = "test.gpx"
+    template_filename = "safa_brian_a.json"
+
+    render_overlay(gpx_filename, template_filename)

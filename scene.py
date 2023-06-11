@@ -8,21 +8,29 @@ from moviepy.editor import *
 from PIL import Image
 
 import constant
-from config import build_config
+from config import config_dicts
 from frame import Frame
 
 
 class Scene:
-    def __init__(self, gpx, attributes, path=f"{os.path.dirname(__file__)}/tmp"):
+    def __init__(
+        self,
+        gpx,
+        valid_attributes,
+        config_filename,
+        path=f"{os.path.dirname(__file__)}/tmp",
+    ):
         self.gpx = gpx
-        self.attributes = attributes
+        self.attributes = valid_attributes
+        self.configs = config_dicts(config_filename)
         self.gpx.parse_data(self.attributes)
+        # TODO smooth data after parsing so that it's less jumpy
+        # divide into fps # of intervals
         self.path = path  # TODO use tmp dir/ tmp file instead of using folder
-        self.fps = build_config("scene")["fps"]
+        self.fps = self.configs["scene"]["fps"]
         self.make_asset_directory()
         self.config_scene()
         self.build_frames()
-        self.build_configs()
         self.build_assets()
         self.draw_frames()
 
@@ -32,13 +40,7 @@ class Scene:
     def draw_frames(self):
         for ii, frame in enumerate(self.frames):
             print(f"{ii + 1}/{len(self.frames)}")
-            frame.draw_attributes(self.attributes, self.configs)
-
-    def build_configs(self):
-        configs = {}
-        for attribute in self.attributes:
-            configs[attribute] = build_config(attribute)
-        self.configs = configs
+            frame.draw_attributes(self.configs)
 
     def config_scene(self):
         self.seconds = len(self.gpx.time)  # I am assuming all gpx files have time data
@@ -107,8 +109,10 @@ class Scene:
                 frame = Frame(
                     f"{self.path}/{str(second * self.fps + ii).zfill(self.frame_digits)}.png",
                 )
-                for attribute in self.attributes:
+                frame.attributes = self.attributes
+                for attribute in frame.attributes:
                     setattr(frame, attribute, frame_data[attribute])
+                frame.attributes
                 frames.append(frame)
         self.frames = frames
 
@@ -125,9 +129,10 @@ class Scene:
 
     def build_course_assets(self):
         # TODO add multiprocessing here
+        # TODO - add width-height for the actual course
         self.attributes.remove(constant.ATTR_COURSE)
-        course_config = build_config("course")
-        scene = build_config("scene")  # TODO width height - do something with this
+        course_config = self.configs["course"]
+        scene = self.configs["scene"]  # TODO width height - do something with this
         plt.rcParams["lines.linewidth"] = course_config["line_width"]
         # plot connected line width plt.figure(figsize=(width, height))
         # TODO - configure line color
@@ -154,7 +159,7 @@ class Scene:
 
     def build_blank_assets(self):
         # TODO add multiprocessing here
-        scene_config = build_config("scene")
+        scene_config = self.configs["scene"]
         img = Image.new(
             mode="RGBA", size=(scene_config["width"], scene_config["height"])
         )

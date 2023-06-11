@@ -5,6 +5,7 @@ __pycache__/
 *.mp4
 *.webp
 *.mov
+*.png
 
 # environments
 venv/
