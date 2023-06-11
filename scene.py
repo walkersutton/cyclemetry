@@ -23,19 +23,14 @@ class Scene:
         self.gpx = gpx
         self.attributes = valid_attributes
         self.configs = config_dicts(config_filename)
-        self.gpx.parse_data(self.attributes)
-        # TODO smooth data after parsing so that it's less jumpy
-        # divide into fps # of intervals
         self.path = path  # TODO use tmp dir/ tmp file instead of using folder
         self.fps = self.configs["scene"]["fps"]
+        self.gpx.interpolate(self.fps)
         self.make_asset_directory()
         self.config_scene()
         self.build_frames()
         self.build_assets()
         self.draw_frames()
-
-        # now_string = ''.join(str(datetime.now()).split())
-        # frame_dir = f'{os.path.dirname(__file__)}/{now_string}'
 
     def draw_frames(self):
         for ii, frame in enumerate(self.frames):
@@ -97,21 +92,29 @@ class Scene:
         #     fps=config["fps"],
         # )
 
-    def frame_attribute_data(self, second: int):
+    def frame_attribute_data(self, second: int, frame_number: int):
         attribute_data = {}
         for attribute in self.attributes:
-            attribute_data[attribute] = getattr(self.gpx, attribute)[second]
+            if attribute in constant.NO_INTERPOLATE_ATTRIBUTES:
+                attribute_data[attribute] = getattr(self.gpx, attribute)[second]
+            else:
+                attribute_data[attribute] = getattr(self.gpx, attribute)[second][
+                    frame_number
+                ]
+        # print(second, frame_number, '----------------------------')
+        # for a in attribute_data:
+        #     print(attribute_data[a])
         return attribute_data
 
     def build_frames(self):
         frames = []
         for second in range(self.seconds):
-            frame_data = self.frame_attribute_data(second)
             for ii in range(self.fps):
                 frame = Frame(
                     f"{self.path}/{str(second * self.fps + ii).zfill(self.frame_digits)}.png",
                 )
                 frame.attributes = self.attributes
+                frame_data = self.frame_attribute_data(second, ii)
                 for attribute in frame.attributes:
                     setattr(frame, attribute, frame_data[attribute])
                 frame.attributes

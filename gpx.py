@@ -2,7 +2,9 @@ import json
 from collections import defaultdict
 
 import gpxpy
+import numpy as np
 from gpxpy.geo import Location
+from scipy.interpolate import interp1d
 
 import constant
 
@@ -16,52 +18,7 @@ class Gpx:
     def __init__(self, filename):
         self.gpx = gpxpy.parse(open(filename, "r"))
         self.set_valid_attributes()
-
-    def parse_data(self, attributes: list[str]):
-        def parse_attribute(index: tuple[int], trackpoint: gpxpy.gpx.GPXTrackPoint):
-            if len(index) == 2:
-                return trackpoint.extensions[index[0]][index[1]].text
-            else:
-                return trackpoint.extensions[index[0]].text
-
-        data = defaultdict(list)
-        track_segment = self.gpx.tracks[0].segments[0]
-        if constant.ATTR_GRADIENT in attributes:
-            # TODO might be a better way to start gradient?? idk lol
-            point = track_segment.points[1]
-            next_point = track_segment.points[2]
-            last_location = Location(
-                point.latitude - (next_point.latitude - point.latitude),
-                point.longitude - (next_point.longitude - point.longitude),
-                point.elevation - (next_point.elevation - point.elevation),
-            )
-        for ii, point in enumerate(track_segment.points):
-            for attribute in attributes:
-                match attribute:
-                    case constant.ATTR_COURSE:
-                        data[attribute].append((point.latitude, point.longitude))
-                    case constant.ATTR_ELEVATION:
-                        data[attribute].append(point.elevation)
-                    case constant.ATTR_TIME:
-                        data[attribute].append(point.time)
-                    case constant.ATTR_SPEED:
-                        data[attribute].append(track_segment.get_speed(ii))
-                    case constant.ATTR_GRADIENT:
-                        location = Location(
-                            point.latitude, point.longitude, point.elevation
-                        )
-                        data[attribute].append(
-                            gpxpy.geo.elevation_angle(
-                                location1=last_location, location2=location
-                            )
-                        )
-                        last_location = location
-                    case constant.ATTR_CADENCE | constant.ATTR_HEARTRATE | constant.ATTR_POWER | constant.ATTR_TEMPERATURE:
-                        data[attribute].append(
-                            parse_attribute(self.tag_map[attribute], point)
-                        )
-        for attribute in attributes:
-            setattr(self, attribute, data[attribute])
+        self.parse_data()
 
     def set_valid_attributes(self):
         attributes = set()
@@ -86,3 +43,71 @@ class Gpx:
 
         self.valid_attributes = list(attributes)
         self.tag_map = tag_map
+
+    def parse_data(self):
+        def parse_attribute(index: tuple[int], trackpoint: gpxpy.gpx.GPXTrackPoint):
+            value = trackpoint.extensions[index[0]]
+            if len(index) == 2:
+                value = value[index[1]]  # index indicates it's a child extension
+            return float(value.text)
+
+        data = defaultdict(list)
+        track_segment = self.gpx.tracks[0].segments[0]
+        if constant.ATTR_GRADIENT in self.valid_attributes:
+            # TODO might be a better way to start gradient?? idk lol
+            # TODO fix this garbage
+            point = track_segment.points[1]
+            next_point = track_segment.points[2]
+            last_location = Location(
+                point.latitude - (next_point.latitude - point.latitude),
+                point.longitude - (next_point.longitude - point.longitude),
+                point.elevation - (next_point.elevation - point.elevation),
+            )
+        for ii, point in enumerate(track_segment.points):
+            for attribute in self.valid_attributes:
+                match attribute:
+                    case constant.ATTR_COURSE:
+                        data[attribute].append((point.latitude, point.longitude))
+                    case constant.ATTR_ELEVATION:
+                        data[attribute].append(point.elevation)
+                    case constant.ATTR_TIME:
+                        data[attribute].append(point.time)
+                    case constant.ATTR_SPEED:
+                        data[attribute].append(track_segment.get_speed(ii))
+                    case constant.ATTR_GRADIENT:
+                        location = Location(
+                            point.latitude, point.longitude, point.elevation
+                        )
+                        data[attribute].append(
+                            gpxpy.geo.elevation_angle(
+                                location1=last_location, location2=location
+                            )
+                        )
+                        last_location = location
+                    case constant.ATTR_CADENCE | constant.ATTR_HEARTRATE | constant.ATTR_POWER | constant.ATTR_TEMPERATURE:
+                        data[attribute].append(
+                            parse_attribute(self.tag_map[attribute], point)
+                        )
+        for attribute in self.valid_attributes:
+            setattr(self, attribute, data[attribute])
+
+    def interpolate(self, fps: int):
+        for attribute in self.valid_attributes:
+            if attribute in constant.NO_INTERPOLATE_ATTRIBUTES:
+                continue
+            data = getattr(self, attribute)
+            time = np.arange(len(data))
+            interp_func = interp1d(time, data)
+            new_time = np.arange(time[0], time[-1], 1 / fps)
+            interpolated = interp_func(new_time).tolist()
+
+            data = []
+            batch = []
+            for ii in range(len(interpolated)):
+                if ii % fps == 0 and ii != 0:
+                    data.append(batch)
+                    batch = []
+                batch.append(interpolated[ii])
+            data.append(batch)
+
+            setattr(self, attribute, data)
