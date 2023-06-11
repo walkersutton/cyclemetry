@@ -57,7 +57,6 @@ def demo_image(configs):
     del test_data[constant.ATTR_COURSE]
     test_data[constant.ATTR_TIME] = datetime.now()
 
-    attributes = list(test_data.keys())
     frame = Frame(CONFIG_FRAME_FILENAME)
     frame.attributes = list(test_data.keys())
 
@@ -75,12 +74,16 @@ def modify_prop(attribute, prop, configs, config_filename, unit=None):
         prop_value = (
             configs[attribute][unit][prop] if unit else configs[attribute][prop]
         )
-        print(f"the current value of {prop} is {prop_value}")
+        print(f"Modifying {prop} for {unit} {attribute}") if unit else print(
+            f"Modifying {prop} for {attribute}"
+        )
+        print(f"Current value: {prop_value}")
         try:  # might need to type case depending on the property
             subprocess.call(
                 ["osascript", "-e", 'tell application "Terminal" to activate']
             )
-            value = input("what value would you like to set it to?\n")
+            value = input("Enter a new value:\n")
+            print("")
             if not value:
                 break
             if prop == "hide":
@@ -110,12 +113,17 @@ def modify_prop(attribute, prop, configs, config_filename, unit=None):
 
 def query_props(attribute, configs, unit=None):
     props = None
-    choices = configs[attribute][unit].keys() if unit else configs[attribute].keys()
+    if unit:
+        message = f"Select properties to modify for {unit} {attribute}"
+        choices = configs[attribute][unit].keys()
+    else:
+        message = f"Select properties to modify for {attribute}"
+        choices = configs[attribute].keys()
     while not props:
         question = [
             inquirer.Checkbox(
                 "properties",
-                message="Select properties to modify",
+                message=message,
                 choices=sorted(list(choices) + ["add a property"]),
             ),
         ]
@@ -136,6 +144,7 @@ def show_frame(config_filename):
 
 
 def modify_template(config_filename):
+    exit_choice = "*** exit ***"
     try:
         show_frame(config_filename)
         while True:
@@ -144,8 +153,11 @@ def modify_template(config_filename):
                 ["osascript", "-e", 'tell application "Terminal" to activate']
             )
             attribute = inquirer.list_input(
-                "Select attribute to modify", choices=sorted(configs.keys())
+                "Select attribute to modify",
+                choices=[exit_choice] + sorted(configs.keys()),
             )
+            if attribute == exit_choice:
+                break
             props = query_props(attribute, configs)
             for prop in props:
                 if prop in ("imperial", "metric"):
@@ -153,6 +165,8 @@ def modify_template(config_filename):
                 else:
                     modify_prop(attribute, prop, configs, config_filename)
     except (KeyboardInterrupt, TypeError):
+        pass
+    finally:
         window_number = int(
             subprocess.check_output(
                 ["osascript", "-e", 'tell application "Preview" to count window']
@@ -181,24 +195,38 @@ def blank_template(filename="blank_template.json"):
         "line_width": 1,
         "point_weight": 1,
     }
-    blank_global = {"text_color": "#ffffff", "font_size": 30, "font": "Evogria.otf"}
+    blank_global = {
+        "text_color": "#ffffff",
+        "font_size": 30,
+        "font": "Evogria.otf",
+        "color": "#ffffff",
+    }
     blank_unit = {"x": 0, "y": 0, "hide": default_hide}
     blank_scene = {"fps": 30, "height": 480, "width": 720}
     blank_time = {"hours_offset": 0, "format": "%H:%M:%S"}
     config = {}
     for attribute in constant.ALL_ATTRIBUTES:
-        config[attribute] = {"x": 0, "y": 0, "suffix": "", "hide": default_hide}
+        config[attribute] = blank_unit.copy()
         match attribute:
             case constant.ATTR_ELEVATION | constant.ATTR_SPEED | constant.ATTR_TEMPERATURE:
-                config[attribute]["imperial"] = blank_unit
-                config[attribute]["metric"] = blank_unit
+                config[attribute]["imperial"] = blank_unit.copy()
+                config[attribute]["imperial"]["suffix"] = constant.DEFAULT_SUFFIX_MAP[
+                    attribute
+                ]["imperial"]
+                config[attribute]["metric"] = blank_unit.copy()
+                config[attribute]["metric"]["suffix"] = constant.DEFAULT_SUFFIX_MAP[
+                    attribute
+                ]["metric"]
+                del config[attribute]["x"]
+                del config[attribute]["y"]
                 if attribute == constant.ATTR_ELEVATION:
                     config[attribute]["profile"] = blank_asset
+            case constant.ATTR_CADENCE | constant.ATTR_GRADIENT | constant.ATTR_HEARTRATE | constant.ATTR_POWER:
+                config[attribute]["suffix"] = constant.DEFAULT_SUFFIX_MAP[attribute]
             case constant.ATTR_COURSE:
                 config[attribute] = blank_asset
             case constant.ATTR_TIME:
                 config[attribute].update(blank_time)
-    config["elevation"]
     config["global"] = blank_global
     config["scene"] = blank_scene
     json.dump(config, open(f"templates/{filename}", "w"), indent=2)

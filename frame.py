@@ -17,6 +17,7 @@ class Frame:
         img.save(self.filename)
 
     def draw_course_outline(self, course_config):
+        # TODO draw basic course outline
         shape = [
             (course_config["x1"], course_config["y1"]),
             (course_config["x2"], course_config["y2"]),
@@ -48,7 +49,7 @@ class Frame:
                 if "metric" in config.keys():
                     # TODO - conversion
                     value = str(getattr(self, attribute))
-                    self.draw_attribute(value, config["imperial"])
+                    self.draw_attribute(value, config["metric"])
             elif not config["hide"]:
                 value = getattr(self, attribute)
                 if attribute == constant.ATTR_TIME:

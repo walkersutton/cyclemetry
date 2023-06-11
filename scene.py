@@ -149,7 +149,7 @@ class Scene:
                 x=[lon],
                 y=[lat],
                 color=course_config[
-                    "primary_color"
+                    "color"
                 ],  # TODO - might need to do something about hex/tuple color conversions
                 s=course_config["point_weight"],
             )

@@ -19,3 +19,22 @@ ALL_ATTRIBUTES = [
     ATTR_TIME,
     ATTR_TEMPERATURE,
 ]
+
+DEFAULT_SUFFIX_MAP = {
+    ATTR_CADENCE: " rpm",
+    ATTR_ELEVATION: {
+        "imperial": " ft",
+        "metric": " m",
+    },
+    ATTR_GRADIENT: " %",
+    ATTR_HEARTRATE: " bpm",
+    ATTR_POWER: " W",
+    ATTR_SPEED: {
+        "imperial": " mph",
+        "metric": " km/h",
+    },
+    ATTR_TEMPERATURE: {
+        "imperial": "°F",
+        "metric": "°C",
+    },
+}
