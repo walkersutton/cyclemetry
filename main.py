@@ -14,11 +14,12 @@ def render_overlay(gpx_filename, template_filename):
 
 
 if __name__ == "__main__":
-    # TODO improve malformed argument handling
-    # TODO - support passing template path - probably need to refactor config
-    # gpx_filename = sys.argv[1]
-    # template_filename = sys.argv[2]
-    gpx_filename = "test.gpx"
-    template_filename = "safa_brian_a.json"
+    # TODO improve argument handling
+    if len(sys.argv) == 2:
+        template_filename = sys.argv[1]
+    else:
+        template_filename = "test_template.json"
 
+    gpx_filename = "test.gpx"
+    print(f"using {template_filename}")
     render_overlay(gpx_filename, template_filename)
