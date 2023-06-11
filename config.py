@@ -1,5 +1,6 @@
 import json
 import subprocess
+import sys
 from datetime import datetime
 
 import inquirer
@@ -172,10 +173,10 @@ def modify_template(config_filename):
 def blank_template(filename="blank_template.json"):
     default_hide = False
     blank_asset = {
-        "x1": 0,
-        "y1": 100,
-        "x2": 0,
-        "y2": 100,
+        "x1": 10,
+        "y1": 10,
+        "x2": 200,
+        "y2": 200,
         "hide": default_hide,
         "line_width": 1,
         "point_weight": 1,
@@ -204,6 +205,9 @@ def blank_template(filename="blank_template.json"):
 
 
 if __name__ == "__main__":
-    safa = "safa_brian_a.json"
-    # blank_template(safa)
-    modify_template(safa)
+    if len(sys.argv) > 1:
+        template_filename = sys.argv[1]
+    else:
+        template_filename = "blank_template.json"
+        blank_template(template_filename)
+    modify_template(template_filename)
