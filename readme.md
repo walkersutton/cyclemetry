@@ -9,8 +9,7 @@
 
 ## Running
 ```sh
-source venv/bin/activate
-python main.py <gpx_file> <template_filename>
+(venv) $ python main.py <gpx_file> <template_filename>
 ```
 ## Templates
 * [Safa Brian A](https://github.com/walkersutton/cyclemetry/blob/main/templates/safa_brian_a.json) (featured image on readme (template under development))
@@ -20,7 +19,7 @@ python main.py <gpx_file> <template_filename>
 * Templates belong in the `./templates` directory
 
 ```
-$ python config.py my_template.json
+(venv) $ python config.py my_template.json
 [?] Select attribute to modify: power
    cadence
    course
@@ -48,11 +47,11 @@ What value would you like to set it to?
 ## Setup
 Tested using `Python 3.11.3` on MacOS Ventura
 ```sh
-git clone https://github.com/walkersutton/cyclemetry.git
-cd cyclemetry
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+$ git clone https://github.com/walkersutton/cyclemetry.git
+$ cd cyclemetry
+$ python3 -m venv venv
+$ source venv/bin/activate
+(venv) $ pip install -r requirements.txt
 ```
 
 
