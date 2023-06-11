@@ -71,14 +71,24 @@ def build_demo_frame(configs):
 
 def modify_prop(attribute, prop, configs, config_filename, unit=None):
     while True:
-        prop_value = (
-            configs[attribute][unit][prop] if unit else configs[attribute][prop]
-        )
+        if prop == "add a property":
+            prop = input("Enter a new property:\n")
+            if not prop:
+                break
+            if unit:
+                configs[attribute][unit][prop] = None
+            else:
+                configs[attribute][prop] = None
+
         print(f"Modifying {prop} for {unit} {attribute}") if unit else print(
             f"Modifying {prop} for {attribute}"
         )
+        prop_value = (
+            configs[attribute][unit][prop] if unit else configs[attribute][prop]
+        )
         print(f"Current value: {prop_value}")
-        try:  # might need to type case depending on the property
+
+        try:  # might need to type case depending on the property - i.e. booleans should not take text input - should be selection
             subprocess.call(
                 ["osascript", "-e", 'tell application "Terminal" to activate']
             )
@@ -98,6 +108,7 @@ def modify_prop(attribute, prop, configs, config_filename, unit=None):
                 "width",
                 "height",
                 "font_size",
+                "round",
             }:
                 value = int(value)
             if unit:
@@ -165,8 +176,8 @@ def modify_template(config_filename):
                     modify_unit_props(attribute, prop, configs, config_filename)
                 else:
                     modify_prop(attribute, prop, configs, config_filename)
-    except (KeyboardInterrupt, TypeError):
-        pass
+    except (KeyboardInterrupt, TypeError) as e:
+        print(e)
     finally:
         window_number = int(
             subprocess.check_output(
@@ -196,9 +207,9 @@ def modify_template(config_filename):
 def blank_template(filename="blank_template.json"):
     default_hide = False
     blank_asset = {
-        "x1": 10,
+        "x1": 500,
         "y1": 10,
-        "x2": 200,
+        "x2": 700,
         "y2": 200,
         "hide": default_hide,
         "line_width": 1,
@@ -220,15 +231,20 @@ def blank_template(filename="blank_template.json"):
     }
     blank_time = {"hours_offset": 0, "format": "%H:%M:%S"}
     config = {}
+    y = 0
     for attribute in constant.ALL_ATTRIBUTES:
         config[attribute] = blank_unit.copy()
         match attribute:
             case constant.ATTR_ELEVATION | constant.ATTR_SPEED | constant.ATTR_TEMPERATURE:
                 config[attribute]["imperial"] = blank_unit.copy()
+                config[attribute]["imperial"]["y"] = y
+                y += 30
                 config[attribute]["imperial"]["suffix"] = constant.DEFAULT_SUFFIX_MAP[
                     attribute
                 ]["imperial"]
                 config[attribute]["metric"] = blank_unit.copy()
+                config[attribute]["metric"]["y"] = y
+                y += 30
                 config[attribute]["metric"]["suffix"] = constant.DEFAULT_SUFFIX_MAP[
                     attribute
                 ]["metric"]
@@ -242,6 +258,9 @@ def blank_template(filename="blank_template.json"):
                 config[attribute] = blank_asset
             case constant.ATTR_TIME:
                 config[attribute].update(blank_time)
+        if "y" in config[attribute].keys():
+            config[attribute]["y"] = y
+            y += 30
     config["global"] = blank_global
     config["scene"] = blank_scene
     json.dump(config, open(f"templates/{filename}", "w"), indent=2)
