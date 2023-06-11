@@ -1,0 +1,110 @@
+{
+  "cadence": {
+    "x": 0,
+    "y": 300,
+    "hide": false,
+    "suffix": " rpm"
+  },
+  "course": {
+    "x1": 200,
+    "y1": 10,
+    "x2": 400,
+    "y2": 200,
+    "hide": false,
+    "line_width": 1,
+    "point_weight": 1
+  },
+  "elevation": {
+    "hide": false,
+    "imperial": {
+      "x": 0,
+      "y": 90,
+      "hide": false,
+      "suffix": " ft"
+    },
+    "metric": {
+      "x": 0,
+      "y": 120,
+      "hide": false,
+      "suffix": " m"
+    },
+    "profile": {
+      "x1": 10,
+      "y1": 10,
+      "x2": 200,
+      "y2": 200,
+      "hide": false,
+      "line_width": 1,
+      "point_weight": 1
+    }
+  },
+  "gradient": {
+    "x": 0,
+    "y": 0,
+    "hide": false,
+    "suffix": " %"
+  },
+  "heartrate": {
+    "x": 0,
+    "y": 270,
+    "hide": false,
+    "suffix": " bpm"
+  },
+  "power": {
+    "x": 0,
+    "y": 210,
+    "hide": false,
+    "suffix": " W"
+  },
+  "speed": {
+    "hide": false,
+    "imperial": {
+      "x": 0,
+      "y": 60,
+      "hide": false,
+      "suffix": " mph"
+    },
+    "metric": {
+      "x": 0,
+      "y": 30,
+      "hide": false,
+      "suffix": " km/h"
+    }
+  },
+  "time": {
+    "x": 0,
+    "y": 240,
+    "hide": false,
+    "hours_offset": 0,
+    "format": "%H:%M:%S"
+  },
+  "temperature": {
+    "hide": false,
+    "imperial": {
+      "x": 0,
+      "y": 150,
+      "hide": false,
+      "suffix": "\u00b0F"
+    },
+    "metric": {
+      "x": 0,
+      "y": 180,
+      "hide": false,
+      "suffix": "\u00b0C"
+    }
+  },
+  "global": {
+    "text_color": "#ffffff",
+    "font_size": 30,
+    "font": "Evogria.otf",
+    "color": "#ffffff",
+    "round": 0
+  },
+  "scene": {
+    "fps": 30,
+    "height": 480,
+    "width": 720,
+    "quicktime_compatible": true,
+    "output_filename": "out.mov"
+  }
+}
