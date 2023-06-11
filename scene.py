@@ -4,7 +4,6 @@ import shutil
 import subprocess
 
 import matplotlib.pyplot as plt
-from moviepy.editor import *
 from PIL import Image
 
 import constant
