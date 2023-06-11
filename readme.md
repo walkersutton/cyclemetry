@@ -16,32 +16,61 @@
 
 ### Template Wizard
 `python config.py <template_filename>` will launch an interactive CLI program and image preview that can help you modify a template. If you don't specify a `template_filename`, a blank template, `blank_template.json`, will be created that you can modify.
-* Templates belong in the `./templates` directory
+* Templates live in the `./templates` directory
 
 ```
-(venv) $ python config.py my_template.json
-[?] Select attribute to modify: power
+(venv) $ python config.py
+[?] Select attribute to modify: elevation
+   *** exit ***
+   cadence
+   course
+ > elevation
+   global
+   gradient
+   heartrate
+   power
+   scene
+   speed
+   temperature
+   time
+
+[?] Select properties to modify for elevation:
+   [ ] add a property
+   [ ] hide
+ > [X] imperial
+   [ ] metric
+   [ ] profile
+
+[?] Select properties to modify for imperial elevation:
+   [ ] add a property
+   [ ] hide
+ > [X] suffix
+   [ ] x
+   [ ] y
+
+Modifying suffix for imperial elevation
+Current value:  ft
+Enter a new value:
+ feet
+
+Modifying suffix for imperial elevation
+Current value:  feet
+Enter a new value:
+
+
+[?] Select attribute to modify: *** exit ***
+ > *** exit ***
    cadence
    course
    elevation
    global
    gradient
    heartrate
- > power
+   power
    scene
    speed
    temperature
    time
-
-[?] Select properties to modify:
-   [ ] add a property
-   [ ] hide
-   [ ] suffix
-   [X] x
- > [X] y
-
-The current value of x is 0
-What value would you like to set it to?
 ```
 
 ## Setup
