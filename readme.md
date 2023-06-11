@@ -46,7 +46,7 @@ What value would you like to set it to?
 ```
 
 ## Setup
-Tested using `Python 3.11.3`
+Tested using `Python 3.11.3` on MacOS Ventura
 ```sh
 git clone https://github.com/walkersutton/cyclemetry.git
 cd cyclemetry
