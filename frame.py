@@ -6,25 +6,21 @@ import constant
 
 
 class Frame:
-    def __init__(self, filename):
+    def __init__(self, filename, path, width, height):
         self.filename = filename
+        self.path = path
+        img = Image.new("RGBA", (width, height))
+        img.save(f"{self.path}/{self.filename}")
+
+    def full_path(self):
+        return f"{self.path}/{self.filename}"
 
     def draw_text(self, text, color, x, y, font_size, font="fonts/Evogria.otf"):
         # todo - check if font can be none or just set a default that isnt' evogria
         font = ImageFont.truetype(f"fonts/{font}", font_size)
-        img = Image.open(self.filename)
+        img = Image.open(self.full_path())
         ImageDraw.Draw(img).text((x, y), text, font=font, fill=color)
-        img.save(self.filename)
-
-    def draw_course_outline(self, course_config):
-        # TODO draw basic course outline
-        shape = [
-            (course_config["x1"], course_config["y1"]),
-            (course_config["x2"], course_config["y2"]),
-        ]
-        img = Image.open(self.filename)
-        ImageDraw.Draw(img).rectangle(shape, outline="red")  # do i need a fill?
-        img.save(self.filename)
+        img.save(self.full_path())
 
     def draw_attribute(self, value: str, config: dict):
         if type(value) in (int, float):
@@ -40,7 +36,7 @@ class Frame:
             value += config["suffix"]
         self.draw_text(
             value,
-            config["text_color"],
+            config["color"],
             config["x"],
             config["y"],
             config["font_size"],

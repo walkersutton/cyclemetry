@@ -14,7 +14,7 @@ def gpx_attribute_map(filename="gpx_attribute_map.json"):
         return json.load(file)
 
 
-class Gpx:
+class Activity:
     def __init__(self, filename):
         self.gpx = gpxpy.parse(open(filename, "r"))
         self.set_valid_attributes()

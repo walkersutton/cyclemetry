@@ -57,15 +57,19 @@ def build_demo_frame(configs):
     test_data[constant.ATTR_TIME] = datetime.now()
 
     demo_frame_filename = "demo_frame.png"
-    frame = Frame(demo_frame_filename)
+    frame = Frame(
+        demo_frame_filename, configs["scene"]["width"], configs["scene"]["height"]
+    )
     frame.attributes = list(test_data.keys())
 
     for attribute, value in test_data.items():
         setattr(frame, attribute, value)
-    img = Image.new("RGBA", (configs["scene"]["width"], configs["scene"]["height"]))
-    img.save(frame.filename)
+
     frame.draw_attributes(configs)
-    frame.draw_course_outline(configs[constant.ATTR_COURSE])
+    scene = Scene(configs)
+    # frame.draw_course_outline(configs[constant.ATTR_COURSE])
+    # TODO - use scene here
+    # maybe just make it easier and just draw the course without a scene? let's just get something out the door before making it pretty
     return frame.filename
 
 
@@ -216,7 +220,6 @@ def blank_template(filename="blank_template.json"):
         "point_weight": 1,
     }
     blank_global = {
-        "text_color": "#ffffff",
         "font_size": 30,
         "font": "Evogria.otf",
         "color": "#ffffff",

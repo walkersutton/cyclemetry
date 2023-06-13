@@ -14,17 +14,17 @@ from frame import Frame
 class Scene:
     def __init__(
         self,
-        gpx,
+        activity,
         valid_attributes,
         config_filename,
         path=f"{os.path.dirname(__file__)}/tmp",
     ):
-        self.gpx = gpx
+        self.activity = activity
         self.attributes = valid_attributes
         self.configs = config_dicts(config_filename)
         self.path = path  # TODO use tmp dir/ tmp file instead of using folder
         self.fps = self.configs["scene"]["fps"]
-        self.gpx.interpolate(self.fps)
+        self.activity.interpolate(self.fps)
         self.make_asset_directory()
         self.config_scene()
         self.build_frames()
@@ -37,7 +37,9 @@ class Scene:
             frame.draw_attributes(self.configs)
 
     def config_scene(self):
-        self.seconds = len(self.gpx.time)  # I am assuming all gpx files have time data
+        self.seconds = len(
+            self.activity.time
+        )  # I am assuming all gpx files have time data
         self.seconds = 2  # TODO change after debugging
         num_frames = self.seconds * self.fps
         self.frame_digits = int(math.log10(num_frames - 2)) + 1
@@ -76,7 +78,7 @@ class Scene:
             + pixel_format
             + output
         )
-        self.delete_asset_directory()
+        # self.delete_asset_directory()
         if quicktime_compatible:
             subprocess.call(["open", output_filename])
         # TODO - try to not depend on ffmpeg subprocess call please
@@ -95,9 +97,9 @@ class Scene:
         attribute_data = {}
         for attribute in self.attributes:
             if attribute in constant.NO_INTERPOLATE_ATTRIBUTES:
-                attribute_data[attribute] = getattr(self.gpx, attribute)[second]
+                attribute_data[attribute] = getattr(self.activity, attribute)[second]
             else:
-                attribute_data[attribute] = getattr(self.gpx, attribute)[second][
+                attribute_data[attribute] = getattr(self.activity, attribute)[second][
                     frame_number
                 ]
         # print(second, frame_number, '----------------------------')
@@ -110,7 +112,10 @@ class Scene:
         for second in range(self.seconds):
             for ii in range(self.fps):
                 frame = Frame(
-                    f"{self.path}/{str(second * self.fps + ii).zfill(self.frame_digits)}.png",
+                    f"{str(second * self.fps + ii).zfill(self.frame_digits)}.png",
+                    self.path,
+                    self.configs["scene"]["width"],
+                    self.configs["scene"]["height"],
                 )
                 frame.attributes = self.attributes
                 frame_data = self.frame_attribute_data(second, ii)
@@ -123,9 +128,8 @@ class Scene:
     def build_assets(self):
         if constant.ATTR_COURSE in self.attributes:
             self.build_course_assets()
-        else:
-            self.build_blank_assets()
         if (
+            # possible key error here
             constant.ATTR_ELEVATION in self.attributes
             and self.configs[constant.ATTR_ELEVATION]["profile"]
         ):
@@ -142,7 +146,8 @@ class Scene:
         # TODO - configure line color
         plt.axis("off")
         plt.plot(
-            [ele[1] for ele in self.gpx.course], [ele[0] for ele in self.gpx.course]
+            [ele[1] for ele in self.activity.course],
+            [ele[0] for ele in self.activity.course],
         )
         ii = 0
         for frame in self.frames:
@@ -158,17 +163,8 @@ class Scene:
                 s=course_config["point_weight"],
             )
             # TODO - take course width/height into consideration
-            plt.savefig(frame.filename, transparent=True)
+            plt.savefig(f"/tmp/course_{frame.filename}", transparent=True)
             scatter.remove()
-
-    def build_blank_assets(self):
-        # TODO add multiprocessing here
-        scene_config = self.configs["scene"]
-        img = Image.new(
-            mode="RGBA", size=(scene_config["width"], scene_config["height"])
-        )
-        for frame in self.frames:
-            img.save(frame.filename)
 
     def build_elevation_profile_assets(self):
         # TODO add multiprocessing here

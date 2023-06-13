@@ -94,7 +94,6 @@
     }
   },
   "global": {
-    "text_color": "#ffffff",
     "font_size": 30,
     "font": "Evogria.otf",
     "color": "#ffffff"
