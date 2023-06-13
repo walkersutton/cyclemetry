@@ -85,6 +85,7 @@ $ source venv/bin/activate
 ## Alternative Tools
 * [DashWare](http://www.dashware.net/) (only available on Windows)
 * [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
+* [GoPro Telemetry Extractor] https://goprotelemetryextractor.com/ ($150)
 
 ## Contributors
 * All contributions are welcome
