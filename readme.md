@@ -82,7 +82,9 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 (venv) $ pip install -r requirements.txt
 ```
-
+## Alternative Tools
+* [DashWare](http://www.dashware.net/)
+* [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
 
 ## Contributors
 * All contributions are welcome
