@@ -58,7 +58,7 @@ def build_demo_frame(configs):
 
     demo_frame_filename = "demo_frame.png"
     frame = Frame(
-        demo_frame_filename, configs["scene"]["width"], configs["scene"]["height"]
+        demo_frame_filename, "./", configs["scene"]["width"], configs["scene"]["height"]
     )
     frame.attributes = list(test_data.keys())
 
@@ -66,7 +66,7 @@ def build_demo_frame(configs):
         setattr(frame, attribute, value)
 
     frame.draw_attributes(configs)
-    scene = Scene(configs)
+    # scene = Scene(configs)
     # frame.draw_course_outline(configs[constant.ATTR_COURSE])
     # TODO - use scene here
     # maybe just make it easier and just draw the course without a scene? let's just get something out the door before making it pretty
