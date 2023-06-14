@@ -62,8 +62,17 @@ class Frame:
                         self.draw_attribute(value, config["metric"])
                 else:
                     value = getattr(self, attribute)
-                    if attribute == constant.ATTR_TIME:
-                        # TODO - try to use timezone instead of offset
-                        value += timedelta(hours=config["hours_offset"])
-                        value = value.strftime(config["format"])
-                    self.draw_attribute(value, config)
+                    if attribute == constant.ATTR_COURSE:
+                        self.draw_course(config)
+                    else:
+                        if attribute == constant.ATTR_TIME:
+                            # TODO - try to use timezone instead of offset
+                            value += timedelta(hours=config["hours_offset"])
+                            value = value.strftime(config["format"])
+                        self.draw_attribute(value, config)
+
+    def draw_course(self, config):
+        course = Image.open(f"{self.path}/course/{self.filename}")
+        frame = Image.open(self.full_path())
+        frame.paste(course, (config["x"], config["y"]), course)
+        frame.save(self.full_path())

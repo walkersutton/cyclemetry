@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 
 import inquirer
+import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
 
 import constant
@@ -37,7 +38,10 @@ def config_dicts(filename):
         for key, value in global_config.items():
             if key not in configs[attribute].keys():
                 configs[attribute][key] = value
-        if any(elem in configs[attribute].keys() for elem in {"imperial", "metric"}):
+        if any(
+            elem in configs[attribute].keys()
+            for elem in {"sub_point", "imperial", "metric"}
+        ):
             if "imperial" in configs[attribute].keys():
                 for key, value in global_config.items():
                     if key not in configs[attribute]["imperial"].keys():
@@ -46,49 +50,95 @@ def config_dicts(filename):
                 for key, value in global_config.items():
                     if key not in configs[attribute]["metric"].keys():
                         configs[attribute]["metric"][key] = value
+            if "sub_point" in configs[attribute].keys():
+                for key, value in global_config.items():
+                    if key not in configs[attribute]["sub_point"].keys():
+                        configs[attribute]["sub_point"][key] = value
     return configs
+
+
+# TODO god this is ugly - refactor pleaseeeee
+def build_demo_course(config, frame):
+    plt.clf()
+    plt.rcParams["lines.linewidth"] = config["line_width"]
+    # plot connected line width plt.figure(figsize=(width, height))
+    # TODO - configure line color
+    plt.axis("off")
+    plt.plot(
+        [ii for ii in range(100)],
+        [jj for jj in range(100)],
+    )
+    scatter = plt.scatter(
+        x=[50],
+        y=[50],
+        color=config[
+            "color"
+        ],  # TODO - might need to do something about hex/tuple color conversions
+        s=config["sub_point"]["point_weight"],
+        alpha=config["sub_point"]["opacity"],
+        edgecolor="none",
+        zorder=2,
+    )
+    scatter = plt.scatter(
+        x=[50],
+        y=[50],
+        color=config[
+            "color"
+        ],  # TODO - might need to do something about hex/tuple color conversions
+        s=config["point_weight"],
+        zorder=3,
+    )
+    # TODO - take course width/height into consideration
+    course_path = f"{frame.path}/course/{frame.filename}"
+    plt.savefig(course_path, transparent=True, dpi=config["dpi"])
 
 
 def build_demo_frame(configs):
     test_data = {}
+    demo_frame_filename = "demo_frame_00.png"
     for attribute in constant.ALL_ATTRIBUTES:
         test_data[attribute] = 50
     del test_data[constant.ATTR_COURSE]
     test_data[constant.ATTR_TIME] = datetime.now()
 
-    demo_frame_filename = "demo_frame.png"
     frame = Frame(
-        demo_frame_filename, "./", configs["scene"]["width"], configs["scene"]["height"]
+        demo_frame_filename,
+        "./tmp",
+        configs["scene"]["width"],
+        configs["scene"]["height"],
     )
+
+    build_demo_course(configs["course"], frame)
     frame.attributes = list(test_data.keys())
 
     for attribute, value in test_data.items():
         setattr(frame, attribute, value)
 
     frame.draw_attributes(configs)
+    frame.draw_course(configs)
     # scene = Scene(configs)
     # frame.draw_course_outline(configs[constant.ATTR_COURSE])
     # TODO - use scene here
     # maybe just make it easier and just draw the course without a scene? let's just get something out the door before making it pretty
-    return frame.filename
+    return frame.full_path()
 
 
-def modify_prop(attribute, prop, configs, config_filename, unit=None):
+def modify_prop(attribute, prop, configs, config_filename, parent=None):
     while True:
         if prop == "add a property":
             prop = input("Enter a new property:\n")
             if not prop:
                 break
-            if unit:
-                configs[attribute][unit][prop] = None
+            if parent:
+                configs[attribute][parent][prop] = None
             else:
                 configs[attribute][prop] = None
 
-        print(f"Modifying {prop} for {unit} {attribute}") if unit else print(
+        print(f"Modifying {prop} for {parent} {attribute}") if parent else print(
             f"Modifying {prop} for {attribute}"
         )
         prop_value = (
-            configs[attribute][unit][prop] if unit else configs[attribute][prop]
+            configs[attribute][parent][prop] if parent else configs[attribute][prop]
         )
         print(f"Current value: {prop_value}")
 
@@ -113,10 +163,18 @@ def modify_prop(attribute, prop, configs, config_filename, unit=None):
                 "height",
                 "font_size",
                 "round",
+                "point_weight",
+                "line_width",
+                "dpi",
             }:
                 value = int(value)
-            if unit:
-                configs[attribute][unit][prop] = value
+            elif prop in {"opacity"}:
+                value = float(value)
+                if not (0 <= value <= 1):
+                    print("Try again: opacity must be between 0 and 1")
+
+            if parent:
+                configs[attribute][parent][prop] = value
             else:
                 configs[attribute][prop] = value
         except Exception as e:
@@ -126,11 +184,11 @@ def modify_prop(attribute, prop, configs, config_filename, unit=None):
         show_frame(config_filename)
 
 
-def query_props(attribute, configs, unit=None):
+def query_props(attribute, configs, parent=None):
     props = None
-    if unit:
-        message = f"Select properties to modify for {unit} {attribute}"
-        choices = configs[attribute][unit].keys()
+    if parent:
+        message = f"Select properties to modify for {parent} {attribute}"
+        choices = configs[attribute][parent].keys()
     else:
         message = f"Select properties to modify for {attribute}"
         choices = configs[attribute].keys()
@@ -146,10 +204,10 @@ def query_props(attribute, configs, unit=None):
     return props
 
 
-def modify_unit_props(attribute, unit, configs, config_filename):
-    props = query_props(attribute, configs, unit)
+def modify_child_props(attribute, parent, configs, config_filename):
+    props = query_props(attribute, configs, parent)
     for prop in props:
-        modify_prop(attribute, prop, configs, config_filename, unit)
+        modify_prop(attribute, prop, configs, config_filename, parent)
 
 
 def show_frame(config_filename):
@@ -176,8 +234,8 @@ def modify_template(config_filename):
                 break
             props = query_props(attribute, configs)
             for prop in props:
-                if prop in ("imperial", "metric"):
-                    modify_unit_props(attribute, prop, configs, config_filename)
+                if prop in ("sub_point", "imperial", "metric"):
+                    modify_child_props(attribute, prop, configs, config_filename)
                 else:
                     modify_prop(attribute, prop, configs, config_filename)
     except (KeyboardInterrupt, TypeError) as e:
@@ -200,8 +258,9 @@ def modify_template(config_filename):
             )
         try:
             os.remove(demo_frame_filename)
+            os.remove("./tmp/course/demo_frame_00.png")
         except FileNotFoundError:
-            print(f"File {demo_Frame_filename} not found.")
+            print(f"File {demo_frame_filename} not found.")
         except PermissionError:
             print(f"Permission denied to delete {demo_frame_filename}.")
         except Exception as e:
@@ -211,13 +270,16 @@ def modify_template(config_filename):
 def blank_template(filename="blank_template.json"):
     default_hide = False
     blank_asset = {
-        "x1": 500,
-        "y1": 10,
-        "x2": 700,
-        "y2": 200,
+        "dpi": 150,
+        "x": 0,
+        "y": 0,
         "hide": default_hide,
-        "line_width": 1,
-        "point_weight": 1,
+        "line_width": 2,
+        "point_weight": 60,
+        "sub_point": {  # maybe this should only be for course and not elevation profile
+            "point_weight": 280,
+            "opacity": 0.5,
+        },
     }
     blank_global = {
         "font_size": 30,
@@ -227,8 +289,8 @@ def blank_template(filename="blank_template.json"):
     blank_unit = {"x": 0, "y": 0, "hide": default_hide}
     blank_scene = {
         "fps": 30,
-        "height": 480,
-        "width": 720,
+        "height": 1080,
+        "width": 1920,
         "quicktime_compatible": True,
         "output_filename": "out.mov",
     }

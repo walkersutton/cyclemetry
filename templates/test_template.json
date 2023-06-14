@@ -1,58 +1,64 @@
 {
   "cadence": {
     "x": 0,
-    "y": 300,
+    "y": 0,
     "hide": false,
     "suffix": " rpm"
   },
   "course": {
-    "x1": 200,
-    "y1": 10,
-    "x2": 400,
-    "y2": 200,
+    "dpi": 100,
+    "x": 700,
+    "y": 30,
     "hide": false,
-    "line_width": 1,
-    "point_weight": 1
+    "line_width": 2,
+    "point_weight": 60,
+    "sub_point": {
+      "point_weight": 280,
+      "opacity": 0.5
+    }
   },
   "elevation": {
     "hide": false,
     "imperial": {
       "x": 0,
-      "y": 90,
+      "y": 60,
       "hide": false,
       "suffix": " ft"
     },
     "metric": {
       "x": 0,
-      "y": 120,
+      "y": 90,
       "hide": false,
       "suffix": " m"
     },
     "profile": {
-      "x1": 10,
-      "y1": 10,
-      "x2": 200,
-      "y2": 200,
+      "dpi": 150,
+      "x": 0,
+      "y": 30,
       "hide": false,
-      "line_width": 1,
-      "point_weight": 1
+      "line_width": 2,
+      "point_weight": 60,
+      "sub_point": {
+        "point_weight": 280,
+        "opacity": 0.5
+      }
     }
   },
   "gradient": {
     "x": 0,
-    "y": 0,
+    "y": 120,
     "hide": false,
     "suffix": " %"
   },
   "heartrate": {
     "x": 0,
-    "y": 270,
+    "y": 150,
     "hide": false,
     "suffix": " bpm"
   },
   "power": {
     "x": 0,
-    "y": 210,
+    "y": 180,
     "hide": false,
     "suffix": " W"
   },
@@ -60,20 +66,20 @@
     "hide": false,
     "imperial": {
       "x": 0,
-      "y": 60,
+      "y": 210,
       "hide": false,
       "suffix": " mph"
     },
     "metric": {
       "x": 0,
-      "y": 30,
+      "y": 240,
       "hide": false,
       "suffix": " km/h"
     }
   },
   "time": {
     "x": 0,
-    "y": 240,
+    "y": 270,
     "hide": false,
     "hours_offset": 0,
     "format": "%H:%M:%S"
@@ -82,28 +88,26 @@
     "hide": false,
     "imperial": {
       "x": 0,
-      "y": 150,
+      "y": 300,
       "hide": false,
       "suffix": "\u00b0F"
     },
     "metric": {
       "x": 0,
-      "y": 180,
+      "y": 330,
       "hide": false,
       "suffix": "\u00b0C"
     }
   },
   "global": {
-    "text_color": "#ffffff",
     "font_size": 30,
     "font": "Evogria.otf",
-    "color": "#ffffff",
-    "round": 0
+    "color": "#ffffff"
   },
   "scene": {
-    "fps": 30,
-    "height": 480,
-    "width": 720,
+    "fps": 3,
+    "height": 1080,
+    "width": 1920,
     "quicktime_compatible": true,
     "output_filename": "out.mov"
   }

@@ -52,6 +52,7 @@ class Scene:
         if os.path.exists(self.path):
             self.delete_asset_directory()
         os.makedirs(self.path)
+        os.makedirs(self.path + "/course")
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
     def export_video(self):
@@ -102,9 +103,6 @@ class Scene:
                 attribute_data[attribute] = getattr(self.activity, attribute)[second][
                     frame_number
                 ]
-        # print(second, frame_number, '----------------------------')
-        # for a in attribute_data:
-        #     print(attribute_data[a])
         return attribute_data
 
     def build_frames(self):
@@ -137,19 +135,20 @@ class Scene:
 
     def build_course_assets(self):
         # TODO add multiprocessing here
-        # TODO - add width-height for the actual course
-        self.attributes.remove(constant.ATTR_COURSE)
-        course_config = self.configs["course"]
-        scene = self.configs["scene"]  # TODO width height - do something with this
-        plt.rcParams["lines.linewidth"] = course_config["line_width"]
+        # self.attributes.remove(constant.ATTR_COURSE)
+        config = self.configs["course"]
+        scene = self.configs["scene"]
+        plt.rcParams["lines.linewidth"] = config["line_width"]
         # plot connected line width plt.figure(figsize=(width, height))
         # TODO - configure line color
         plt.axis("off")
         plt.plot(
             [ele[1] for ele in self.activity.course],
             [ele[0] for ele in self.activity.course],
+            color=config["color"],
         )
         ii = 0
+        sub_scatter = None
         for frame in self.frames:
             print(f"{ii + 1}/{len(self.frames)}")
             ii += 1
@@ -157,14 +156,27 @@ class Scene:
             scatter = plt.scatter(
                 x=[lon],
                 y=[lat],
-                color=course_config[
-                    "color"
-                ],  # TODO - might need to do something about hex/tuple color conversions
-                s=course_config["point_weight"],
+                color=config["color"],
+                s=config["point_weight"],
+                zorder=3,
             )
+            if "sub_point" in config.keys():
+                # handle hide in sub point
+                sub_scatter = plt.scatter(
+                    x=[lon],
+                    y=[lat],
+                    color=config["sub_point"]["color"],
+                    s=config["sub_point"]["point_weight"],
+                    zorder=2,
+                    alpha=config["sub_point"]["opacity"],
+                    edgecolor="none",
+                )
             # TODO - take course width/height into consideration
-            plt.savefig(f"/tmp/course_{frame.filename}", transparent=True)
+            plt.savefig(f"{self.path}/course/{frame.filename}", transparent=True)
             scatter.remove()
+            if sub_scatter:
+                sub_scatter.remove()
+                sub_scatter = None
 
     def build_elevation_profile_assets(self):
         # TODO add multiprocessing here
