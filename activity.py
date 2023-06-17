@@ -111,3 +111,11 @@ class Activity:
             data.append(batch)
 
             setattr(self, attribute, data)
+
+
+def lat_lon_from_gpx(gpx_filename):
+    gpx = gpxpy.parse(open(gpx_filename, "r"))
+    track_segment = gpx.tracks[0].segments[0]
+    return [point.latitude for point in track_segment.points], [
+        point.longitude for point in track_segment.points
+    ]

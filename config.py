@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 import constant
 import scene
+from activity import lat_lon_from_gpx
 from frame import Frame
 
 
@@ -59,18 +60,24 @@ def config_dicts(filename):
 
 # TODO god this is ugly - refactor pleaseeeee
 def build_demo_course(config, frame):
-    plt.clf()
     plt.rcParams["lines.linewidth"] = config["line_width"]
     # plot connected line width plt.figure(figsize=(width, height))
     # TODO - configure line color
     plt.axis("off")
+    test_gpx_filename = "config.gpx"
+    if os.path.exists(test_gpx_filename):
+        lat, lon = lat_lon_from_gpx(test_gpx_filename)
+    else:
+        lat = [ii for ii in range(100)]
+        lon = [ii for ii in range(100)]
     plt.plot(
-        [ii for ii in range(100)],
-        [jj for jj in range(100)],
+        lon,
+        lat,
+        color=config["color"],
     )
-    scatter = plt.scatter(
-        x=[50],
-        y=[50],
+    plt.scatter(
+        x=[lon[0]],
+        y=[lat[0]],
         color=config[
             "color"
         ],  # TODO - might need to do something about hex/tuple color conversions
@@ -79,16 +86,15 @@ def build_demo_course(config, frame):
         edgecolor="none",
         zorder=2,
     )
-    scatter = plt.scatter(
-        x=[50],
-        y=[50],
+    plt.scatter(
+        x=[lon[0]],
+        y=[lat[0]],
         color=config[
             "color"
         ],  # TODO - might need to do something about hex/tuple color conversions
         s=config["point_weight"],
         zorder=3,
     )
-    # TODO - take course width/height into consideration
     course_path = f"{frame.path}/course/{frame.filename}"
     plt.savefig(course_path, transparent=True, dpi=config["dpi"])
 
@@ -115,7 +121,7 @@ def build_demo_frame(configs):
         setattr(frame, attribute, value)
 
     frame.draw_attributes(configs)
-    frame.draw_course(configs)
+    frame.draw_course(configs["course"])
     # scene = Scene(configs)
     # frame.draw_course_outline(configs[constant.ATTR_COURSE])
     # TODO - use scene here
@@ -166,6 +172,7 @@ def modify_prop(attribute, prop, configs, config_filename, parent=None):
                 "point_weight",
                 "line_width",
                 "dpi",
+                "rotation",
             }:
                 value = int(value)
             elif prop in {"opacity"}:
@@ -321,6 +328,7 @@ def blank_template(filename="blank_template.json"):
                 config[attribute]["suffix"] = constant.DEFAULT_SUFFIX_MAP[attribute]
             case constant.ATTR_COURSE:
                 config[attribute] = blank_asset
+                config[attribute]["rotation"] = 0
             case constant.ATTR_TIME:
                 config[attribute].update(blank_time)
         if "y" in config[attribute].keys():

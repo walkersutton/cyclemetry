@@ -63,7 +63,7 @@ class Frame:
                 else:
                     value = getattr(self, attribute)
                     if attribute == constant.ATTR_COURSE:
-                        self.draw_course(config)
+                        self.draw_course(config["course"])
                     else:
                         if attribute == constant.ATTR_TIME:
                             # TODO - try to use timezone instead of offset
@@ -74,5 +74,7 @@ class Frame:
     def draw_course(self, config):
         course = Image.open(f"{self.path}/course/{self.filename}")
         frame = Image.open(self.full_path())
+        angle = config["rotation"]
+        course = course.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
         frame.paste(course, (config["x"], config["y"]), course)
         frame.save(self.full_path())
