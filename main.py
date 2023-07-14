@@ -18,8 +18,8 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         template_filename = sys.argv[1]
     else:
-        template_filename = "test_template.json"
+        template_filename = "blank_template.json"
 
-    gpx_filename = "test.gpx"
+    gpx_filename = "config.gpx"
     print(f"using {template_filename}")
     render_overlay(gpx_filename, template_filename)

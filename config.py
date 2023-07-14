@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 import constant
 import scene
-from activity import lat_lon_from_gpx
+from activity import elevation_from_gpx, lat_lon_from_gpx
 from frame import Frame
 
 
@@ -99,6 +99,48 @@ def build_demo_course(config, frame):
     plt.savefig(course_path, transparent=True, dpi=config["dpi"])
 
 
+def build_demo_profile(config, frame):
+    plt.rcParams["lines.linewidth"] = config["line_width"]
+    # plot connected line width plt.figure(figsize=(width, height))
+    # TODO - configure line color
+    plt.axis("off")
+    test_gpx_filename = "config.gpx"
+    if os.path.exists(test_gpx_filename):
+        elevation = elevation_from_gpx(test_gpx_filename)
+        time = [ii for ii in range(len(elevation))]
+    else:
+        elevation = [ii for ii in range(100, 0, -1)]
+        time = [ii for ii in range(100)]
+    plt.plot(
+        time,
+        elevation,
+        color=config["color"],
+    )
+    # TODO conditionally render sub point
+    plt.scatter(
+        x=[time[0]],
+        y=[elevation[0]],
+        color=config[
+            "color"
+        ],  # TODO - might need to do something about hex/tuple color conversions
+        s=config["sub_point"]["point_weight"],
+        alpha=config["sub_point"]["opacity"],
+        edgecolor="none",
+        zorder=2,
+    )
+    plt.scatter(
+        x=[time[0]],
+        y=[elevation[0]],
+        color=config[
+            "color"
+        ],  # TODO - might need to do something about hex/tuple color conversions
+        s=config["point_weight"],
+        zorder=3,
+    )
+    profile_path = f"{frame.path}/profile/{frame.filename}"
+    plt.savefig(profile_path, transparent=True, dpi=config["dpi"])
+
+
 def build_demo_frame(configs):
     test_data = {}
     demo_frame_filename = "demo_frame_00.png"
@@ -114,14 +156,18 @@ def build_demo_frame(configs):
         configs["scene"]["height"],
     )
 
-    build_demo_course(configs["course"], frame)
-    frame.attributes = list(test_data.keys())
-
     for attribute, value in test_data.items():
         setattr(frame, attribute, value)
+    frame.attributes = list(test_data.keys())
+
+    build_demo_course(configs["course"], frame)
+    frame.draw_course(configs["course"])
+    build_demo_profile(configs["elevation"], frame)
+    frame.draw_profile(configs["elevation"])
 
     frame.draw_attributes(configs)
-    frame.draw_course(configs["course"])
+    # ploting issue on frame refreshes
+
     # scene = Scene(configs)
     # frame.draw_course_outline(configs[constant.ATTR_COURSE])
     # TODO - use scene here
@@ -263,15 +309,19 @@ def modify_template(config_filename):
                     f'tell application "Preview" to close window {str(window_number)}',
                 ]
             )
-        try:
-            os.remove(demo_frame_filename)
-            os.remove("./tmp/course/demo_frame_00.png")
-        except FileNotFoundError:
-            print(f"File {demo_frame_filename} not found.")
-        except PermissionError:
-            print(f"Permission denied to delete {demo_frame_filename}.")
-        except Exception as e:
-            print(f"An error occurred while deleting {demo_frame_filename}: {str(e)}")
+        for f in [
+            demo_frame_filename,
+            "./tmp/course/demo_frame_00.png",
+            "./tmp/profile/demo_frame_00.png",
+        ]:
+            try:
+                os.remove(f)
+            except FileNotFoundError:
+                print(f"File {f} not found.")
+            except PermissionError:
+                print(f"Permission denied to delete {f}.")
+            except Exception as e:
+                print(f"An error occurred while deleting {f}: {str(e)}")
 
 
 def blank_template(filename="blank_template.json"):
@@ -293,7 +343,8 @@ def blank_template(filename="blank_template.json"):
         "font": "Evogria.otf",
         "color": "#ffffff",
     }
-    blank_unit = {"x": 0, "y": 0, "hide": default_hide}
+
+    blank_unit = {"label": "", "x": 0, "y": 0, "hide": default_hide}
     blank_scene = {
         "fps": 30,
         "height": 1080,
@@ -307,7 +358,7 @@ def blank_template(filename="blank_template.json"):
     for attribute in constant.ALL_ATTRIBUTES:
         config[attribute] = blank_unit.copy()
         match attribute:
-            case constant.ATTR_ELEVATION | constant.ATTR_SPEED | constant.ATTR_TEMPERATURE:
+            case constant.ATTR_SPEED | constant.ATTR_TEMPERATURE:  # fix elevation properties
                 config[attribute]["imperial"] = blank_unit.copy()
                 config[attribute]["imperial"]["y"] = y
                 y += 30
@@ -322,13 +373,13 @@ def blank_template(filename="blank_template.json"):
                 ]["metric"]
                 del config[attribute]["x"]
                 del config[attribute]["y"]
-                if attribute == constant.ATTR_ELEVATION:
-                    config[attribute]["profile"] = blank_asset
             case constant.ATTR_CADENCE | constant.ATTR_GRADIENT | constant.ATTR_HEARTRATE | constant.ATTR_POWER:
                 config[attribute]["suffix"] = constant.DEFAULT_SUFFIX_MAP[attribute]
-            case constant.ATTR_COURSE:
-                config[attribute] = blank_asset
+            case constant.ATTR_COURSE | constant.ATTR_ELEVATION:
+                config[attribute] = blank_asset.copy()
                 config[attribute]["rotation"] = 0
+                if attribute == constant.ATTR_ELEVATION:
+                    config[attribute]["profile"] = blank_asset.copy()
             case constant.ATTR_TIME:
                 config[attribute].update(blank_time)
         if "y" in config[attribute].keys():

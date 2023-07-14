@@ -53,6 +53,7 @@ class Scene:
             self.delete_asset_directory()
         os.makedirs(self.path)
         os.makedirs(self.path + "/course")
+        os.makedirs(self.path + "/profile")
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
     def export_video(self):
@@ -182,4 +183,42 @@ class Scene:
         # TODO add multiprocessing here
         # TODO create pngs that represent profile of elevation over course
         # draw these pngs in the frame draw method:56
-        pass
+        config = self.configs["elevation"]
+        scene = self.configs["scene"]
+        plt.rcParams["lines.linewidth"] = config["line_width"]
+        plt.axis("off")
+        plt.plot(
+            [ii for ii in range(len(self.activity.elevation))],
+            [ele for ele in self.activity.elevation],
+            color=config["color"],
+        )
+        ii = 0
+        sub_scatter = None
+        # TODO - probably make this into a helper
+        for frame in self.frames:
+            print(f"{ii + 1}/{len(self.frames)}")
+            ii += 1
+            scatter = plt.scatter(
+                x=[ii],
+                y=[frame.elevation],
+                color=config["color"],
+                s=config["point_weight"],
+                zorder=3,
+            )
+            if "sub_point" in config.keys():
+                # handle hide in sub point
+                sub_scatter = plt.scatter(
+                    x=[ii],
+                    y=[frame.elevation],
+                    color=config["sub_point"]["color"],
+                    s=config["sub_point"]["point_weight"],
+                    zorder=2,
+                    alpha=config["sub_point"]["opacity"],
+                    edgecolor="none",
+                )
+            # TODO - take course width/height into consideration
+            plt.savefig(f"{self.path}/profile/{frame.filename}", transparent=True)
+            scatter.remove()
+            if sub_scatter:
+                sub_scatter.remove()
+                sub_scatter = None
