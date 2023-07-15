@@ -1,6 +1,5 @@
 {
   "cadence": {
-    "label": "",
     "x": 0,
     "y": 0,
     "hide": false,
@@ -45,38 +44,32 @@
     }
   },
   "gradient": {
-    "label": "",
     "x": 0,
     "y": 90,
     "hide": false,
     "suffix": " %"
   },
   "heartrate": {
-    "label": "",
     "x": 0,
     "y": 120,
     "hide": false,
     "suffix": " bpm"
   },
   "power": {
-    "label": "",
     "x": 0,
     "y": 150,
     "hide": false,
     "suffix": " W"
   },
   "speed": {
-    "label": "",
     "hide": false,
     "imperial": {
-      "label": "",
       "x": 0,
       "y": 180,
       "hide": false,
       "suffix": " mph"
     },
     "metric": {
-      "label": "",
       "x": 0,
       "y": 210,
       "hide": false,
@@ -84,7 +77,6 @@
     }
   },
   "time": {
-    "label": "",
     "x": 0,
     "y": 240,
     "hide": false,
@@ -92,17 +84,14 @@
     "format": "%H:%M:%S"
   },
   "temperature": {
-    "label": "",
     "hide": false,
     "imperial": {
-      "label": "",
       "x": 0,
       "y": 270,
       "hide": false,
       "suffix": "\u00b0F"
     },
     "metric": {
-      "label": "",
       "x": 0,
       "y": 300,
       "hide": false,
@@ -120,5 +109,13 @@
     "width": 1920,
     "quicktime_compatible": true,
     "output_filename": "out.mov"
-  }
+  },
+  "labels": [
+    {
+      "text": "label_1",
+      "x": 300,
+      "y": 300,
+      "hide": false
+    }
+  ]
 }

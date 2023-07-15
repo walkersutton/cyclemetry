@@ -36,25 +36,33 @@ def config_dicts(filename):
     configs = raw_configs(filename)
     global_config = configs["global"]
     for attribute in configs.keys():
-        for key, value in global_config.items():
-            if key not in configs[attribute].keys():
-                configs[attribute][key] = value
-        if any(
-            elem in configs[attribute].keys()
-            for elem in {"sub_point", "imperial", "metric"}
-        ):
-            if "imperial" in configs[attribute].keys():
+        if type(configs[attribute]) == dict:
+            for key, value in global_config.items():
+                if key not in configs[attribute].keys():
+                    configs[attribute][key] = value
+            if any(
+                elem in configs[attribute].keys()
+                for elem in {"sub_point", "imperial", "metric"}
+            ):
+                if "imperial" in configs[attribute].keys():
+                    for key, value in global_config.items():
+                        if key not in configs[attribute]["imperial"].keys():
+                            configs[attribute]["imperial"][key] = value
+                if "metric" in configs[attribute].keys():
+                    for key, value in global_config.items():
+                        if key not in configs[attribute]["metric"].keys():
+                            configs[attribute]["metric"][key] = value
+                if "sub_point" in configs[attribute].keys():
+                    for key, value in global_config.items():
+                        if key not in configs[attribute]["sub_point"].keys():
+                            configs[attribute]["sub_point"][key] = value
+        elif type(configs[attribute]) == list:
+            for element in configs[attribute]:
                 for key, value in global_config.items():
-                    if key not in configs[attribute]["imperial"].keys():
-                        configs[attribute]["imperial"][key] = value
-            if "metric" in configs[attribute].keys():
-                for key, value in global_config.items():
-                    if key not in configs[attribute]["metric"].keys():
-                        configs[attribute]["metric"][key] = value
-            if "sub_point" in configs[attribute].keys():
-                for key, value in global_config.items():
-                    if key not in configs[attribute]["sub_point"].keys():
-                        configs[attribute]["sub_point"][key] = value
+                    if key not in element.keys():
+                        element[key] = value
+        else:
+            raise Exception("config attribute must be dict or list, depending on type")
     return configs
 
 
@@ -165,7 +173,7 @@ def build_demo_frame(configs):
     build_demo_profile(configs["elevation"], frame)
     frame.draw_profile(configs["elevation"])
 
-    frame.draw_attributes(configs)
+    frame.draw(configs)
     # ploting issue on frame refreshes
 
     # scene = Scene(configs)
@@ -344,7 +352,8 @@ def blank_template(filename="blank_template.json"):
         "color": "#ffffff",
     }
 
-    blank_unit = {"label": "", "x": 0, "y": 0, "hide": default_hide}
+    blank_value = {"x": 0, "y": 0, "hide": default_hide}
+    blank_label = {"text": "test label", "x": 0, "y": 0, "hide": default_hide}
     blank_scene = {
         "fps": 30,
         "height": 1080,
@@ -356,16 +365,16 @@ def blank_template(filename="blank_template.json"):
     config = {}
     y = 0
     for attribute in constant.ALL_ATTRIBUTES:
-        config[attribute] = blank_unit.copy()
+        config[attribute] = blank_value.copy()
         match attribute:
             case constant.ATTR_SPEED | constant.ATTR_TEMPERATURE:  # fix elevation properties
-                config[attribute]["imperial"] = blank_unit.copy()
+                config[attribute]["imperial"] = blank_value.copy()
                 config[attribute]["imperial"]["y"] = y
                 y += 30
                 config[attribute]["imperial"]["suffix"] = constant.DEFAULT_SUFFIX_MAP[
                     attribute
                 ]["imperial"]
-                config[attribute]["metric"] = blank_unit.copy()
+                config[attribute]["metric"] = blank_value.copy()
                 config[attribute]["metric"]["y"] = y
                 y += 30
                 config[attribute]["metric"]["suffix"] = constant.DEFAULT_SUFFIX_MAP[
@@ -387,6 +396,7 @@ def blank_template(filename="blank_template.json"):
             y += 30
     config["global"] = blank_global
     config["scene"] = blank_scene
+    config["labels"] = [blank_label.copy()]
     json.dump(config, open(f"templates/{filename}", "w"), indent=2)
 
 

@@ -15,14 +15,14 @@ class Frame:
     def full_path(self):
         return f"{self.path}/{self.filename}"
 
-    def draw_text(self, text, color, x, y, font_size, font="fonts/Evogria.otf"):
-        # todo - check if font can be none or just set a default that isnt' evogria
-        font = ImageFont.truetype(f"fonts/{font}", font_size)
-        img = Image.open(self.full_path())
-        ImageDraw.Draw(img).text((x, y), text, font=font, fill=color)
-        img.save(self.full_path())
+    def draw_value(self, value: str, config: dict):
+        def draw_value_helper(text, color, x, y, font_size, font="fonts/Evogria.otf"):
+            # todo - check if font can be none or just set a default that isnt' evogria
+            font = ImageFont.truetype(f"fonts/{font}", font_size)
+            img = Image.open(self.full_path())
+            ImageDraw.Draw(img).text((x, y), text, font=font, fill=color)
+            img.save(self.full_path())
 
-    def draw_attribute(self, value: str, config: dict):
         if type(value) in (int, float):
             if "round" in config.keys():
                 if config["round"] == 0:
@@ -34,7 +34,7 @@ class Frame:
         value = str(value)
         if "suffix" in config.keys():
             value += config["suffix"]
-        self.draw_text(
+        draw_value_helper(
             value,
             config["color"],
             config["x"],
@@ -43,7 +43,7 @@ class Frame:
             config["font"],
         )
 
-    def draw_attributes(self, configs):
+    def draw(self, configs):
         for attribute in self.attributes:
             config = configs[attribute]
             if "hide" not in config.keys() or not config["hide"]:
@@ -54,12 +54,12 @@ class Frame:
                             value *= constant.MPH_CONVERSION
                         elif attribute == constant.ATTR_ELEVATION:
                             value *= constant.FT_CONVERSION
-                        self.draw_attribute(value, config["imperial"])
+                        self.draw_value(value, config["imperial"])
                     if "metric" in config.keys():
                         value = getattr(self, attribute)
                         if attribute == constant.ATTR_SPEED:
                             value *= constant.KMH_CONVERSION
-                        self.draw_attribute(value, config["metric"])
+                        self.draw_value(value, config["metric"])
                 else:
                     value = getattr(self, attribute)
                     if attribute == constant.ATTR_COURSE:
@@ -71,7 +71,10 @@ class Frame:
                             # TODO - try to use timezone instead of offset
                             value += timedelta(hours=config["hours_offset"])
                             value = value.strftime(config["format"])
-                        self.draw_attribute(value, config)
+                        self.draw_value(value, config)
+        for label in self.labels:
+            if "hide" not in label.keys() or not label["hide"]:
+                self.draw_value(label["text"], label)
 
     def draw_course(self, config):
         course = Image.open(f"{self.path}/course/{self.filename}")

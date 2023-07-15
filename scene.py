@@ -24,6 +24,7 @@ class Scene:
         self.configs = config_dicts(config_filename)
         self.path = path  # TODO use tmp dir/ tmp file instead of using folder
         self.fps = self.configs["scene"]["fps"]
+        self.labels = self.configs["labels"]
         self.activity.interpolate(self.fps)
         self.make_asset_directory()
         self.config_scene()
@@ -34,7 +35,7 @@ class Scene:
     def draw_frames(self):
         for ii, frame in enumerate(self.frames):
             print(f"{ii + 1}/{len(self.frames)}")
-            frame.draw_attributes(self.configs)
+            frame.draw(self.configs)
 
     def config_scene(self):
         self.seconds = len(
@@ -117,10 +118,10 @@ class Scene:
                     self.configs["scene"]["height"],
                 )
                 frame.attributes = self.attributes
+                frame.labels = self.labels
                 frame_data = self.frame_attribute_data(second, ii)
                 for attribute in frame.attributes:
                     setattr(frame, attribute, frame_data[attribute])
-                frame.attributes
                 frames.append(frame)
         self.frames = frames
 
