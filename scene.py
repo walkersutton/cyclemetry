@@ -3,12 +3,10 @@ import os
 import shutil
 import subprocess
 
-import matplotlib.pyplot as plt
-from PIL import Image
-
 import constant
 from config import config_dicts
 from frame import Frame
+from plot import build_plot_assets
 
 
 class Scene:
@@ -29,7 +27,7 @@ class Scene:
         self.make_asset_directory()
         self.config_scene()
         self.build_frames()
-        self.build_assets()
+        build_plot_assets(self)
         self.draw_frames()
 
     def draw_frames(self):
@@ -124,102 +122,3 @@ class Scene:
                     setattr(frame, attribute, frame_data[attribute])
                 frames.append(frame)
         self.frames = frames
-
-    def build_assets(self):
-        if constant.ATTR_COURSE in self.attributes:
-            self.build_course_assets()
-        if (
-            # possible key error here
-            constant.ATTR_ELEVATION in self.attributes
-            and self.configs[constant.ATTR_ELEVATION]["profile"]
-        ):
-            self.build_elevation_profile_assets()
-
-    def build_course_assets(self):
-        # TODO add multiprocessing here
-        # self.attributes.remove(constant.ATTR_COURSE)
-        config = self.configs["course"]
-        scene = self.configs["scene"]
-        plt.rcParams["lines.linewidth"] = config["line_width"]
-        # plot connected line width plt.figure(figsize=(width, height))
-        # TODO - configure line color
-        plt.axis("off")
-        plt.plot(
-            [ele[1] for ele in self.activity.course],
-            [ele[0] for ele in self.activity.course],
-            color=config["color"],
-        )
-        ii = 0
-        sub_scatter = None
-        for frame in self.frames:
-            print(f"{ii + 1}/{len(self.frames)}")
-            ii += 1
-            lat, lon = frame.course
-            scatter = plt.scatter(
-                x=[lon],
-                y=[lat],
-                color=config["color"],
-                s=config["point_weight"],
-                zorder=3,
-            )
-            if "sub_point" in config.keys():
-                # handle hide in sub point
-                sub_scatter = plt.scatter(
-                    x=[lon],
-                    y=[lat],
-                    color=config["sub_point"]["color"],
-                    s=config["sub_point"]["point_weight"],
-                    zorder=2,
-                    alpha=config["sub_point"]["opacity"],
-                    edgecolor="none",
-                )
-            # TODO - take course width/height into consideration
-            plt.savefig(f"{self.path}/course/{frame.filename}", transparent=True)
-            scatter.remove()
-            if sub_scatter:
-                sub_scatter.remove()
-                sub_scatter = None
-
-    def build_elevation_profile_assets(self):
-        # TODO add multiprocessing here
-        # TODO create pngs that represent profile of elevation over course
-        # draw these pngs in the frame draw method:56
-        config = self.configs["elevation"]
-        scene = self.configs["scene"]
-        plt.rcParams["lines.linewidth"] = config["line_width"]
-        plt.axis("off")
-        plt.plot(
-            [ii for ii in range(len(self.activity.elevation))],
-            [ele for ele in self.activity.elevation],
-            color=config["color"],
-        )
-        ii = 0
-        sub_scatter = None
-        # TODO - probably make this into a helper
-        for frame in self.frames:
-            print(f"{ii + 1}/{len(self.frames)}")
-            ii += 1
-            scatter = plt.scatter(
-                x=[ii],
-                y=[frame.elevation],
-                color=config["color"],
-                s=config["point_weight"],
-                zorder=3,
-            )
-            if "sub_point" in config.keys():
-                # handle hide in sub point
-                sub_scatter = plt.scatter(
-                    x=[ii],
-                    y=[frame.elevation],
-                    color=config["sub_point"]["color"],
-                    s=config["sub_point"]["point_weight"],
-                    zorder=2,
-                    alpha=config["sub_point"]["opacity"],
-                    edgecolor="none",
-                )
-            # TODO - take course width/height into consideration
-            plt.savefig(f"{self.path}/profile/{frame.filename}", transparent=True)
-            scatter.remove()
-            if sub_scatter:
-                sub_scatter.remove()
-                sub_scatter = None
