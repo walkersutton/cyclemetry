@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
@@ -71,7 +73,12 @@ def build_elevation_profile_assets(scene):
     # fig, ax = plt.subplots(facecolor='none')
     plt.rcParams["lines.linewidth"] = elevation_config["line_width"]
     plt.axis("off")
-    x = [ii for ii in range(len(scene.activity.elevation))]
+    x = [
+        ii
+        for ii in range(
+            len(scene.activity.elevation) * len(scene.activity.elevation[0])
+        )
+    ]
     y = np.array(sum(scene.activity.elevation, []))
     plt.plot(x, y, color=elevation_config["color"])
     plt.fill_between(
@@ -84,6 +91,7 @@ def build_elevation_profile_assets(scene):
     )
     ii = 0
     sub_scatter = None
+    point_text = None
     # TODO - probably make this into a helper
     for frame in scene.frames:
         print(f"{ii + 1}/{len(scene.frames)}")
@@ -95,6 +103,16 @@ def build_elevation_profile_assets(scene):
             s=elevation_config["point_weight"],
             zorder=3,
         )
+        if "point_label" in elevation_config.keys():
+            point_text = plt.text(
+                ii + elevation_config["point_label"]["x_offset"],
+                frame.elevation + elevation_config["point_label"]["y_offset"],
+                elevation_config["point_label"]["text"],
+                fontsize=elevation_config["point_label"]["font_size"],
+                color=elevation_config["point_label"]["color"],
+                font=Path(f'./fonts/{elevation_config["point_label"]["font"]}'),
+            )
+
         if "sub_point" in elevation_config.keys():
             # handle hide in sub point
             sub_scatter = plt.scatter(
@@ -117,3 +135,6 @@ def build_elevation_profile_assets(scene):
         if sub_scatter:
             sub_scatter.remove()
             sub_scatter = None
+        if point_text:
+            point_text.remove()
+            point_text = None
