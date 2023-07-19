@@ -1,0 +1,135 @@
+{
+  "cadence": {
+    "hide": true
+  },
+  "course": {
+    "dpi": 150,
+    "x": 0,
+    "y": 30,
+    "hide": false,
+    "line_width": 2,
+    "point_weight": 60,
+    "sub_point": {
+      "point_weight": 280,
+      "opacity": 0.5
+    },
+    "rotation": 35
+  },
+  "elevation": {
+    "dpi": 150,
+    "x": 0,
+    "y": 60,
+    "hide": false,
+    "line_width": 2,
+    "point_weight": 60,
+    "opacity": 1,
+    "sub_point": {
+      "point_weight": 150,
+      "opacity": 1
+    },
+    "profile": {
+      "dpi": 200,
+      "x": -220,
+      "y": 1530,
+      "color": "white",
+      "rotation": 0,
+      "hide": false,
+      "line_width": 2,
+      "point_weight": 60,
+      "point_label": {
+        "font": "Evogria.otf",
+        "x_offset": 20,
+        "y_offset": 20,
+        "font_size": 30,
+        "color": "white"
+      },
+      "sub_point": {
+        "point_weight": 280,
+        "opacity": 0.2
+      }
+    }
+  },
+  "gradient": {
+    "x": 40,
+    "y": 1960,
+    "hide": false,
+    "font_size": 150,
+    "suffix": ""
+  },
+  "heartrate": {
+    "hide": true
+  },
+  "power": {
+    "x": 70,
+    "y": 1300,
+    "font_size": 270,
+    "hide": false,
+    "suffix": ""
+  },
+  "speed": {
+    "hide": false,
+    "imperial": {
+      "x": 70,
+      "y": 580,
+      "font_size": 270,
+      "hide": false,
+      "suffix": ""
+    },
+    "metric": {
+      "x": 70,
+      "y": 940,
+      "font_size": 270,
+      "hide": false,
+      "suffix": ""
+    }
+  },
+  "time": {
+    "hide": true
+  },
+  "temperature": {
+    "hide": true
+  },
+  "global": {
+    "font_size": 30,
+    "font": "Evogria.otf",
+    "color": "#ffffff",
+    "round": 0
+  },
+  "scene": {
+    "fps": 4,
+    "height": 2160,
+    "width": 3840,
+    "quicktime_compatible": true,
+    "output_filename": "out.mov"
+  },
+  "labels": [
+    {
+      "text": "MPH",
+      "x": 90,
+      "y": 510,
+      "hide": false,
+      "font_size": 90
+    },
+    {
+      "text": "KMH",
+      "x": 90,
+      "y": 870,
+      "hide": false,
+      "font_size": 90
+    },
+    {
+      "text": "PWR",
+      "x": 90,
+      "y": 1230,
+      "hide": false,
+      "font_size": 90
+    },
+    {
+      "text": "GRAD.",
+      "x": 50,
+      "y": 1880,
+      "hide": false,
+      "font_size": 62
+    }
+  ]
+}
