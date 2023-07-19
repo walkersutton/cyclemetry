@@ -65,7 +65,7 @@ class Frame:
                     if attribute == constant.ATTR_COURSE:
                         self.draw_course(config)
                     elif attribute == constant.ATTR_ELEVATION:
-                        self.draw_profile(config)
+                        self.draw_profile(config["profile"])
                     else:
                         if attribute == constant.ATTR_TIME:
                             # TODO - try to use timezone instead of offset

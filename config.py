@@ -167,11 +167,12 @@ def build_demo_frame(configs):
     for attribute, value in test_data.items():
         setattr(frame, attribute, value)
     frame.attributes = list(test_data.keys())
+    frame.labels = configs["labels"]
 
     build_demo_course(configs["course"], frame)
     frame.draw_course(configs["course"])
     build_demo_profile(configs["elevation"], frame)
-    frame.draw_profile(configs["elevation"])
+    frame.draw_profile(configs["elevation"]["profile"])
 
     frame.draw(configs)
     # ploting issue on frame refreshes
@@ -407,4 +408,8 @@ if __name__ == "__main__":
         template_filename = "blank_template.json"
         blank_template(template_filename)
 
-    modify_template(template_filename)
+    # while True:
+    #     input()
+    #     template_filename = "safa_brian_a.json"
+    #     show_frame(template_filename)
+    # # modify_template(template_filename)
