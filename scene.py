@@ -35,7 +35,7 @@ class Scene:
         self.export_video()
 
     def render_demo(self):
-        self.build_frame(0, 0, 0)
+        self.build_frame(0, 0)
         build_plot_assets(self)
         self.draw_frames()
 
