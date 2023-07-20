@@ -26,7 +26,16 @@ class Scene:
         self.activity.interpolate(self.fps)
         self.make_asset_directory()
         self.config_scene()
+        self.frames = []
+
+    def render_video(self):
         self.build_frames()
+        build_plot_assets(self)
+        self.draw_frames()
+        self.export_video()
+
+    def render_demo(self):
+        self.build_frame(0, 0, 0)
         build_plot_assets(self)
         self.draw_frames()
 
@@ -39,7 +48,7 @@ class Scene:
         self.seconds = len(
             self.activity.time
         )  # I am assuming all gpx files have time data
-        self.seconds = 2  # TODO change after debugging
+        self.seconds = 4  # TODO change after debugging
         num_frames = self.seconds * self.fps
         self.frame_digits = int(math.log10(num_frames - 2)) + 1
 
@@ -105,20 +114,21 @@ class Scene:
                 ]
         return attribute_data
 
+    def build_frame(self, second, frame_number):
+        frame = Frame(
+            f"{str(second * self.fps + frame_number).zfill(self.frame_digits)}.png",
+            self.path,
+            self.configs["scene"]["width"],
+            self.configs["scene"]["height"],
+        )
+        frame.attributes = self.attributes
+        frame.labels = self.labels
+        frame_data = self.frame_attribute_data(second, frame_number)
+        for attribute in frame.attributes:
+            setattr(frame, attribute, frame_data[attribute])
+        self.frames.append(frame)
+
     def build_frames(self):
-        frames = []
         for second in range(self.seconds):
-            for ii in range(self.fps):
-                frame = Frame(
-                    f"{str(second * self.fps + ii).zfill(self.frame_digits)}.png",
-                    self.path,
-                    self.configs["scene"]["width"],
-                    self.configs["scene"]["height"],
-                )
-                frame.attributes = self.attributes
-                frame.labels = self.labels
-                frame_data = self.frame_attribute_data(second, ii)
-                for attribute in frame.attributes:
-                    setattr(frame, attribute, frame_data[attribute])
-                frames.append(frame)
-        self.frames = frames
+            for frame_number in range(self.fps):
+                self.build_frame(second, frame_number)

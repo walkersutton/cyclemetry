@@ -5,13 +5,8 @@ import sys
 from datetime import datetime
 
 import inquirer
-import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw, ImageFont
 
 import constant
-import scene
-from activity import elevation_from_gpx, lat_lon_from_gpx
-from frame import Frame
 
 
 def raw_configs(filename):
@@ -64,124 +59,6 @@ def config_dicts(filename):
         else:
             raise Exception("config attribute must be dict or list, depending on type")
     return configs
-
-
-# TODO god this is ugly - refactor pleaseeeee
-def build_demo_course(config, frame):
-    plt.rcParams["lines.linewidth"] = config["line_width"]
-    # plot connected line width plt.figure(figsize=(width, height))
-    # TODO - configure line color
-    plt.axis("off")
-    test_gpx_filename = "config.gpx"
-    if os.path.exists(test_gpx_filename):
-        lat, lon = lat_lon_from_gpx(test_gpx_filename)
-    else:
-        lat = [ii for ii in range(100)]
-        lon = [ii for ii in range(100)]
-    plt.plot(
-        lon,
-        lat,
-        color=config["color"],
-    )
-    plt.scatter(
-        x=[lon[0]],
-        y=[lat[0]],
-        color=config[
-            "color"
-        ],  # TODO - might need to do something about hex/tuple color conversions
-        s=config["sub_point"]["point_weight"],
-        alpha=config["sub_point"]["opacity"],
-        edgecolor="none",
-        zorder=2,
-    )
-    plt.scatter(
-        x=[lon[0]],
-        y=[lat[0]],
-        color=config[
-            "color"
-        ],  # TODO - might need to do something about hex/tuple color conversions
-        s=config["point_weight"],
-        zorder=3,
-    )
-    course_path = f"{frame.path}/course/{frame.filename}"
-    plt.savefig(course_path, transparent=True, dpi=config["dpi"])
-
-
-def build_demo_profile(config, frame):
-    plt.rcParams["lines.linewidth"] = config["line_width"]
-    # plot connected line width plt.figure(figsize=(width, height))
-    # TODO - configure line color
-    plt.axis("off")
-    test_gpx_filename = "config.gpx"
-    if os.path.exists(test_gpx_filename):
-        elevation = elevation_from_gpx(test_gpx_filename)
-        time = [ii for ii in range(len(elevation))]
-    else:
-        elevation = [ii for ii in range(100, 0, -1)]
-        time = [ii for ii in range(100)]
-    plt.plot(
-        time,
-        elevation,
-        color=config["color"],
-    )
-    # TODO conditionally render sub point
-    plt.scatter(
-        x=[time[0]],
-        y=[elevation[0]],
-        color=config[
-            "color"
-        ],  # TODO - might need to do something about hex/tuple color conversions
-        s=config["sub_point"]["point_weight"],
-        alpha=config["sub_point"]["opacity"],
-        edgecolor="none",
-        zorder=2,
-    )
-    plt.scatter(
-        x=[time[0]],
-        y=[elevation[0]],
-        color=config[
-            "color"
-        ],  # TODO - might need to do something about hex/tuple color conversions
-        s=config["point_weight"],
-        zorder=3,
-    )
-    profile_path = f"{frame.path}/profile/{frame.filename}"
-    plt.savefig(profile_path, transparent=True, dpi=config["dpi"])
-
-
-def build_demo_frame(configs):
-    test_data = {}
-    demo_frame_filename = "demo_frame_00.png"
-    for attribute in constant.ALL_ATTRIBUTES:
-        test_data[attribute] = 50
-    del test_data[constant.ATTR_COURSE]
-    test_data[constant.ATTR_TIME] = datetime.now()
-
-    frame = Frame(
-        demo_frame_filename,
-        "./tmp",
-        configs["scene"]["width"],
-        configs["scene"]["height"],
-    )
-
-    for attribute, value in test_data.items():
-        setattr(frame, attribute, value)
-    frame.attributes = list(test_data.keys())
-    frame.labels = configs["labels"]
-
-    build_demo_course(configs["course"], frame)
-    frame.draw_course(configs["course"])
-    build_demo_profile(configs["elevation"], frame)
-    frame.draw_profile(configs["elevation"]["profile"])
-
-    frame.draw(configs)
-    # ploting issue on frame refreshes
-
-    # scene = Scene(configs)
-    # frame.draw_course_outline(configs[constant.ATTR_COURSE])
-    # TODO - use scene here
-    # maybe just make it easier and just draw the course without a scene? let's just get something out the door before making it pretty
-    return frame.full_path()
 
 
 def modify_prop(attribute, prop, configs, config_filename, parent=None):
@@ -243,7 +120,6 @@ def modify_prop(attribute, prop, configs, config_filename, parent=None):
             print("configging error during modify_prop", e)
         with open(f"templates/{config_filename}", "w") as file:
             json.dump(configs, file, indent=2)
-        show_frame(config_filename)
 
 
 def query_props(attribute, configs, parent=None):
@@ -272,17 +148,9 @@ def modify_child_props(attribute, parent, configs, config_filename):
         modify_prop(attribute, prop, configs, config_filename, parent)
 
 
-def show_frame(config_filename):
-    configs = config_dicts(config_filename)
-    demo_frame_filename = build_demo_frame(configs)
-    subprocess.call(["open", demo_frame_filename])
-    return demo_frame_filename
-
-
 def modify_template(config_filename):
     exit_choice = "*** exit ***"
     try:
-        demo_frame_filename = show_frame(config_filename)
         while True:
             configs = raw_configs(config_filename)
             subprocess.call(
@@ -399,17 +267,3 @@ def blank_template(filename="blank_template.json"):
     config["scene"] = blank_scene
     config["labels"] = [blank_label.copy()]
     json.dump(config, open(f"templates/{filename}", "w"), indent=2)
-
-
-if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        template_filename = sys.argv[1]
-    else:
-        template_filename = "blank_template.json"
-        blank_template(template_filename)
-
-    # while True:
-    #     input()
-    #     template_filename = "safa_brian_a.json"
-    #     show_frame(template_filename)
-    # # modify_template(template_filename)
