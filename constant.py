@@ -47,6 +47,8 @@ DEFAULT_SUFFIX_MAP = {
     },
 }
 
+FONTS_DIR = "./fonts/"
+
 
 # CONVERSIONS
 ## IMPERIAL

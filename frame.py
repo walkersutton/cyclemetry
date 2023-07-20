@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 
 from PIL import Image, ImageDraw, ImageFont
@@ -16,9 +17,10 @@ class Frame:
         return f"{self.path}/{self.filename}"
 
     def draw_value(self, value: str, config: dict):
-        def draw_value_helper(text, color, x, y, font_size, font="fonts/Evogria.otf"):
-            # todo - check if font can be none or just set a default that isnt' evogria
-            font = ImageFont.truetype(f"fonts/{font}", font_size)
+        def draw_value_helper(text, color, x, y, font_size, font="arial.ttf"):
+            if not os.path.exists(font):
+                font = constant.FONTS_DIR + font
+            font = ImageFont.truetype(font, font_size)
             img = Image.open(self.full_path())
             ImageDraw.Draw(img).text((x, y), text, font=font, fill=color)
             img.save(self.full_path())
@@ -43,6 +45,14 @@ class Frame:
             config["font"],
         )
 
+    def draw_asset(self, config, attribute):
+        asset = Image.open(f"{self.path}/{attribute}/{self.filename}")
+        frame = Image.open(self.full_path())
+        angle = config["rotation"]
+        asset = asset.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
+        frame.paste(asset, (config["x"], config["y"]), asset)
+        frame.save(self.full_path())
+
     def draw(self, configs):
         for attribute in self.attributes:
             config = configs[attribute]
@@ -63,9 +73,9 @@ class Frame:
                 else:
                     value = getattr(self, attribute)
                     if attribute == constant.ATTR_COURSE:
-                        self.draw_course(config)
+                        self.draw_asset(config, attribute)
                     elif attribute == constant.ATTR_ELEVATION:
-                        self.draw_profile(config["profile"])
+                        self.draw_asset(config["profile"], attribute)
                     else:
                         if attribute == constant.ATTR_TIME:
                             # TODO - try to use timezone instead of offset
@@ -75,19 +85,3 @@ class Frame:
         for label in self.labels:
             if "hide" not in label.keys() or not label["hide"]:
                 self.draw_value(label["text"], label)
-
-    def draw_course(self, config):
-        course = Image.open(f"{self.path}/course/{self.filename}")
-        frame = Image.open(self.full_path())
-        angle = config["rotation"]
-        course = course.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
-        frame.paste(course, (config["x"], config["y"]), course)
-        frame.save(self.full_path())
-
-    def draw_profile(self, config):
-        course = Image.open(f"{self.path}/profile/{self.filename}")
-        frame = Image.open(self.full_path())
-        angle = config["rotation"]
-        course = course.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
-        frame.paste(course, (config["x"], config["y"]), course)
-        frame.save(self.full_path())

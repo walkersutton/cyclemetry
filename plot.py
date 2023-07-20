@@ -110,7 +110,9 @@ def build_elevation_profile_assets(scene):
                 elevation_config["point_label"]["text"],
                 fontsize=elevation_config["point_label"]["font_size"],
                 color=elevation_config["point_label"]["color"],
-                font=Path(f'./fonts/{elevation_config["point_label"]["font"]}'),
+                font=Path(
+                    f'{constant.FONTS_DIR}{elevation_config["point_label"]["font"]}'
+                ),  # TODO - support system fonts? not sure how pyplot deals with this
             )
 
         if "sub_point" in elevation_config.keys():
@@ -127,7 +129,7 @@ def build_elevation_profile_assets(scene):
         # TODO - take course width/height into consideration
         plt.tight_layout()
         plt.savefig(
-            f"{scene.path}/profile/{frame.filename}",
+            f"{scene.path}/elevation/{frame.filename}",
             bbox_inches="tight",
             transparent=True,
         )

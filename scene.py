@@ -52,7 +52,7 @@ class Scene:
             self.delete_asset_directory()
         os.makedirs(self.path)
         os.makedirs(self.path + "/course")
-        os.makedirs(self.path + "/profile")
+        os.makedirs(self.path + "/elevation")
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
     def export_video(self):
