@@ -19,21 +19,23 @@ def demo_frame(gpx_filename, template_filename):
     scene = Scene(activity, activity.valid_attributes, template_filename)
     scene.render_demo()
     subprocess.call(["open", scene.frames[0].full_path()])
+    return scene
 
 
+# TODO improve argument handling
 if __name__ == "__main__":
-    # TODO improve argument handling
-    # template_filename = sys.argv[1]
     gpx_filename = "config.gpx"
     if len(sys.argv) == 2:
         if sys.argv[1] == "demo":
-            template_filename = "safa_brian_a.json"
-            template_filename = "blank_template.json"
-            print(
-                f"demoing frame using the {template_filename} template and {gpx_filename} gpx file"
-            )
-            demo_frame(gpx_filename, template_filename)
-            exit()
+            while True:
+                template_filename = "blank_template.json"
+                print(
+                    f"demoing frame using the {template_filename} template and {gpx_filename} gpx file"
+                )
+                scene = demo_frame(gpx_filename, template_filename)
+                input("enter to re-render:")
+                scene.update_configs(template_filename)
+
     template_filename = "blank_template.json"
     print(
         f"rendering overlay using the {template_filename} template and {gpx_filename} gpx file"

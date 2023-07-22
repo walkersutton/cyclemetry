@@ -39,6 +39,9 @@ class Scene:
         build_plot_assets(self)
         self.draw_frames()
 
+    def update_configs(self, config_filename):
+        self.configs = config_dicts(config_filename)
+
     def draw_frames(self):
         for ii, frame in enumerate(self.frames):
             print(f"{ii + 1}/{len(self.frames)}")
@@ -48,7 +51,7 @@ class Scene:
         self.seconds = len(
             self.activity.time
         )  # I am assuming all gpx files have time data
-        self.seconds = 4  # TODO change after debugging
+        self.seconds = 40  # TODO change after debugging
         num_frames = self.seconds * self.fps
         self.frame_digits = int(math.log10(num_frames - 2)) + 1
 
