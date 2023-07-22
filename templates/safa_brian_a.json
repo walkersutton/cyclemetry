@@ -3,82 +3,82 @@
     "hide": true
   },
   "course": {
-    "dpi": 150,
-    "x": 0,
-    "y": 30,
+    "dpi": 300,
+    "x": 10,
+    "y": -100,
     "hide": false,
-    "line_width": 2,
+    "line_width": 1.5,
     "point_weight": 60,
+    "width": 1000,
+    "height": 800,
     "sub_point": {
       "point_weight": 280,
       "opacity": 0.5
     },
-    "rotation": 35
+    "rotation": 80
   },
   "elevation": {
-    "dpi": 150,
+    "dpi": 300,
     "x": 0,
     "y": 60,
     "hide": false,
-    "line_width": 2,
-    "point_weight": 60,
-    "opacity": 1,
-    "sub_point": {
-      "point_weight": 150,
-      "opacity": 1
-    },
     "profile": {
-      "dpi": 200,
-      "x": -220,
-      "y": 1530,
       "color": "white",
-      "rotation": 0,
-      "hide": false,
+      "dpi": 300,
       "line_width": 2,
-      "point_weight": 60,
+      "hide": false,
+      "x": -43,
+      "y": 1716,
+      "width": 1200,
+      "height": 600,
+      "opacity": 0.4,
+      "rotation": 0,
+      "point_weight": 10,
       "point_label": {
-        "font": "Evogria.otf",
+        "font": "Furore.otf",
         "x_offset": 20,
         "y_offset": 20,
-        "font_size": 30,
+        "font_size": 12.5,
+        "text": "mate",
         "color": "white"
       },
       "sub_point": {
-        "point_weight": 280,
-        "opacity": 0.2
+        "point_weight": 30,
+        "opacity": 0.2,
+        "color": "white"
       }
     }
   },
   "gradient": {
-    "x": 40,
-    "y": 1960,
+    "x": 37,
+    "y": 1928,
     "hide": false,
-    "font_size": 150,
+    "font_size": 192,
     "suffix": ""
   },
   "heartrate": {
     "hide": true
   },
   "power": {
-    "x": 70,
-    "y": 1300,
-    "font_size": 270,
+    "x": 80,
+    "y": 1334,
+    "font_size": 255,
     "hide": false,
     "suffix": ""
   },
   "speed": {
     "hide": false,
     "imperial": {
-      "x": 70,
-      "y": 580,
-      "font_size": 270,
+      "x": 80,
+      "y": 724,
+      "font_size": 255,
       "hide": false,
       "suffix": ""
     },
     "metric": {
-      "x": 70,
-      "y": 940,
-      "font_size": 270,
+      "x": 80,
+      "y": 1029,
+      "font_size": 255,
       "hide": false,
       "suffix": ""
     }
@@ -93,10 +93,11 @@
     "font_size": 30,
     "font": "Evogria.otf",
     "color": "#ffffff",
-    "round": 0
+    "round": 0,
+    "opacity": 0.5
   },
   "scene": {
-    "fps": 4,
+    "fps": 30,
     "height": 2160,
     "width": 3840,
     "quicktime_compatible": true,
@@ -105,31 +106,33 @@
   "labels": [
     {
       "text": "MPH",
-      "x": 90,
-      "y": 510,
+      "x": 100,
+      "y": 695,
       "hide": false,
-      "font_size": 90
+      "font_size": 70
     },
     {
       "text": "KMH",
-      "x": 90,
-      "y": 870,
+      "x": 100,
+      "y": 1000,
       "hide": false,
-      "font_size": 90
+      "font_size":70
     },
     {
       "text": "PWR",
-      "x": 90,
-      "y": 1230,
+      "x": 100,
+      "y": 1305,
       "hide": false,
-      "font_size": 90
+      "font_size": 70,
+      "opacity": 0.5
     },
     {
-      "text": "GRAD.",
-      "x": 50,
-      "y": 1880,
+      "text": "Grad.",
+      "x": 44,
+      "y": 1889,
       "hide": false,
-      "font_size": 62
+      "font_size": 60,
+      "opacity": 0.5
     }
   ]
 }
