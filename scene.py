@@ -2,6 +2,7 @@ import math
 import os
 import shutil
 import subprocess
+from subprocess import PIPE, Popen
 
 import constant
 from config import config_dicts
@@ -31,7 +32,6 @@ class Scene:
     def render_video(self):
         self.build_frames()
         build_plot_assets(self)
-        self.draw_frames()
         self.export_video()
 
     def render_demo(self):
@@ -45,7 +45,7 @@ class Scene:
     def draw_frames(self):
         for ii, frame in enumerate(self.frames):
             print(f"{ii + 1}/{len(self.frames)}")
-            frame.draw(self.configs)
+            frame.draw(self.configs).save(frame.full_path())
 
     def config_scene(self):
         self.seconds = len(
@@ -72,8 +72,8 @@ class Scene:
         quicktime_compatible = self.configs["scene"]["quicktime_compatible"]
         less_verbose = ["-loglevel", "warning"]
         framerate = ["-r", str(self.fps)]
-        fmt = ["-f", "image2"]
-        input_files = ["-i", f"{self.path}/%0{self.frame_digits}d.png"]
+        fmt = ["-f", "image2pipe"]
+        input_files = ["-i", "-"]
         codec = ["-c:v", "prores_ks"] if quicktime_compatible else ["-c:v", "png"]
         pixel_format = (
             ["-pix_fmt", "yuva444p10le"]
@@ -81,7 +81,7 @@ class Scene:
             else ["-pix_fmt", "rgba"]
         )
         output = ["-y", output_filename]
-        subprocess.call(
+        p = Popen(
             ["ffmpeg"]
             + less_verbose
             + framerate
@@ -89,8 +89,15 @@ class Scene:
             + input_files
             + codec
             + pixel_format
-            + output
+            + output,
+            stdin=PIPE,
         )
+        for ii, frame in enumerate(self.frames):
+            print(f"{ii + 1}/{len(self.frames)}")
+            frame.draw(self.configs).save(p.stdin, "PNG")
+        p.stdin.close()
+        p.wait()
+
         # self.delete_asset_directory()
         if quicktime_compatible:
             subprocess.call(["open", output_filename])

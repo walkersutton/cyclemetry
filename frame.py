@@ -86,7 +86,7 @@ class Frame:
         for label in self.labels:
             if "hide" not in label.keys() or not label["hide"]:
                 img = self.draw_value(img, label["text"], label)
-        img.save(self.full_path())
+        return img
 
     def profile_label_text(self, config):
         text = ""
