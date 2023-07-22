@@ -40,10 +40,12 @@
       "point_label": {
         "color": "#ffffffb9",
         "font": "Furore.otf",
+        "round": 0,
         "x_offset": 20,
         "y_offset": 20,
         "font_size": 12.5,
-        "text": "mate"
+        "text": "mate",
+        "units": ["imperial", "metric"]
       }
     }
   },

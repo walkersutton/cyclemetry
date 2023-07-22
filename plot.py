@@ -109,7 +109,9 @@ def build_elevation_profile_assets(scene):
         print(f"{ii + 1}/{len(scene.frames)}")
         ii += 1
         scatter = plt.scatter(
-            x=[ii],
+            x=[
+                ii
+            ],  # TODO - fix this so that frames don't all need to be built to properly draw points
             y=[frame.elevation],
             color=config["color"],
             s=config["point_weight"],
@@ -119,7 +121,9 @@ def build_elevation_profile_assets(scene):
             point_text = plt.text(
                 ii + config["point_label"]["x_offset"],
                 frame.elevation + config["point_label"]["y_offset"],
-                config["point_label"]["text"],
+                frame.profile_label_text(
+                    scene.configs["elevation"]["profile"]["point_label"]
+                ),
                 fontsize=config["point_label"]["font_size"],
                 color=config["point_label"]["color"],
                 font=Path(

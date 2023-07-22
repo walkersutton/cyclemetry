@@ -87,3 +87,17 @@ class Frame:
         for label in self.labels:
             if "hide" not in label.keys() or not label["hide"]:
                 self.draw_value(label["text"], label)
+
+    def profile_label_text(self, config):
+        text = ""
+        for unit in config["units"]:
+            value = self.elevation * constant.ELEVATION_CONVERSION_MAP[unit]
+            if "round" in config.keys():
+                if config["round"] == 0:
+                    value = int(value)
+                else:
+                    value = round(float(value), config["round"])
+            text += (
+                f"{value}{constant.DEFAULT_SUFFIX_MAP[constant.ATTR_ELEVATION][unit]}\n"
+            )
+        return text.rstrip()

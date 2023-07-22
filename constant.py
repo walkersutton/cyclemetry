@@ -1,3 +1,24 @@
+FONTS_DIR = "./fonts/"
+
+# UNITS
+UNIT_IMPERIAL = "imperial"
+UNIT_METRIC = "metric"
+
+
+# CONVERSIONS
+
+## IMPERIAL
+FT_CONVERSION = 3.28084
+MPH_CONVERSION = 2.23694
+
+## METRIC
+KMH_CONVERSION = 3.6
+
+
+ELEVATION_CONVERSION_MAP = {UNIT_IMPERIAL: FT_CONVERSION, UNIT_METRIC: KMH_CONVERSION}
+
+
+# ATTRIBUTES
 ATTR_CADENCE = "cadence"
 ATTR_COURSE = "course"
 ATTR_ELEVATION = "elevation"
@@ -28,31 +49,23 @@ ALL_ATTRIBUTES = [
     ATTR_TEMPERATURE,
 ]
 
+
+# SUFFIXES
 DEFAULT_SUFFIX_MAP = {
     ATTR_CADENCE: " rpm",
     ATTR_ELEVATION: {
-        "imperial": " ft",
-        "metric": " m",
+        UNIT_IMPERIAL: " ft",
+        UNIT_METRIC: " m",
     },
     ATTR_GRADIENT: " %",
     ATTR_HEARTRATE: " bpm",
     ATTR_POWER: " W",
     ATTR_SPEED: {
-        "imperial": " mph",
-        "metric": " km/h",
+        UNIT_IMPERIAL: " mph",
+        UNIT_METRIC: " km/h",
     },
     ATTR_TEMPERATURE: {
-        "imperial": "°F",
-        "metric": "°C",
+        UNIT_IMPERIAL: "°F",
+        UNIT_METRIC: "°C",
     },
 }
-
-FONTS_DIR = "./fonts/"
-
-
-# CONVERSIONS
-## IMPERIAL
-FT_CONVERSION = 3.28084
-MPH_CONVERSION = 2.23694
-## METRIC
-KMH_CONVERSION = 3.6
