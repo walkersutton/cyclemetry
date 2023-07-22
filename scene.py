@@ -35,7 +35,7 @@ class Scene:
         self.export_video()
 
     def render_demo(self):
-        self.build_frame(0, 0)
+        self.build_frame(200, 0)
         build_plot_assets(self)
         self.draw_frames()
 
@@ -51,7 +51,7 @@ class Scene:
         self.seconds = len(
             self.activity.time
         )  # I am assuming all gpx files have time data
-        self.seconds = 40  # TODO change after debugging
+        self.seconds = 4  # TODO change after debugging
         num_frames = self.seconds * self.fps
         self.frame_digits = int(math.log10(num_frames - 2)) + 1
 

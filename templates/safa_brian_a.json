@@ -7,13 +7,15 @@
     "x": 10,
     "y": -100,
     "hide": false,
-    "line_width": 1.5,
-    "point_weight": 60,
+    "line_width": 1.75,
+    "point_weight": 80,
+    "noooopacity": 0.9,
     "width": 1000,
     "height": 800,
+    "color": "#f4f4f4",
     "sub_point": {
-      "point_weight": 280,
-      "opacity": 0.5
+      "point_weight": 345,
+      "opacity": 0.52
     },
     "rotation": 80
   },
@@ -23,7 +25,7 @@
     "y": 60,
     "hide": false,
     "profile": {
-      "color": "white",
+      "color": "#f4f4f4",
       "dpi": 300,
       "line_width": 2,
       "hide": false,
@@ -31,25 +33,22 @@
       "y": 1716,
       "width": 1200,
       "height": 600,
-      "opacity": 0.4,
+      "nooooooopacity": 0.2,
+      "fill_opacity": 0.75,
       "rotation": 0,
-      "point_weight": 10,
+      "point_weight": 14,
       "point_label": {
+        "color": "#ffffffb9",
         "font": "Furore.otf",
         "x_offset": 20,
         "y_offset": 20,
         "font_size": 12.5,
-        "text": "mate",
-        "color": "white"
-      },
-      "sub_point": {
-        "point_weight": 30,
-        "opacity": 0.2,
-        "color": "white"
+        "text": "mate"
       }
     }
   },
   "gradient": {
+    "color": "#ffffffb9",
     "x": 37,
     "y": 1928,
     "hide": false,
@@ -60,6 +59,7 @@
     "hide": true
   },
   "power": {
+    "color": "#ffffffb9",
     "x": 80,
     "y": 1334,
     "font_size": 255,
@@ -68,7 +68,10 @@
   },
   "speed": {
     "hide": false,
+    "opacity": 0.3,
     "imperial": {
+      "color": "#ffffffb9",
+      "opacity": 0.3,
       "x": 80,
       "y": 724,
       "font_size": 255,
@@ -76,6 +79,7 @@
       "suffix": ""
     },
     "metric": {
+      "color": "#ffffffb9",
       "x": 80,
       "y": 1029,
       "font_size": 255,
@@ -105,6 +109,7 @@
   },
   "labels": [
     {
+      "color": "#ffffffb9",
       "text": "MPH",
       "x": 100,
       "y": 695,
@@ -112,6 +117,7 @@
       "font_size": 70
     },
     {
+      "color": "#ffffffb9",
       "text": "KMH",
       "x": 100,
       "y": 1000,
@@ -119,6 +125,7 @@
       "font_size":70
     },
     {
+      "color": "#ffffffb9",
       "text": "PWR",
       "x": 100,
       "y": 1305,
@@ -127,6 +134,7 @@
       "opacity": 0.5
     },
     {
+      "color": "#ffffffb9",
       "text": "Grad.",
       "x": 44,
       "y": 1889,

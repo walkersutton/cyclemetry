@@ -100,10 +100,9 @@ def build_elevation_profile_assets(scene):
         0,
         where=(y > 0),
         facecolor=config["color"],
-        alpha=config["opacity"],
+        alpha=config["fill_opacity"],
     )
     ii = 0
-    sub_point = None
     point_text = None
     # TODO - probably make this into a helper
     for frame in scene.frames:
@@ -127,18 +126,6 @@ def build_elevation_profile_assets(scene):
                     f'{constant.FONTS_DIR}{config["point_label"]["font"]}'
                 ),  # TODO - support system fonts? not sure how pyplot deals with this
             )
-
-        if "sub_point" in config.keys():
-            # handle hide in sub point
-            sub_point = plt.scatter(
-                x=[ii],
-                y=[frame.elevation],
-                color=config["sub_point"]["color"],
-                s=config["sub_point"]["point_weight"],
-                zorder=2,
-                alpha=config["opacity"],
-                edgecolor="none",
-            )
         # TODO - take course width/height into consideration
         plt.savefig(
             f"{scene.path}/elevation/{frame.filename}",
@@ -148,9 +135,6 @@ def build_elevation_profile_assets(scene):
             dpi=config["dpi"],
         )
         scatter.remove()
-        if sub_point:
-            sub_point.remove()
-            sub_point = None
         if point_text:
             point_text.remove()
             point_text = None

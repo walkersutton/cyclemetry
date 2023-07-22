@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 
 import constant
 
@@ -22,7 +22,9 @@ class Frame:
                 font = constant.FONTS_DIR + font
             font = ImageFont.truetype(font, font_size)
             img = Image.open(self.full_path())
-            ImageDraw.Draw(img).text((x, y), text, font=font, fill=color)
+            ImageDraw.Draw(img).text(
+                (x, y), text, font=font, fill=ImageColor.getcolor(color, "RGBA")
+            )
             img.save(self.full_path())
 
         if type(value) in (int, float):
