@@ -10,8 +10,8 @@ class Frame:
     def __init__(self, filename, path, width, height):
         self.filename = filename
         self.path = path
-        img = Image.new("RGBA", (width, height))
-        img.save(f"{self.path}/{self.filename}")
+        self.width = width
+        self.height = height
 
     def full_path(self):
         return f"{self.path}/{self.filename}"
@@ -54,7 +54,7 @@ class Frame:
         return img
 
     def draw(self, configs):
-        img = Image.open(self.full_path())
+        img = Image.new("RGBA", (self.width, self.height))
         for attribute in self.attributes:
             config = configs[attribute]
             if "hide" not in config.keys() or not config["hide"]:
