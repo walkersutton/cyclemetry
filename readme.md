@@ -22,7 +22,7 @@
 * [ffmpeg](https://FFmpeg.org/)
 
 ## Setup
-Tested using `Python 3.11.3` on MacOS Ventura
+Tested using `Python 3.11.4` on MacOS Ventura
 ```sh
 $ git clone https://github.com/walkersutton/cyclemetry.git
 $ cd cyclemetry

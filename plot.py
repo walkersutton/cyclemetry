@@ -35,9 +35,8 @@ def build_image(fig, config, x, y, text=""):
     fig, points = draw_points(fig, config, x, y)
     fig, labels = draw_labels(fig, config, x, y, text)
 
-    buffer = (
-        io.BytesIO()
-    )  # for some reason, faster to create buffer here than to pass as param - also prevents figure duplication issue
+    # for some reason, faster to create buffer here than to pass as param - also prevents figure duplication issue
+    buffer = io.BytesIO()
     plt.savefig(
         buffer,
         pad_inches=0,

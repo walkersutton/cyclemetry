@@ -24,22 +24,30 @@ class Activity:
         attributes = set()
         attribute_map = gpx_attribute_map()
         tag_map = {}
-        track_point = self.gpx.tracks[0].segments[0].points[0]
-        attributes.update(
-            {constant.ATTR_COURSE, constant.ATTR_SPEED}
-        ) if track_point.latitude and track_point.longitude else None
-        attributes.add(constant.ATTR_TIME) if track_point.time else None
-        attributes.add(constant.ATTR_ELEVATION) if track_point.elevation else None
-        for ii, extension in enumerate(track_point.extensions):
-            if extension.tag in attribute_map.keys():
-                attributes.add(attribute_map[extension.tag])
-                tag_map[attribute_map[extension.tag]] = [ii]
-            for jj, child_extension in enumerate(extension):
-                if child_extension.tag in attribute_map.keys():
-                    attributes.add(attribute_map[child_extension.tag])
-                    tag_map[attribute_map[child_extension.tag]] = [ii, jj]
-        if {constant.ATTR_COURSE, constant.ATTR_ELEVATION}.issubset(attributes):
-            attributes.add(constant.ATTR_GRADIENT)
+        track_points = self.gpx.tracks[0].segments[0].points
+        # not all extensions are present in all track points
+        # TODO this needs work - probably don't need to set attributes - should be able to parse data in single pass
+        track_points = [
+            track_points[0],
+            track_points[len(track_points) // 2],
+            track_points[-1],
+        ]
+        for track_point in track_points:
+            attributes.update(
+                {constant.ATTR_COURSE, constant.ATTR_SPEED}
+            ) if track_point.latitude and track_point.longitude else None
+            attributes.add(constant.ATTR_TIME) if track_point.time else None
+            attributes.add(constant.ATTR_ELEVATION) if track_point.elevation else None
+            for ii, extension in enumerate(track_point.extensions):
+                if extension.tag in attribute_map.keys():
+                    attributes.add(attribute_map[extension.tag])
+                    tag_map[attribute_map[extension.tag]] = [ii]
+                for jj, child_extension in enumerate(extension):
+                    if child_extension.tag in attribute_map.keys():
+                        attributes.add(attribute_map[child_extension.tag])
+                        tag_map[attribute_map[child_extension.tag]] = [ii, jj]
+            if {constant.ATTR_COURSE, constant.ATTR_ELEVATION}.issubset(attributes):
+                attributes.add(constant.ATTR_GRADIENT)
 
         self.valid_attributes = list(attributes)
         self.tag_map = tag_map

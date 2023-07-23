@@ -3,5 +3,6 @@
   "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}hr": "heartrate",
   "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}cad": "cadence",
   "{http://www.garmin.com/xmlschemas/PowerExtension/v1}PowerInWatts": "power",
+  "power": "power",
   "{http://www.garmin.com/xmlschemas/GpxExtensions/v3}Temperature": "temperature"
 }
