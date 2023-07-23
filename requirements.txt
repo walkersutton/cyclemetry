@@ -15,4 +15,5 @@ python-editor==1.0.4
 readchar==4.0.5
 scipy==1.11.1
 six==1.16.0
+tqdm==4.65.0
 wcwidth==0.2.6
