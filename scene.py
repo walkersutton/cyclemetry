@@ -35,8 +35,12 @@ class Scene:
         self.export_video()
 
     def render_demo(self):
-        self.build_frame(200, 0)
+        self.build_frame(0, 0)
         self.draw_frames()
+        # TODO is there a better way to close plots on the fly?
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
 
     def update_configs(self, config_filename):
         self.configs = config_dicts(config_filename)

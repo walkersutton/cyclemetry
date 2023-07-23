@@ -18,6 +18,18 @@ def build_figure(config, x, y):
         y,
         color=config["color"],
     )
+
+    # might be able to remove margin if doesn't work for the course
+    if "margin" in config.keys():
+        extra_margin = config["margin"]
+        fig.subplots_adjust(
+            left=extra_margin,
+            right=1 - extra_margin,
+            top=1 - extra_margin,
+            bottom=extra_margin,
+        )
+    if "axis" in config.keys():
+        plt.axis(config["axis"])
     if "fill_opacity" in config.keys():
         plt.fill_between(
             x,
@@ -39,8 +51,7 @@ def build_image(fig, config, x, y, text=""):
     buffer = io.BytesIO()
     plt.savefig(
         buffer,
-        pad_inches=0,
-        bbox_inches="tight",
+        bbox_inches=config["bbox"] if "bbox" in config.keys() else None,
         transparent=True,
         dpi=config["dpi"],
     )

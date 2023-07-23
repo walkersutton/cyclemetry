@@ -57,7 +57,7 @@ class Frame:
             text = None
         elif attribute == constant.ATTR_ELEVATION:
             # TODO  - fix fps hard code - probably just need to clean up the actual elevation data
-            fps = 4
+            fps = config["fps"]
             x = self.second * fps + self.frame_number
             y = self.elevation
             text = self.profile_label_text(config["point_label"])
