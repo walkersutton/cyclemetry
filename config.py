@@ -15,18 +15,6 @@ def raw_configs(filename):
     return configs
 
 
-def color_conversion():
-    # maybe make this a helper
-    # TODO probably will need this in config_dicts
-    for key, value in attrib_config.items():
-        if key == "text_color" and type(value) == list:
-            attrib_config[key] = tuple(value)
-        elif key == "text_color" and type(value) == str:
-            attrib_config[key] = tuple(
-                int(value.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)
-            )
-
-
 def config_dicts(filename):
     configs = raw_configs(filename)
     global_config = configs["global"]
