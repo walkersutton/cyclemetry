@@ -1,16 +1,20 @@
 import io
 from pathlib import Path
 
+import matplotlib.axes as ax
 import matplotlib.pyplot as plt
 from PIL import Image
 
 from constant import FONTS_DIR
+from utils import printc
 
 
 def build_figure(config, x, y):
-    fig = plt.figure(
-        figsize=(config["width"] / config["dpi"], config["height"] / config["dpi"])
-    )
+    fig = plt.figure()
+    if "width" and "height" in config.keys():
+        fig = plt.figure(
+            figsize=(config["width"] / config["dpi"], config["height"] / config["dpi"])
+        )
     plt.rcParams["lines.linewidth"] = config["line_width"]
     plt.axis("off")
     plt.plot(
@@ -19,17 +23,15 @@ def build_figure(config, x, y):
         color=config["color"],
     )
 
-    # might be able to remove margin if doesn't work for the course
     if "margin" in config.keys():
-        extra_margin = config["margin"]
-        fig.subplots_adjust(
-            left=extra_margin,
-            right=1 - extra_margin,
-            top=1 - extra_margin,
-            bottom=extra_margin,
-        )
+        ax = plt.gca()
+        ax.set_xmargin(0.1)
+        ax.set_ymargin(0.1)
     if "axis" in config.keys():
-        plt.axis(config["axis"])
+        try:
+            plt.axis(config["axis"])
+        except ValueError as e:
+            printc(f"Invalid axis value: {e}", "red")
     if "fill_opacity" in config.keys():
         plt.fill_between(
             x,

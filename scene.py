@@ -34,8 +34,8 @@ class Scene:
         self.build_frames()
         self.export_video()
 
-    def render_demo(self):
-        self.build_frame(0, 0)
+    def render_demo(self, second):
+        self.build_frame(second, 0)
         self.draw_frames()
         # TODO is there a better way to close plots on the fly?
         import matplotlib.pyplot as plt
@@ -52,12 +52,7 @@ class Scene:
             frame.draw(self.configs, self.figs).save(frame.full_path())
 
     def config_scene(self):
-        self.seconds = len(
-            self.activity.time
-        )  # I am assuming all gpx files have time data
-        self.seconds = 10  # TODO change after debugging
-        num_frames = self.seconds * self.fps
-        self.frame_digits = int(math.log10(num_frames - 2)) + 1
+        self.seconds = len(self.activity.time)
 
     def build_figures(self):
         self.figs = {}
@@ -137,8 +132,10 @@ class Scene:
         return attribute_data
 
     def build_frame(self, second, frame_number):
+        num_frames = self.seconds * self.fps
+        frame_digits = int(math.log10(num_frames - 2)) + 1
         frame = Frame(
-            f"{str(second * self.fps + frame_number).zfill(self.frame_digits)}.png",
+            f"{str(second * self.fps + frame_number).zfill(frame_digits)}.png",
             self.configs["scene"]["width"],
             self.configs["scene"]["height"],
             second,
