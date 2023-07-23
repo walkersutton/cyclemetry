@@ -1,145 +1,107 @@
+import io
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 from PIL import Image
 
-import constant
+from constant import FONTS_DIR
 
 
-def build_plot_assets(scene):
-    if constant.ATTR_COURSE in scene.attributes:
-        build_course_assets(scene)
-    if (
-        # possible key error here
-        constant.ATTR_ELEVATION in scene.attributes
-        and scene.configs[constant.ATTR_ELEVATION]["profile"]
-    ):
-        build_elevation_profile_assets(scene)
-
-
-def build_course_assets(scene):
-    # TODO add multiprocessing here
-    # scene.attributes.remove(constant.ATTR_COURSE)
-    config = scene.configs["course"]
-    # scene_config = scene.configs["scene"]
-    plt.rcParams["lines.linewidth"] = config["line_width"]
-    plt.figure(
+def build_figure(config, x, y):
+    fig = plt.figure(
         figsize=(config["width"] / config["dpi"], config["height"] / config["dpi"])
     )
-    # plot connected line width plt.figure(figsize=(width, height))
-    # TODO - configure line color
+    plt.rcParams["lines.linewidth"] = config["line_width"]
     plt.axis("off")
     plt.plot(
-        [ele[1] for ele in scene.activity.course],
-        [ele[0] for ele in scene.activity.course],
+        x,
+        y,
         color=config["color"],
     )
-    ii = 0
-    sub_point = None
-    for frame in scene.frames:
-        print(f"{ii + 1}/{len(scene.frames)}")
-        ii += 1
-        lat, lon = frame.course
-        scatter = plt.scatter(
-            x=[lon],
-            y=[lat],
+    if "fill_opacity" in config.keys():
+        plt.fill_between(
+            x,
+            y,
+            0,
+            where=(y > 0),
+            facecolor=config["color"],
+            alpha=config["fill_opacity"],
+        )
+    return fig
+
+
+def build_image(fig, config, x, y, text=""):
+    plt.figure(fig.number)
+    fig, points = draw_points(fig, config, x, y)
+    fig, labels = draw_labels(fig, config, x, y, text)
+
+    buffer = (
+        io.BytesIO()
+    )  # for some reason, faster to create buffer here than to pass as param - also prevents figure duplication issue
+    plt.savefig(
+        buffer,
+        pad_inches=0,
+        bbox_inches="tight",
+        transparent=True,
+        dpi=config["dpi"],
+    )
+    img = Image.open(buffer)
+
+    # TODO this is significantly faster than the above - need to get alpha channel working
+    # fig.canvas.draw()
+    # buffer = fig.canvas.tostring_argb()
+    # img = Image.frombytes('RGBA', fig.canvas.get_width_height(), buffer)
+
+    for point in points:
+        point.remove()
+    for label in labels:
+        label.remove()
+    return img, buffer
+
+
+def draw_points(fig, config, x, y):
+    plt.figure(fig.number)
+    points = []
+    points.append(
+        plt.scatter(  # assuming every profile and course includes point_weight - might want to make this a child property
+            x=x,
+            y=y,
             color=config["color"],
             s=config["point_weight"],
             zorder=3,
         )
-        if "sub_point" in config.keys():
-            # handle hide in sub point
-            sub_point = plt.scatter(
-                x=[lon],
-                y=[lat],
+    )
+    if "sub_point" in config.keys():
+        points.append(
+            plt.scatter(
+                x=x,
+                y=y,
                 color=config["sub_point"]["color"],
                 s=config["sub_point"]["point_weight"],
                 zorder=2,
                 alpha=config["sub_point"]["opacity"],
                 edgecolor="none",
             )
-        # TODO - take course width/height into consideration
-        plt.savefig(
-            f"{scene.path}/course/{frame.filename}",
-            pad_inches=0,
-            bbox_inches="tight",
-            transparent=True,
-            dpi=config["dpi"],
         )
-        scatter.remove()
-        if sub_point:
-            sub_point.remove()
-            sub_point = None
-    plt.close()
+    return fig, points
 
 
-def build_elevation_profile_assets(scene):
-    # TODO add multiprocessing here
-    # TODO create pngs that represent profile of elevation over course
-    # draw these pngs in the frame draw method:56
-    config = scene.configs["elevation"]["profile"]
-    # scene_config = scene.configs["scene"]
-    # fig, ax = plt.subplots(facecolor='none')
-    plt.rcParams["lines.linewidth"] = config["line_width"]
-    plt.figure(
-        figsize=(config["width"] / config["dpi"], config["height"] / config["dpi"])
-    )
-    plt.axis("off")
-    x = [
-        ii
-        for ii in range(
-            len(scene.activity.elevation) * len(scene.activity.elevation[0])
-        )
-    ]
-    y = np.array(sum(scene.activity.elevation, []))
-    plt.plot(x, y, color=config["color"])
-    plt.fill_between(
-        x,
-        y,
-        0,
-        where=(y > 0),
-        facecolor=config["color"],
-        alpha=config["fill_opacity"],
-    )
-    ii = 0
-    point_text = None
-    # TODO - probably make this into a helper
-    for frame in scene.frames:
-        print(f"{ii + 1}/{len(scene.frames)}")
-        ii += 1
-        scatter = plt.scatter(
-            x=[
-                ii
-            ],  # TODO - fix this so that frames don't all need to be built to properly draw points
-            y=[frame.elevation],
-            color=config["color"],
-            s=config["point_weight"],
-            zorder=3,
-        )
-        if "point_label" in config.keys():
-            point_text = plt.text(
-                ii + config["point_label"]["x_offset"],
-                frame.elevation + config["point_label"]["y_offset"],
-                frame.profile_label_text(
-                    scene.configs["elevation"]["profile"]["point_label"]
-                ),
+def draw_labels(
+    fig, config, x, y, text
+):  # probably want to make text a list? and iterate through labels?
+    plt.figure(fig.number)
+    labels = []
+    if "point_label" in config.keys():  # rename - label
+        labels.append(
+            plt.text(
+                x + config["point_label"]["x_offset"],
+                y + config["point_label"]["y_offset"],
+                text,
                 fontsize=config["point_label"]["font_size"],
                 color=config["point_label"]["color"],
                 font=Path(
-                    f'{constant.FONTS_DIR}{config["point_label"]["font"]}'
+                    f'{FONTS_DIR}{config["point_label"]["font"]}'
                 ),  # TODO - support system fonts? not sure how pyplot deals with this
             )
-        # TODO - take course width/height into consideration
-        plt.savefig(
-            f"{scene.path}/elevation/{frame.filename}",
-            pad_inches=0,
-            bbox_inches="tight",
-            transparent=True,
-            dpi=config["dpi"],
         )
-        scatter.remove()
-        if point_text:
-            point_text.remove()
-            point_text = None
-    plt.close()
+    return fig, labels

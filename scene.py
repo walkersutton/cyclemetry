@@ -4,10 +4,12 @@ import shutil
 import subprocess
 from subprocess import PIPE, Popen
 
+import numpy as np
+
 import constant
 from config import config_dicts
 from frame import Frame
-from plot import build_plot_assets
+from plot import build_figure
 
 
 class Scene:
@@ -16,55 +18,61 @@ class Scene:
         activity,
         valid_attributes,
         config_filename,
-        path=f"{os.path.dirname(__file__)}/tmp",
     ):
         self.activity = activity
         self.attributes = valid_attributes
         self.configs = config_dicts(config_filename)
-        self.path = path  # TODO use tmp dir/ tmp file instead of using folder
         self.fps = self.configs["scene"]["fps"]
         self.labels = self.configs["labels"]
         self.activity.interpolate(self.fps)
-        self.make_asset_directory()
         self.config_scene()
+        self.build_figures()
         self.frames = []
 
     def render_video(self):
         self.build_frames()
-        build_plot_assets(self)
         self.export_video()
 
     def render_demo(self):
         self.build_frame(200, 0)
-        build_plot_assets(self)
         self.draw_frames()
 
     def update_configs(self, config_filename):
         self.configs = config_dicts(config_filename)
 
     def draw_frames(self):
+        if not os.path.exists(constant.FRAMES_DIR):
+            os.makedirs(constant.FRAMES_DIR)
         for ii, frame in enumerate(self.frames):
+            # TODO make percentage bar
             print(f"{ii + 1}/{len(self.frames)}")
-            frame.draw(self.configs).save(frame.full_path())
+            frame.draw(self.configs, self.figs).save(frame.full_path())
 
     def config_scene(self):
         self.seconds = len(
             self.activity.time
         )  # I am assuming all gpx files have time data
-        self.seconds = 4  # TODO change after debugging
+        self.seconds = 10  # TODO change after debugging
         num_frames = self.seconds * self.fps
         self.frame_digits = int(math.log10(num_frames - 2)) + 1
 
-    def delete_asset_directory(self):
-        if os.path.exists(self.path) and os.path.isdir(self.path):
-            shutil.rmtree(self.path)
-
-    def make_asset_directory(self):
-        if os.path.exists(self.path):
-            self.delete_asset_directory()
-        os.makedirs(self.path)
-        os.makedirs(self.path + "/course")
-        os.makedirs(self.path + "/elevation")
+    def build_figures(self):
+        self.figs = {}
+        self.figs[constant.ATTR_COURSE] = build_figure(
+            self.configs[constant.ATTR_COURSE],
+            [ele[1] for ele in self.activity.course],
+            [ele[0] for ele in self.activity.course],
+        )
+        ele_x = [
+            ii
+            for ii in range(
+                len(self.activity.elevation) * len(self.activity.elevation[0])
+            )
+        ]
+        ele_y = np.array(sum(self.activity.elevation, []))
+        self.figs[constant.ATTR_ELEVATION] = build_figure(
+            self.configs[constant.ATTR_ELEVATION]["profile"], ele_x, ele_y
+        )
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
     def export_video(self):
@@ -92,15 +100,16 @@ class Scene:
             + output,
             stdin=PIPE,
         )
+
         for ii, frame in enumerate(self.frames):
             print(f"{ii + 1}/{len(self.frames)}")
-            frame.draw(self.configs).save(p.stdin, "PNG")
+            frame.draw(self.configs, self.figs).save(p.stdin, "PNG")
         p.stdin.close()
         p.wait()
 
-        # self.delete_asset_directory()
         if quicktime_compatible:
             subprocess.call(["open", output_filename])
+
         # TODO - try to not depend on ffmpeg subprocess call please
         # clips = [
         #     ImageClip(frame.filename, transparent=True).set_duration(frame_duration)
@@ -127,9 +136,10 @@ class Scene:
     def build_frame(self, second, frame_number):
         frame = Frame(
             f"{str(second * self.fps + frame_number).zfill(self.frame_digits)}.png",
-            self.path,
             self.configs["scene"]["width"],
             self.configs["scene"]["height"],
+            second,
+            frame_number,
         )
         frame.attributes = self.attributes
         frame.labels = self.labels

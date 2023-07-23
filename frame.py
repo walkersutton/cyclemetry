@@ -4,17 +4,19 @@ from datetime import timedelta
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 
 import constant
+from plot import build_image
 
 
 class Frame:
-    def __init__(self, filename, path, width, height):
+    def __init__(self, filename, width, height, second, frame_number):
         self.filename = filename
-        self.path = path
         self.width = width
         self.height = height
+        self.second = second
+        self.frame_number = frame_number
 
     def full_path(self):
-        return f"{self.path}/{self.filename}"
+        return f"{constant.FRAMES_DIR}{self.filename}"
 
     def draw_value(self, img, value: str, config: dict):
         def draw_value_helper(text, color, x, y, font_size, font="arial.ttf"):
@@ -46,14 +48,31 @@ class Frame:
         )
         return img
 
-    def draw_asset(self, img, config, attribute):
-        asset = Image.open(f"{self.path}/{attribute}/{self.filename}")
+    def draw_figure(self, img, config, attribute, figure):
+        if attribute == constant.ATTR_COURSE:
+            (
+                y,
+                x,
+            ) = self.course
+            text = None
+        elif attribute == constant.ATTR_ELEVATION:
+            # TODO  - fix fps hard code - probably just need to clean up the actual elevation data
+            fps = 4
+            x = self.second * fps + self.frame_number
+            y = self.elevation
+            text = self.profile_label_text(config["point_label"])
+        plot_img, buffer = build_image(figure, config, x, y, text)
+
         angle = config["rotation"]
-        asset = asset.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
-        img.paste(asset, (config["x"], config["y"]), asset)
+        if angle != 0:
+            plot_img = plot_img.rotate(
+                angle, resample=Image.Resampling.BICUBIC, expand=True
+            )
+        img.paste(plot_img, (config["x"], config["y"]), plot_img)
+        buffer.close()  # faster to not close the buffer? maybe just small sample size - seems like better practice to close though, so let's for now
         return img
 
-    def draw(self, configs):
+    def draw(self, configs, figures):
         img = Image.new("RGBA", (self.width, self.height))
         for attribute in self.attributes:
             config = configs[attribute]
@@ -74,9 +93,13 @@ class Frame:
                 else:
                     value = getattr(self, attribute)
                     if attribute == constant.ATTR_COURSE:
-                        img = self.draw_asset(img, config, attribute)
+                        img = self.draw_figure(
+                            img, config, attribute, figures[attribute]
+                        )
                     elif attribute == constant.ATTR_ELEVATION:
-                        img = self.draw_asset(img, config["profile"], attribute)
+                        img = self.draw_figure(
+                            img, config["profile"], attribute, figures[attribute]
+                        )
                     else:
                         if attribute == constant.ATTR_TIME:
                             # TODO - try to use timezone instead of offset
