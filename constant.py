@@ -70,3 +70,7 @@ DEFAULT_SUFFIX_MAP = {
         UNIT_METRIC: "°C",
     },
 }
+
+# COLORS
+ANSI_COLOR_MAP = {"green": "\033[92m", "red": "\033[91m", "yellow": "\033[93m"}
+ANSI_RESET_CODE = "\033[0m"
