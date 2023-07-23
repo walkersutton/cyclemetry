@@ -4,17 +4,15 @@
   },
   "course": {
     "dpi": 300,
-    "x": -35,
-    "y": -138,
+    "x": -153,
+    "y": -260,
     "hide": false,
     "line_width": 1.75,
     "point_weight": 80,
-    "width": 385,
-    "height": 250,
-    "bbox": "tight",
+    "width": 1100,
+    "height": 900,
     "color": "#f4f4f4",
-    "margin": -1,
-    "axis": "on",
+    "margin": 0.1,
     "sub_point": {
       "point_weight": 345,
       "opacity": 0.52

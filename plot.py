@@ -25,8 +25,8 @@ def build_figure(config, x, y):
 
     if "margin" in config.keys():
         ax = plt.gca()
-        ax.set_xmargin(0.1)
-        ax.set_ymargin(0.1)
+        ax.set_xmargin(config["margin"])
+        ax.set_ymargin(config["margin"])
     if "axis" in config.keys():
         try:
             plt.axis(config["axis"])
