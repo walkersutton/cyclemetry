@@ -48,7 +48,7 @@ class Frame:
         )
         return img
 
-    def draw_figure(self, img, config, attribute, figure):
+    def draw_figure(self, img, config, attribute, figure, fps=None):
         if attribute == constant.ATTR_COURSE:
             (
                 y,
@@ -56,8 +56,6 @@ class Frame:
             ) = self.course
             text = None
         elif attribute == constant.ATTR_ELEVATION:
-            # TODO  - fix fps hard code - probably just need to clean up the actual elevation data
-            fps = config["fps"]
             x = self.second * fps + self.frame_number
             y = self.elevation
             text = self.profile_label_text(config["point_label"])
@@ -98,7 +96,11 @@ class Frame:
                         )
                     elif attribute == constant.ATTR_ELEVATION:
                         img = self.draw_figure(
-                            img, config["profile"], attribute, figures[attribute]
+                            img,
+                            config["profile"],
+                            attribute,
+                            figures[attribute],
+                            configs["scene"]["fps"],
                         )
                     else:
                         if attribute == constant.ATTR_TIME:

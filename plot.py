@@ -34,9 +34,10 @@ def build_figure(config, x, y):
         except ValueError as e:
             printc(f"Invalid axis value: {e}", "red")
     if "fill_opacity" in config.keys():
+        y = np.array(y)
         plt.fill_between(
             x,
-            np.array(y),
+            y,
             0,
             where=(y > 0),
             facecolor=config["color"],
