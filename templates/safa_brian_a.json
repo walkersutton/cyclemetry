@@ -31,7 +31,7 @@
       "hide": false,
       "x": -193,
       "y": 1647,
-      "fps": 1,
+      "fps": 24,
       "width": 1200,
       "height": 600,
       "fill_opacity": 0.75,
@@ -102,7 +102,7 @@
     "opacity": 0.5
   },
   "scene": {
-    "fps": 1,
+    "fps": 24,
     "height": 2160,
     "width": 3840,
     "quicktime_compatible": true,
