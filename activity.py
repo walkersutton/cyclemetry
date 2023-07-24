@@ -61,16 +61,7 @@ class Activity:
 
         data = defaultdict(list)
         track_segment = self.gpx.tracks[0].segments[0]
-        if constant.ATTR_GRADIENT in self.valid_attributes:
-            # TODO might be a better way to start gradient?? idk lol
-            # TODO fix this garbage
-            point = track_segment.points[1]
-            next_point = track_segment.points[2]
-            last_location = Location(
-                point.latitude - (next_point.latitude - point.latitude),
-                point.longitude - (next_point.longitude - point.longitude),
-                point.elevation - (next_point.elevation - point.elevation),
-            )
+        previous_point = None
         for ii, point in enumerate(track_segment.points):
             for attribute in self.valid_attributes:
                 match attribute:
@@ -82,21 +73,21 @@ class Activity:
                         data[attribute].append(point.time)
                     case constant.ATTR_SPEED:
                         data[attribute].append(track_segment.get_speed(ii))
+                        # data[attribute].append(point.speed) - for some reason, point.speed isn't interpreted correctly (always None). maybe try other gpx files to see if it works in other cases?
                     case constant.ATTR_GRADIENT:
-                        location = Location(
-                            point.latitude, point.longitude, point.elevation
-                        )
-                        data[attribute].append(
-                            gpxpy.geo.elevation_angle(
-                                location1=last_location, location2=location
-                            )
-                        )
-                        last_location = location
+                        data[attribute].append(gradient(point, previous_point))
                     case constant.ATTR_CADENCE | constant.ATTR_HEARTRATE | constant.ATTR_POWER | constant.ATTR_TEMPERATURE:
                         data[attribute].append(
                             parse_attribute(self.tag_map[attribute], point)
                         )
+            previous_point = point
+
         for attribute in self.valid_attributes:
+            if attribute == constant.ATTR_GRADIENT:
+                data[attribute] = smooth_list(
+                    data[attribute][1:]
+                )  # first element is always None
+                data[attribute].insert(0, data[attribute][0])
             setattr(self, attribute, data[attribute])
 
     def interpolate(self, fps: int):
@@ -119,3 +110,24 @@ class Activity:
             data.append(batch)
 
             setattr(self, attribute, data)
+
+
+def smooth_list(data, window_size=3):
+    smoothed_data = []
+    for i in range(len(data)):
+        start_idx = max(0, i - window_size // 2)
+        end_idx = min(len(data), i + window_size // 2 + 1)
+        smoothed_value = sum(data[start_idx:end_idx]) / (end_idx - start_idx)
+        smoothed_data.append(smoothed_value)
+    return smoothed_data
+
+
+def gradient(point, previous_point):
+    if previous_point:
+        location = Location(point.latitude, point.longitude, point.elevation)
+        previous_location = Location(
+            previous_point.latitude, previous_point.longitude, previous_point.elevation
+        )
+        return gpxpy.geo.elevation_angle(
+            location1=previous_location, location2=location
+        )
