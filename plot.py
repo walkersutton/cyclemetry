@@ -3,6 +3,7 @@ from pathlib import Path
 
 import matplotlib.axes as ax
 import matplotlib.pyplot as plt
+import numpy as np
 from PIL import Image
 
 from constant import FONTS_DIR
@@ -35,7 +36,7 @@ def build_figure(config, x, y):
     if "fill_opacity" in config.keys():
         plt.fill_between(
             x,
-            y,
+            np.array(y),
             0,
             where=(y > 0),
             facecolor=config["color"],

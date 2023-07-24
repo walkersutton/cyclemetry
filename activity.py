@@ -95,21 +95,12 @@ class Activity:
             if attribute in constant.NO_INTERPOLATE_ATTRIBUTES:
                 continue
             data = getattr(self, attribute)
+            data.append(2 * data[-1] - data[-2])
             time = np.arange(len(data))
             interp_func = interp1d(time, data)
             new_time = np.arange(time[0], time[-1], 1 / fps)
-            interpolated = interp_func(new_time).tolist()
-
-            data = []
-            batch = []
-            for ii in range(len(interpolated)):
-                if ii % fps == 0 and ii != 0:
-                    data.append(batch)
-                    batch = []
-                batch.append(interpolated[ii])
-            data.append(batch)
-
-            setattr(self, attribute, data)
+            new_data = interp_func(new_time).tolist()
+            setattr(self, attribute, new_data)
 
 
 def smooth_list(data, window_size=3):

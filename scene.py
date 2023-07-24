@@ -61,15 +61,10 @@ class Scene:
             [ele[1] for ele in self.activity.course],
             [ele[0] for ele in self.activity.course],
         )
-        ele_x = [
-            ii
-            for ii in range(
-                len(self.activity.elevation) * len(self.activity.elevation[0])
-            )
-        ]
-        ele_y = np.array(sum(self.activity.elevation, []))
         self.figs[constant.ATTR_ELEVATION] = build_figure(
-            self.configs[constant.ATTR_ELEVATION]["profile"], ele_x, ele_y
+            self.configs[constant.ATTR_ELEVATION]["profile"],
+            [ii for ii in range(len(self.activity.elevation))],
+            self.activity.elevation,
         )
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
@@ -126,8 +121,8 @@ class Scene:
             if attribute in constant.NO_INTERPOLATE_ATTRIBUTES:
                 attribute_data[attribute] = getattr(self.activity, attribute)[second]
             else:
-                attribute_data[attribute] = getattr(self.activity, attribute)[second][
-                    frame_number
+                attribute_data[attribute] = getattr(self.activity, attribute)[
+                    second * self.fps + frame_number
                 ]
         return attribute_data
 
