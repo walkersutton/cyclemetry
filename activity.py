@@ -84,10 +84,9 @@ class Activity:
 
         for attribute in self.valid_attributes:
             if attribute == constant.ATTR_GRADIENT:
-                data[attribute] = smooth_list(
-                    data[attribute][1:]
-                )  # first element is always None
-                data[attribute].insert(0, data[attribute][0])
+                # first element is always None
+                data[attribute] = data[attribute][1:]
+                data[attribute].insert(0, 2 * data[attribute][0] - data[attribute][1])
             setattr(self, attribute, data[attribute])
 
     def interpolate(self, fps: int):
@@ -109,16 +108,6 @@ class Activity:
             else:
                 new_data = helper(data)
             setattr(self, attribute, new_data)
-
-
-def smooth_list(data, window_size=3):
-    smoothed_data = []
-    for i in range(len(data)):
-        start_idx = max(0, i - window_size // 2)
-        end_idx = min(len(data), i + window_size // 2 + 1)
-        smoothed_value = sum(data[start_idx:end_idx]) / (end_idx - start_idx)
-        smoothed_data.append(smoothed_value)
-    return smoothed_data
 
 
 def gradient(point, previous_point):
