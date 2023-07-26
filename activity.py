@@ -91,15 +91,23 @@ class Activity:
             setattr(self, attribute, data[attribute])
 
     def interpolate(self, fps: int):
+        def helper(data):
+            data.append(2 * data[-1] - data[-2])
+            x = np.arange(len(data))
+            interp_func = interp1d(x, data)
+            new_x = np.arange(x[0], x[-1], 1 / fps)
+            return interp_func(new_x).tolist()
+
         for attribute in self.valid_attributes:
             if attribute in constant.NO_INTERPOLATE_ATTRIBUTES:
                 continue
             data = getattr(self, attribute)
-            data.append(2 * data[-1] - data[-2])
-            time = np.arange(len(data))
-            interp_func = interp1d(time, data)
-            new_time = np.arange(time[0], time[-1], 1 / fps)
-            new_data = interp_func(new_time).tolist()
+            if attribute == constant.ATTR_COURSE:
+                new_lat = helper([ele[0] for ele in data])
+                new_lon = helper([ele[1] for ele in data])
+                new_data = list(zip(new_lat, new_lon))
+            else:
+                new_data = helper(data)
             setattr(self, attribute, new_data)
 
 
