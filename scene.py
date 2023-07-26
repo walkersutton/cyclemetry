@@ -48,7 +48,7 @@ class Scene:
     def draw_frames(self):
         if not os.path.exists(constant.FRAMES_DIR):
             os.makedirs(constant.FRAMES_DIR)
-        for frame in tqdm(self.frames):
+        for frame in tqdm(self.frames, dynamic_ncols=True):
             frame.draw(self.configs, self.figs).save(frame.full_path())
 
     def config_scene(self):
@@ -94,7 +94,7 @@ class Scene:
             stdin=PIPE,
         )
 
-        for frame in tqdm(self.frames):
+        for frame in tqdm(self.frames, dynamic_ncols=True):
             frame.draw(self.configs, self.figs).save(p.stdin, "PNG")
 
         p.stdin.close()
