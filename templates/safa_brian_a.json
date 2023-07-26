@@ -43,7 +43,7 @@
         "x_offset": 20,
         "y_offset": 20,
         "font_size": 12.5,
-        "units": ["imperial", "metric"]
+        "units": ["metric", "imperial"]
       }
     }
   },
