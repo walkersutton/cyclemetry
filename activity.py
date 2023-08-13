@@ -3,10 +3,10 @@ from collections import defaultdict
 
 import gpxpy
 import numpy as np
-from gpxpy.geo import Location
 from scipy.interpolate import interp1d
 
 import constant
+from gradient import gradient, smooth_gradients
 
 
 def gpx_attribute_map(filename="gpx_attribute_map.json"):
@@ -84,9 +84,7 @@ class Activity:
 
         for attribute in self.valid_attributes:
             if attribute == constant.ATTR_GRADIENT:
-                # first element is always None
-                data[attribute] = data[attribute][1:]
-                data[attribute].insert(0, 2 * data[attribute][0] - data[attribute][1])
+                data[attribute] = smooth_gradients(data[attribute])
             setattr(self, attribute, data[attribute])
 
     def interpolate(self, fps: int):
@@ -108,14 +106,3 @@ class Activity:
             else:
                 new_data = helper(data)
             setattr(self, attribute, new_data)
-
-
-def gradient(point, previous_point):
-    if previous_point:
-        location = Location(point.latitude, point.longitude, point.elevation)
-        previous_location = Location(
-            previous_point.latitude, previous_point.longitude, previous_point.elevation
-        )
-        return gpxpy.geo.elevation_angle(
-            location1=previous_location, location2=location
-        )
