@@ -9,6 +9,7 @@ __pycache__/
 
 # environments
 venv/
+jupyter/
 
 # dev
 *.gpx
