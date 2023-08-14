@@ -144,6 +144,15 @@ class Scene:
         self.frames.append(frame)
 
     def build_frames(self):
-        for second in range(self.seconds):
+        start, end = None, None
+        if "start" in self.configs["scene"]:
+            start = self.configs["scene"]["start"]
+        if "end" in self.configs["scene"]:
+            end = self.configs["scene"]["end"]
+        if start is None:
+            start = 0
+        if end is None:
+            end = self.seconds
+        for second in range(start, end):
             for frame_number in range(self.fps):
                 self.build_frame(second, frame_number)
