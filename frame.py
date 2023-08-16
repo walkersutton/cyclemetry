@@ -100,7 +100,7 @@ class Frame:
                             config["profile"],
                             attribute,
                             figures[attribute],
-                            configs["scene"]["fps"],
+                            fps=configs["scene"]["fps"],
                         )
                     else:
                         if attribute == constant.ATTR_TIME:

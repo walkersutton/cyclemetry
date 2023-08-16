@@ -106,3 +106,8 @@ class Activity:
             else:
                 new_data = helper(data)
             setattr(self, attribute, new_data)
+
+    def trim(self, start, end):
+        for attribute in self.valid_attributes:
+            data = getattr(self, attribute)
+            setattr(self, attribute, data[start:end])

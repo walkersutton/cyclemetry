@@ -25,17 +25,14 @@ class Scene:
         self.configs = config_dicts(config_filename)
         self.fps = self.configs["scene"]["fps"]
         self.labels = self.configs["labels"]
-        self.activity.interpolate(self.fps)
-        self.config_scene()
-        self.build_figures()
         self.frames = []
 
-    def render_video(self):
-        self.build_frames()
+    def render_video(self, seconds):
+        self.build_frames(seconds)
         self.export_video()
 
-    def render_demo(self, second):
-        self.build_frame(second, 0)
+    def render_demo(self, seconds, second):
+        self.build_frame(seconds, second, 0)
         self.draw_frames()
         # TODO is there a better way to close plots on the fly?
         import matplotlib.pyplot as plt
@@ -50,9 +47,6 @@ class Scene:
             os.makedirs(constant.FRAMES_DIR)
         for frame in tqdm(self.frames, dynamic_ncols=True):
             frame.draw(self.configs, self.figs).save(frame.full_path())
-
-    def config_scene(self):
-        self.seconds = len(self.activity.time)
 
     def build_figures(self):
         self.figs = {}
@@ -126,8 +120,8 @@ class Scene:
                 ]
         return attribute_data
 
-    def build_frame(self, second, frame_number):
-        num_frames = self.seconds * self.fps
+    def build_frame(self, seconds, second, frame_number):
+        num_frames = seconds * self.fps
         frame_digits = int(math.log10(num_frames - 2)) + 1
         frame = Frame(
             f"{str(second * self.fps + frame_number).zfill(frame_digits)}.png",
@@ -143,16 +137,7 @@ class Scene:
             setattr(frame, attribute, frame_data[attribute])
         self.frames.append(frame)
 
-    def build_frames(self):
-        start, end = None, None
-        if "start" in self.configs["scene"]:
-            start = self.configs["scene"]["start"]
-        if "end" in self.configs["scene"]:
-            end = self.configs["scene"]["end"]
-        if start is None:
-            start = 0
-        if end is None:
-            end = self.seconds
-        for second in range(start, end):
+    def build_frames(self, seconds):
+        for second in range(seconds):
             for frame_number in range(self.fps):
-                self.build_frame(second, frame_number)
+                self.build_frame(seconds, second, frame_number)

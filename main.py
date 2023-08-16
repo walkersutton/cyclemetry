@@ -11,13 +11,21 @@ from scene import Scene
 def render_overlay(gpx_filename, template_filename):
     activity = Activity(gpx_filename)
     scene = Scene(activity, activity.valid_attributes, template_filename)
-    scene.render_video()
+    start, end = scene.configs["scene"]["start"], scene.configs["scene"]["end"]
+    activity.trim(start, end)
+    activity.interpolate(scene.fps)
+    scene.build_figures()
+    scene.render_video(end - start)
 
 
 def demo_frame(gpx_filename, template_filename, second):
     activity = Activity(gpx_filename)
     scene = Scene(activity, activity.valid_attributes, template_filename)
-    scene.render_demo(second)
+    start, end = scene.configs["scene"]["start"], scene.configs["scene"]["end"]
+    activity.trim(start, end)
+    activity.interpolate(scene.fps)
+    scene.build_figures()
+    scene.render_demo(end - start, second)
     subprocess.call(["open", scene.frames[0].full_path()])
     return scene
 
