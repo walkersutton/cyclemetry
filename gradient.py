@@ -55,7 +55,6 @@ def smooth_gradients(gradients):
     # first element is always None
     gradients = gradients[1:]
     gradients.insert(0, 2 * gradients[0] - gradients[1])
-    print(gradients[:10])
     gradients = handle_outliers(gradients)
     gradients = lowess_smooth(gradients)
     scale_factor = 1.747
