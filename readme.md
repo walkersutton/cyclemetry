@@ -30,7 +30,12 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 (venv) $ pip install -r requirements.txt
 ```
-## Alternative Tools
+
+## How to
+
+I need to make Cyclemetry a bit easier to use, but I'll record a video tomorrow, Sep 6, explaining how I'm currently using the tool and post it here.
+
+## Alternate Tools
 * [DashWare](http://www.dashware.net/) (only available on Windows)
 * [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
 * [GoPro Telemetry Extractor](https://goprotelemetryextractor.com/) ($150/$300? - fuck that)
