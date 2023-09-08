@@ -33,7 +33,7 @@ $ source venv/bin/activate
 
 ## How to
 
-I need to make Cyclemetry a bit easier to use, but I'll record a video tomorrow, Sep 6, explaining how I'm currently using the tool and post it here.
+I need to make Cyclemetry a bit easier to use. [Here's a video](https://youtu.be/gqn5MfcypH4) where I explain how I'm currently using the tool. I plan on writing a more concise user guide in the coming weeks.
 
 ## Alternate Tools
 * [DashWare](http://www.dashware.net/) (only available on Windows)
