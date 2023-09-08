@@ -54,10 +54,21 @@ class Activity:
 
     def parse_data(self):
         def parse_attribute(index: tuple[int], trackpoint: gpxpy.gpx.GPXTrackPoint):
-            value = trackpoint.extensions[index[0]]
-            if len(index) == 2:
-                value = value[index[1]]  # index indicates it's a child extension
-            return float(value.text)
+            try:
+                value = trackpoint.extensions[index[0]]
+                if len(index) == 2:
+                    value = value[index[1]]  # index indicates it's a child extension
+            except Exception as e:
+                # print("probably an issue with power :(")
+                # print(e)
+                f = 0.0
+            try:
+                f = float(value.text)
+            except Exception as e:
+                # print("probably an issue with power :(")
+                # print(e)
+                f = 0.0
+            return f
 
         data = defaultdict(list)
         track_segment = self.gpx.tracks[0].segments[0]
@@ -110,4 +121,14 @@ class Activity:
     def trim(self, start, end):
         for attribute in self.valid_attributes:
             data = getattr(self, attribute)
+            if start > len(data):
+                print(
+                    f"invalid scene start value in config. Value should be less than {len(data)}. Current value is {start}"
+                )
+                exit(1)
+            if end > len(data) or end < start:
+                print(
+                    f"invalid scene end value in config. Value should be less than {len(data)} and greater than {start}. Current value is {end}"
+                )
+                exit(1)
             setattr(self, attribute, data[start:end])
