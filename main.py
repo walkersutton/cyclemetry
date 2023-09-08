@@ -33,19 +33,18 @@ def demo_frame(gpx_filename, template_filename, second):
 # TODO improve argument handling
 if __name__ == "__main__":
     gpx_filename = "config.gpx"
+    template_filename = "safa_brian_a.json"
+    # template_filename = "safa_brian_a_1280_720.json"
     if len(sys.argv) >= 2:
         if sys.argv[1] == "demo":
             second = int(sys.argv[2]) if len(sys.argv) == 3 else 0
             while True:
-                template_filename = "blank_template.json"
                 print(
                     f"demoing frame using the {template_filename} template and {gpx_filename} gpx file"
                 )
                 scene = demo_frame(gpx_filename, template_filename, second)
                 input("enter to re-render:")
                 scene.update_configs(template_filename)
-
-    template_filename = "blank_template.json"
     print(
         f"rendering overlay using the {template_filename} template and {gpx_filename} gpx file"
     )
