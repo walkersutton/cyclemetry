@@ -22,7 +22,9 @@
 * [ffmpeg](https://FFmpeg.org/)
 
 ## Setup
-Tested using `Python 3.11.4` on MacOS Ventura
+Tested using Python 3.11.4 and 3.11.6 on MacOS Ventura and MacOS Sonoma
+** Not working on Python 3.12.0 (distutils dependency issue)**
+
 ```sh
 $ git clone https://github.com/walkersutton/cyclemetry.git
 $ cd cyclemetry
