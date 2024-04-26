@@ -14,7 +14,7 @@
 ## Templates
 * [Safa Brian A](https://github.com/walkersutton/cyclemetry/blob/main/templates/safa_brian_a.json) (featured image on readme)
 
-### Designing Templates <UNDER DEVELOPMENT>
+### Designing Templates - UNDER DEVELOPMENT
 `python designer.py` will launch a web app that can help you interactively modify a template.
 
 ## Dependencies
