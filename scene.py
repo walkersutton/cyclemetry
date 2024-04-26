@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 
 import constant
-from config import config_dicts
+from designer import template_dicts
 from frame import Frame
 from plot import build_figure
 
@@ -22,9 +22,9 @@ class Scene:
     ):
         self.activity = activity
         self.attributes = valid_attributes
-        self.configs = config_dicts(config_filename)
-        self.fps = self.configs["scene"]["fps"]
-        self.labels = self.configs["labels"]
+        self.template = template_dicts(config_filename)
+        self.fps = self.template["scene"]["fps"]
+        self.labels = self.template["labels"]
         self.frames = []
 
     def render_video(self, seconds):
@@ -40,31 +40,31 @@ class Scene:
         plt.close("all")
 
     def update_configs(self, config_filename):
-        self.configs = config_dicts(config_filename)
+        self.template = template_dicts(config_filename)
 
     def draw_frames(self):
         if not os.path.exists(constant.FRAMES_DIR):
             os.makedirs(constant.FRAMES_DIR)
         for frame in tqdm(self.frames, dynamic_ncols=True):
-            frame.draw(self.configs, self.figs).save(frame.full_path())
+            frame.draw(self.template, self.figs).save(frame.full_path())
 
     def build_figures(self):
         self.figs = {}
         self.figs[constant.ATTR_COURSE] = build_figure(
-            self.configs[constant.ATTR_COURSE],
+            self.template[constant.ATTR_COURSE],
             [ele[1] for ele in self.activity.course],
             [ele[0] for ele in self.activity.course],
         )
         self.figs[constant.ATTR_ELEVATION] = build_figure(
-            self.configs[constant.ATTR_ELEVATION]["profile"],
+            self.template[constant.ATTR_ELEVATION]["profile"],
             [ii for ii in range(len(self.activity.elevation))],
             self.activity.elevation,
         )
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
     def export_video(self):
-        output_filename = self.configs["scene"]["output_filename"]
-        quicktime_compatible = self.configs["scene"]["quicktime_compatible"]
+        output_filename = self.template["scene"]["output_filename"]
+        quicktime_compatible = self.template["scene"]["quicktime_compatible"]
         less_verbose = ["-loglevel", "warning"]
         framerate = ["-r", str(self.fps)]
         fmt = ["-f", "image2pipe"]
@@ -89,7 +89,7 @@ class Scene:
         )
 
         for frame in tqdm(self.frames, dynamic_ncols=True):
-            frame.draw(self.configs, self.figs).save(p.stdin, "PNG")
+            frame.draw(self.template, self.figs).save(p.stdin, "PNG")
 
         p.stdin.close()
         p.wait()
@@ -125,8 +125,8 @@ class Scene:
         frame_digits = int(math.log10(num_frames - 2)) + 1
         frame = Frame(
             f"{str(second * self.fps + frame_number).zfill(frame_digits)}.png",
-            self.configs["scene"]["width"],
-            self.configs["scene"]["height"],
+            self.template["scene"]["width"],
+            self.template["scene"]["height"],
             second,
             frame_number,
         )

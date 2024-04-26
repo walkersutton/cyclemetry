@@ -8,15 +8,39 @@ import inquirer
 
 import constant
 
+'''
+designer types
+* point_label, cadence, course, elevation, gradient, heartrate, sub_point, imperial, metric, time, temperature, scene -> object
+* labels -> list[dict]
+* units -> list[str]
+* hide -> boolean
+* dpi, x, y, width, height, rotation, x_offset, y_offset, round, fps -> int
+* line_width, point_weight, margin, opacity, fill_opacity, font_size -> float
+* color -> string(hex or ______)
+* suffix, output_filename, text -> str
+* quicktime_compatible -> true
 
-def raw_configs(filename):
+
+notes:
+* i think speed should be a list of dict (simlar to labels) rather than including hide and opacity at top level
+* we need to define a spec for minimum requirements for a template -> use this to generate a new template
+* use the above types to write some sort of template validator -> similar to validating form inputs on payment web views
+  * and use the types and validator to design template form behaviro -> encourage users to populate fields where required
+    but also give option to extend template for additinoal customizability
+* i know that flask supports forms - i think we should be able to leverage that -
+
+'''
+
+
+
+def raw_template(filename):
     with open(f"templates/{filename}", "r") as file:
-        configs = json.load(file)
-    return configs
+        tempalte = json.load(file)
+    return template
 
 
-def config_dicts(filename):
-    configs = raw_configs(filename)
+def template_dicts(filename):
+    configs = raw_template(filename)
     global_config = configs["global"]
     for attribute in configs.keys():
         if type(configs[attribute]) == dict:
@@ -140,7 +164,7 @@ def modify_template(config_filename):
     exit_choice = "*** exit ***"
     try:
         while True:
-            configs = raw_configs(config_filename)
+            configs = raw_template(config_filename)
             subprocess.call(
                 ["osascript", "-e", 'tell application "Terminal" to activate']
             )
@@ -255,3 +279,45 @@ def blank_template(filename="blank_template.json"):
     config["scene"] = blank_scene
     config["labels"] = [blank_label.copy()]
     json.dump(config, open(f"templates/{filename}", "w"), indent=2)
+
+import subprocess
+import sys
+
+import inquirer # i think we use this for CLI interactions
+
+from activity import Activity
+from scene import Scene
+
+def demo_frame(gpx_filename, template_filename, second):
+	# bring the loop in here
+	# open a browser window,
+	# asked to specify which template and gpx file to consider
+	# also asked to specify what time to render demo frame for
+	# present form that allows user to edit template in real time using a form on left side of screen
+	# listeners on inputs to re-render frame as template is updated
+	# right side of browser shows updated frame
+	# should be accessed simply using ./demo or a similary simple command
+
+    activity = Activity(gpx_filename)
+    scene = Scene(activity, activity.valid_attributes, template_filename)
+    start, end = scene.configs["scene"]["start"], scene.configs["scene"]["end"]
+    activity.trim(start, end)
+    activity.interpolate(scene.fps)
+    scene.build_figures()
+    scene.render_demo(end - start, second)
+    subprocess.call(["open", scene.frames[0].full_path()])
+    return scene
+
+
+if __name__ == "__main__":
+    gpx_filename = "config.gpx"
+    template_filename = "safa_brian_a.json"
+    # template_filename = "safa_brian_a_1280_720.json"
+	second = int(sys.argv[1]) if len(sys.argv) == 2 else 0 # probably move this to the gui
+	while True:
+		print(
+			f"rendering demo frame using the {template_filename} template and {gpx_filename} gpx file"
+		)
+		scene = demo_frame(gpx_filename, template_filename, second)
+		input("enter to re-render:")
+		scene.update_configs(template_filename)

@@ -14,9 +14,8 @@
 ## Templates
 * [Safa Brian A](https://github.com/walkersutton/cyclemetry/blob/main/templates/safa_brian_a.json) (featured image on readme)
 
-### Template Wizard
-`python config.py <template_filename>` will launch an interactive CLI program and image preview that can help you modify a template. If you don't specify a `template_filename`, a blank template, `blank_template.json`, will be created that you can modify.
-* Templates live in the `./templates` directory
+### Designing Templates <UNDER DEVELOPMENT>
+`python designer.py` will launch a web app that can help you interactively modify a template.
 
 ## Dependencies
 * [ffmpeg](https://FFmpeg.org/)
