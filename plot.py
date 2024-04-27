@@ -13,8 +13,12 @@ from utils import printc
 def build_figure(config, x, y):
     fig = plt.figure()
     if "width" and "height" in config.keys():
+        padding = 200
         fig = plt.figure(
-            figsize=(config["width"] / config["dpi"], config["height"] / config["dpi"])
+            figsize=(
+                (config["width"] + padding) / config["dpi"],
+                (config["height"] + padding) / config["dpi"],
+            )
         )
     plt.rcParams["lines.linewidth"] = config["line_width"]
     plt.axis("off")
@@ -34,12 +38,13 @@ def build_figure(config, x, y):
         except ValueError as e:
             printc(f"Invalid axis value: {e}", "red")
     if "fill_opacity" in config.keys():
+        min_threshold = min(y) * 0.99
         y = np.array(y)
         plt.fill_between(
             x,
             y,
-            0,
-            where=(y > 0),
+            min_threshold,
+            where=(y > min_threshold),
             facecolor=config["color"],
             alpha=config["fill_opacity"],
         )
