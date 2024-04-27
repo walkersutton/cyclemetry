@@ -8,7 +8,7 @@ import inquirer
 
 import constant
 
-'''
+"""
 designer types
 * point_label, cadence, course, elevation, gradient, heartrate, sub_point, imperial, metric, time, temperature, scene -> object
 * labels -> list[dict]
@@ -29,48 +29,12 @@ notes:
     but also give option to extend template for additinoal customizability
 * i know that flask supports forms - i think we should be able to leverage that -
 
-'''
+"""
 
 
 
-def raw_template(filename):
-    with open(f"templates/{filename}", "r") as file:
-        tempalte = json.load(file)
-    return template
 
 
-def template_dicts(filename):
-    configs = raw_template(filename)
-    global_config = configs["global"]
-    for attribute in configs.keys():
-        if type(configs[attribute]) == dict:
-            for key, value in global_config.items():
-                if key not in configs[attribute].keys():
-                    configs[attribute][key] = value
-            if any(
-                elem in configs[attribute].keys()
-                for elem in {"sub_point", "imperial", "metric"}
-            ):
-                if "imperial" in configs[attribute].keys():
-                    for key, value in global_config.items():
-                        if key not in configs[attribute]["imperial"].keys():
-                            configs[attribute]["imperial"][key] = value
-                if "metric" in configs[attribute].keys():
-                    for key, value in global_config.items():
-                        if key not in configs[attribute]["metric"].keys():
-                            configs[attribute]["metric"][key] = value
-                if "sub_point" in configs[attribute].keys():
-                    for key, value in global_config.items():
-                        if key not in configs[attribute]["sub_point"].keys():
-                            configs[attribute]["sub_point"][key] = value
-        elif type(configs[attribute]) == list:
-            for element in configs[attribute]:
-                for key, value in global_config.items():
-                    if key not in element.keys():
-                        element[key] = value
-        else:
-            raise Exception("config attribute must be dict or list, depending on type")
-    return configs
 
 
 def modify_prop(attribute, prop, configs, config_filename, parent=None):
@@ -84,8 +48,10 @@ def modify_prop(attribute, prop, configs, config_filename, parent=None):
             else:
                 configs[attribute][prop] = None
 
-        print(f"Modifying {prop} for {parent} {attribute}") if parent else print(
-            f"Modifying {prop} for {attribute}"
+        (
+            print(f"Modifying {prop} for {parent} {attribute}")
+            if parent
+            else print(f"Modifying {prop} for {attribute}")
         )
         prop_value = (
             configs[attribute][parent][prop] if parent else configs[attribute][prop]
@@ -160,57 +126,57 @@ def modify_child_props(attribute, parent, configs, config_filename):
         modify_prop(attribute, prop, configs, config_filename, parent)
 
 
-def modify_template(config_filename):
-    exit_choice = "*** exit ***"
-    try:
-        while True:
-            configs = raw_template(config_filename)
-            subprocess.call(
-                ["osascript", "-e", 'tell application "Terminal" to activate']
-            )
-            attribute = inquirer.list_input(
-                "Select attribute to modify",
-                choices=[exit_choice] + sorted(configs.keys()),
-            )
-            if attribute == exit_choice:
-                break
-            props = query_props(attribute, configs)
-            for prop in props:
-                if prop in ("sub_point", "imperial", "metric"):
-                    modify_child_props(attribute, prop, configs, config_filename)
-                else:
-                    modify_prop(attribute, prop, configs, config_filename)
-    except (KeyboardInterrupt, TypeError) as e:
-        print(e)
-    finally:
-        window_number = int(
-            subprocess.check_output(
-                ["osascript", "-e", 'tell application "Preview" to count window']
-            )
-            .decode("utf-8")
-            .replace("\n", "")
-        )
-        if window_number > 0:
-            subprocess.call(
-                [
-                    "osascript",
-                    "-e",
-                    f'tell application "Preview" to close window {str(window_number)}',
-                ]
-            )
-        for f in [
-            demo_frame_filename,
-            "./tmp/course/demo_frame_00.png",
-            "./tmp/profile/demo_frame_00.png",
-        ]:
-            try:
-                os.remove(f)
-            except FileNotFoundError:
-                print(f"File {f} not found.")
-            except PermissionError:
-                print(f"Permission denied to delete {f}.")
-            except Exception as e:
-                print(f"An error occurred while deleting {f}: {str(e)}")
+# def modify_template(config_filename):
+#     exit_choice = "*** exit ***"
+#     try:
+#         while True:
+#             configs = raw_template(config_filename)
+#             subprocess.call(
+#                 ["osascript", "-e", 'tell application "Terminal" to activate']
+#             )
+#             attribute = inquirer.list_input(
+#                 "Select attribute to modify",
+#                 choices=[exit_choice] + sorted(configs.keys()),
+#             )
+#             if attribute == exit_choice:
+#                 break
+#             props = query_props(attribute, configs)
+#             for prop in props:
+#                 if prop in ("sub_point", "imperial", "metric"):
+#                     modify_child_props(attribute, prop, configs, config_filename)
+#                 else:
+#                     modify_prop(attribute, prop, configs, config_filename)
+#     except (KeyboardInterrupt, TypeError) as e:
+#         print(e)
+#     finally:
+#         window_number = int(
+#             subprocess.check_output(
+#                 ["osascript", "-e", 'tell application "Preview" to count window']
+#             )
+#             .decode("utf-8")
+#             .replace("\n", "")
+#         )
+#         if window_number > 0:
+#             subprocess.call(
+#                 [
+#                     "osascript",
+#                     "-e",
+#                     f'tell application "Preview" to close window {str(window_number)}',
+#                 ]
+#             )
+#         for f in [
+#             demo_frame_filename,
+#             "./tmp/course/demo_frame_00.png",
+#             "./tmp/profile/demo_frame_00.png",
+#         ]:
+#             try:
+#                 os.remove(f)
+#             except FileNotFoundError:
+#                 print(f"File {f} not found.")
+#             except PermissionError:
+#                 print(f"Permission denied to delete {f}.")
+#             except Exception as e:
+#                 print(f"An error occurred while deleting {f}: {str(e)}")
 
 
 def blank_template(filename="blank_template.json"):
@@ -248,7 +214,9 @@ def blank_template(filename="blank_template.json"):
     for attribute in constant.ALL_ATTRIBUTES:
         config[attribute] = blank_value.copy()
         match attribute:
-            case constant.ATTR_SPEED | constant.ATTR_TEMPERATURE:  # fix elevation properties
+            case (
+                constant.ATTR_SPEED | constant.ATTR_TEMPERATURE
+            ):  # fix elevation properties
                 config[attribute]["imperial"] = blank_value.copy()
                 config[attribute]["imperial"]["y"] = y
                 y += 30
@@ -263,7 +231,12 @@ def blank_template(filename="blank_template.json"):
                 ]["metric"]
                 del config[attribute]["x"]
                 del config[attribute]["y"]
-            case constant.ATTR_CADENCE | constant.ATTR_GRADIENT | constant.ATTR_HEARTRATE | constant.ATTR_POWER:
+            case (
+                constant.ATTR_CADENCE
+                | constant.ATTR_GRADIENT
+                | constant.ATTR_HEARTRATE
+                | constant.ATTR_POWER
+            ):
                 config[attribute]["suffix"] = constant.DEFAULT_SUFFIX_MAP[attribute]
             case constant.ATTR_COURSE | constant.ATTR_ELEVATION:
                 config[attribute] = blank_asset.copy()
@@ -280,27 +253,29 @@ def blank_template(filename="blank_template.json"):
     config["labels"] = [blank_label.copy()]
     json.dump(config, open(f"templates/{filename}", "w"), indent=2)
 
+
 import subprocess
 import sys
 
-import inquirer # i think we use this for CLI interactions
+import inquirer  # i think we use this for CLI interactions
 
 from activity import Activity
 from scene import Scene
 
+
 def demo_frame(gpx_filename, template_filename, second):
-	# bring the loop in here
-	# open a browser window,
-	# asked to specify which template and gpx file to consider
-	# also asked to specify what time to render demo frame for
-	# present form that allows user to edit template in real time using a form on left side of screen
-	# listeners on inputs to re-render frame as template is updated
-	# right side of browser shows updated frame
-	# should be accessed simply using ./demo or a similary simple command
+    # bring the loop in here
+    # open a browser window,
+    # asked to specify which template and gpx file to consider
+    # also asked to specify what time to render demo frame for
+    # present form that allows user to edit template in real time using a form on left side of screen
+    # listeners on inputs to re-render frame as template is updated
+    # right side of browser shows updated frame
+    # should be accessed simply using ./demo or a similary simple command
 
     activity = Activity(gpx_filename)
     scene = Scene(activity, activity.valid_attributes, template_filename)
-    start, end = scene.configs["scene"]["start"], scene.configs["scene"]["end"]
+    start, end = scene.template["scene"]["start"], scene.template["scene"]["end"]
     activity.trim(start, end)
     activity.interpolate(scene.fps)
     scene.build_figures()
@@ -310,14 +285,16 @@ def demo_frame(gpx_filename, template_filename, second):
 
 
 if __name__ == "__main__":
-    gpx_filename = "config.gpx"
-    template_filename = "safa_brian_a.json"
+    gpx_filename = "pinosaltos.gpx"
+    template_filename = "safa_brian_a_4k.json"
     # template_filename = "safa_brian_a_1280_720.json"
-	second = int(sys.argv[1]) if len(sys.argv) == 2 else 0 # probably move this to the gui
-	while True:
-		print(
-			f"rendering demo frame using the {template_filename} template and {gpx_filename} gpx file"
-		)
-		scene = demo_frame(gpx_filename, template_filename, second)
-		input("enter to re-render:")
-		scene.update_configs(template_filename)
+    second = (
+        int(sys.argv[1]) if len(sys.argv) == 2 else 0
+    )  # probably move this to the gui
+    while True:
+        print(
+            f"rendering demo frame using the {template_filename} template and {gpx_filename} gpx file"
+        )
+        scene = demo_frame(gpx_filename, template_filename, second)
+        input("enter to re-render:")
+        scene.update_configs(template_filename)

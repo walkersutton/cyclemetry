@@ -1,4 +1,5 @@
 import math
+import json
 import os
 import shutil
 import subprocess
@@ -8,7 +9,6 @@ import numpy as np
 from tqdm import tqdm
 
 import constant
-from designer import template_dicts
 from frame import Frame
 from plot import build_figure
 
@@ -141,3 +141,42 @@ class Scene:
         for second in range(seconds):
             for frame_number in range(self.fps):
                 self.build_frame(seconds, second, frame_number)
+
+
+def raw_template(filename):
+    with open(f"templates/{filename}", "r") as file:
+        return json.load(file)
+
+
+def template_dicts(filename):
+    configs = raw_template(filename)
+    global_config = configs["global"]
+    for attribute in configs.keys():
+        if type(configs[attribute]) == dict:
+            for key, value in global_config.items():
+                if key not in configs[attribute].keys():
+                    configs[attribute][key] = value
+            if any(
+                elem in configs[attribute].keys()
+                for elem in {"sub_point", "imperial", "metric"}
+            ):
+                if "imperial" in configs[attribute].keys():
+                    for key, value in global_config.items():
+                        if key not in configs[attribute]["imperial"].keys():
+                            configs[attribute]["imperial"][key] = value
+                if "metric" in configs[attribute].keys():
+                    for key, value in global_config.items():
+                        if key not in configs[attribute]["metric"].keys():
+                            configs[attribute]["metric"][key] = value
+                if "sub_point" in configs[attribute].keys():
+                    for key, value in global_config.items():
+                        if key not in configs[attribute]["sub_point"].keys():
+                            configs[attribute]["sub_point"][key] = value
+        elif type(configs[attribute]) == list:
+            for element in configs[attribute]:
+                for key, value in global_config.items():
+                    if key not in element.keys():
+                        element[key] = value
+        else:
+            raise Exception("config attribute must be dict or list, depending on type")
+    return configs
