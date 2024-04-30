@@ -4,20 +4,20 @@
     },
     "course": {
       "dpi": 150,
-      "x": 0,
-      "y": -100,
+      "x": 200,
+      "y": -50,
       "hide": false,
       "line_width": 1.75,
       "point_weight": 80,
-      "width": 400,
-      "height": 400,
+      "width": 300,
+      "height": 700,
       "color": "#f4f4f4",
       "margin": 0.1,
       "sub_point": {
         "point_weight": 345,
         "opacity": 0.52
       },
-      "rotation": 80
+      "rotation": 150
     },
     "elevation": {
       "hide": false,
@@ -47,8 +47,7 @@
     "gradient": {
       "color": "#ffffff96",
       "x": 10,
-      "y": 528,
-      "hide": false,
+     "y": 528, "hide": false,
       "font_size": 50,
       "suffix": ""
     },
@@ -98,8 +97,8 @@
       "opacity": 0.5
     },
     "scene": {
-      "start": 15720,
-      "end": 17400,
+      "start": 5,
+      "end": 500,
       "fps": 1,
       "height": 720,
       "width": 1280,
@@ -119,7 +118,7 @@
         "color": "#ffffff96",
         "text": "KMH",
         "x": 10,
-        "y": 290,
+        "y": 160,
         "hide": false,
         "font_size":40
       },
