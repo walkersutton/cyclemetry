@@ -1,4 +1,5 @@
 FRAMES_DIR = "./frames/"
+FONTS_DIR = "./fonts/"
 
 # UNITS
 UNIT_IMPERIAL = "imperial"
