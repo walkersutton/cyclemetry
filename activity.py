@@ -33,9 +33,11 @@ class Activity:
             track_points[-1],
         ]
         for track_point in track_points:
-            attributes.update(
-                {constant.ATTR_COURSE, constant.ATTR_SPEED}
-            ) if track_point.latitude and track_point.longitude else None
+            (
+                attributes.update({constant.ATTR_COURSE, constant.ATTR_SPEED})
+                if track_point.latitude and track_point.longitude
+                else None
+            )
             attributes.add(constant.ATTR_TIME) if track_point.time else None
             attributes.add(constant.ATTR_ELEVATION) if track_point.elevation else None
             for ii, extension in enumerate(track_point.extensions):
@@ -87,7 +89,12 @@ class Activity:
                         # data[attribute].append(point.speed) - for some reason, point.speed isn't interpreted correctly (always None). maybe try other gpx files to see if it works in other cases?
                     case constant.ATTR_GRADIENT:
                         data[attribute].append(gradient(point, previous_point))
-                    case constant.ATTR_CADENCE | constant.ATTR_HEARTRATE | constant.ATTR_POWER | constant.ATTR_TEMPERATURE:
+                    case (
+                        constant.ATTR_CADENCE
+                        | constant.ATTR_HEARTRATE
+                        | constant.ATTR_POWER
+                        | constant.ATTR_TEMPERATURE
+                    ):
                         data[attribute].append(
                             parse_attribute(self.tag_map[attribute], point)
                         )
