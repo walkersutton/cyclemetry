@@ -15,7 +15,9 @@
 * [Safa Brian A](https://github.com/walkersutton/cyclemetry/blob/main/templates/safa_brian_a.json) (featured image on readme)
 
 ### Designing Templates - UNDER DEVELOPMENT
-`python designer.py` will launch a web app that can help you interactively modify a template.
+[Template Designer](https://walkersutton.com/cyclemetry/)
+
+TODO optionally run locally`python designer.py` will launch a web app that can help you interactively modify a template.
 
 ## Dependencies
 * [ffmpeg](https://FFmpeg.org/)
