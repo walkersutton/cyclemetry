@@ -17,8 +17,6 @@
 ### Designing Templates - UNDER DEVELOPMENT
 [Template Designer](https://walkersutton.com/cyclemetry/)
 
-TODO optionally run locally`python designer.py` will launch a web app that can help you interactively modify a template.
-
 ## Dependencies
 * [ffmpeg](https://FFmpeg.org/)
 
