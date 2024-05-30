@@ -7,6 +7,7 @@ __pycache__/
 *.webp
 *.mov
 *.png
+tmp/
 
 # environments
 venv/
