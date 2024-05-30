@@ -37,93 +37,94 @@ notes:
 
 
 
-def modify_prop(attribute, prop, configs, config_filename, parent=None):
-    while True:
-        if prop == "add a property":
-            prop = input("Enter a new property:\n")
-            if not prop:
-                break
-            if parent:
-                configs[attribute][parent][prop] = None
-            else:
-                configs[attribute][prop] = None
+# def modify_prop(attribute, prop, configs, config_filename, parent=None):
+#     while True:
+#         if prop == "add a property":
+#             prop = input("Enter a new property:\n")
+#             if not prop:
+#                 break
+#             if parent:
+#                 configs[attribute][parent][prop] = None
+#             else:
+#                 configs[attribute][prop] = None
 
-        (
-            print(f"Modifying {prop} for {parent} {attribute}")
-            if parent
-            else print(f"Modifying {prop} for {attribute}")
-        )
-        prop_value = (
-            configs[attribute][parent][prop] if parent else configs[attribute][prop]
-        )
-        print(f"Current value: {prop_value}")
+#         (
+#             print(f"Modifying {prop} for {parent} {attribute}")
+#             if parent
+#             else print(f"Modifying {prop} for {attribute}")
+#         )
+#         prop_value = (
+#             configs[attribute][parent][prop] if parent else configs[attribute][prop]
+#         )
+#         print(f"Current value: {prop_value}")
 
-        try:  # might need to type case depending on the property - i.e. booleans should not take text input - should be selection
-            subprocess.call(
-                ["osascript", "-e", 'tell application "Terminal" to activate']
-            )
-            value = input("Enter a new value:\n")
-            print("")
-            if not value:
-                break
-            if prop == "hide":
-                value = bool(value)
-            elif prop in {
-                "x",
-                "y",
-                "x1",
-                "x2",
-                "y1",
-                "y2",
-                "width",
-                "height",
-                "font_size",
-                "round",
-                "point_weight",
-                "line_width",
-                "dpi",
-                "rotation",
-            }:
-                value = int(value)
-            elif prop in {"opacity"}:
-                value = float(value)
-                if not (0 <= value <= 1):
-                    print("Try again: opacity must be between 0 and 1")
+#         try:  # might need to type case depending on the property - i.e. booleans should not take text input - should be selection
+#             subprocess.call(
+#                 ["osascript", "-e", 'tell application "Terminal" to activate']
+#             )
+#             value = input("Enter a new value:\n")
+#             print("")
+#             if not value:
+#                 break
+#             if prop == "hide":
+#                 value = bool(value)
+#             elif prop in {
+#                 "x",
+#                 "y",
+#                 "x1",
+#                 "x2",
+#                 "y1",
+#                 "y2",
+#                 "width",
+#                 "height",
+#                 "font_size",
+#                 "round",
+#                 "point_weight",
+#                 "line_width",
+#                 "dpi",
+#                 "rotation",
+#             }:
+#                 value = int(value)
+#             elif prop in {"opacity"}:
+#                 value = float(value)
+#                 if not (0 <= value <= 1):
+#                     print("Try again: opacity must be between 0 and 1")
 
-            if parent:
-                configs[attribute][parent][prop] = value
-            else:
-                configs[attribute][prop] = value
-        except Exception as e:
-            print("configging error during modify_prop", e)
-        with open(f"templates/{config_filename}", "w") as file:
-            json.dump(configs, file, indent=2)
-
-
-def query_props(attribute, configs, parent=None):
-    props = None
-    if parent:
-        message = f"Select properties to modify for {parent} {attribute}"
-        choices = configs[attribute][parent].keys()
-    else:
-        message = f"Select properties to modify for {attribute}"
-        choices = configs[attribute].keys()
-    while not props:
-        question = [
-            inquirer.Checkbox(
-                "properties",
-                message=message,
-                choices=sorted(list(choices) + ["add a property"]),
-            ),
-        ]
-        props = inquirer.prompt(question)["properties"]
-    return props
+#             if parent:
+#                 configs[attribute][parent][prop] = value
+#             else:
+#                 configs[attribute][prop] = value
+#         except Exception as e:
+#             print("configging error during modify_prop", e)
+#         with open(f"../../templates/{config_filename}", "w") as file:
+#             json.dump(configs, file, indent=2)
 
 
-def modify_child_props(attribute, parent, configs, config_filename):
-    props = query_props(attribute, configs, parent)
-    for prop in props:
-        modify_prop(attribute, prop, configs, config_filename, parent)
+# def query_props(attribute, configs, parent=None):
+#     props = None
+#     if parent:
+#         message = f"Select properties to modify for {parent} {attribute}"
+#         choices = configs[attribute][parent].keys()
+#     else:
+#         message = f"Select properties to modify for {attribute}"
+#         choices = configs[attribute].keys()
+#     while not props:
+#         # question = [
+#         #     inquirer.Checkbox(
+#         #         "properties",
+#         #         message=message,
+#         #         choices=sorted(list(choices) + ["add a property"]),
+#         #     ),
+#         # ]
+#         # props = inquirer.prompt(question)["properties"]
+#         pass
+#     return props
+
+
+# def modify_child_props(attribute, parent, configs, config_filename):
+#     props = query_props(attribute, configs, parent)
+#     for prop in props:
+#         modify_prop(attribute, prop, configs, config_filename, parent)
 
 
 # def modify_template(config_filename):
@@ -251,16 +252,20 @@ def blank_template(filename="blank_template.json"):
     config["global"] = blank_global
     config["scene"] = blank_scene
     config["labels"] = [blank_label.copy()]
-    json.dump(config, open(f"templates/{filename}", "w"), indent=2)
+    json.dump(config, open(f"../../templates/{filename}", "w"), indent=2)
 
 
 import subprocess
 import sys
 
-import inquirer  # i think we use this for CLI interactions
+# import inquirer  # i think we use this for CLI interactions
 
 from activity import Activity
 from scene import Scene
+
+
+def test():
+	print("test success")
 
 
 def demo_frame(gpx_filename, template_filename, second):
@@ -280,11 +285,13 @@ def demo_frame(gpx_filename, template_filename, second):
     activity.interpolate(scene.fps)
     scene.build_figures()
     scene.render_demo(end - start, second)
-    subprocess.call(["open", scene.frames[0].full_path()])
+    # subprocess.call(["open", scene.frames[0].full_path()])
     return scene
 
 
 if __name__ == "__main__":
+    test()
+    exit()
     gpx_filename = "pinosaltos.gpx"
     template_filename = "safa_brian_a_4k.json"
     # template_filename = "safa_brian_a_1280_720.json"

@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { JSONEditor } from "@json-editor/json-editor";
 import axios from "axios";
 
-function Editor() {
+function Editor({ configFileId, gpxFileId, setFileId }) {
   const config = {
     use_name_attributes: false,
     theme: "bootstrap4",
@@ -107,22 +107,25 @@ function Editor() {
 
   const editorRef = useRef(null);
 
-  const postData = {};
-
-  const generateDemoFrame = async () => {
-    console.log("sending req");
-    try {
-      const response = await axios.post("http://localhost:8080/demo", postData);
-      console.log("Response:", response.data);
-    } catch (error) {
-      console.error("Error:", error);
+  const generateDemoFrame = async (configId, gpxId) => {
+    const data = { config_id: configId, gpx_id: gpxId };
+    if (configId && gpxId) {
+      await axios
+        .post(process.env.REACT_APP_FLASK_SERVER_URL + "/demo", data)
+        .then((response) => {
+          setFileId(response.data.data);
+        })
+        .catch((error) => {
+          console.log("bad bad bad");
+          console.log(error);
+        });
     }
   };
 
   useEffect(() => {
     const editor = new JSONEditor(editorRef.current, config);
     editor.on("change", function () {
-      generateDemoFrame();
+      generateDemoFrame(configFileId, gpxFileId);
 
       // TODO trigger image generation - in backend
       // document.querySelector('#input').value = JSON.stringify(editor.getValue())
@@ -130,7 +133,7 @@ function Editor() {
     return () => {
       editor.destroy(); // Destroy the JSONEditor instance when component unmounts
     };
-  }, []); // Empty dependency array to run the effect only once after the initial render
+  }, [configFileId, gpxFileId]); // Empty dependency array to run the effect only once after the initial render
 
   return <div ref={editorRef} />;
 }

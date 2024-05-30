@@ -149,7 +149,12 @@ def raw_template(filename):
 
 
 def template_dicts(filename):
-    configs = raw_template(filename)
+    # configs = raw_template(filename) TODO just for templates in tmp folder
+    # TODO CLEAN
+    configs = None
+    with open(filename, "r") as file:
+        configs = json.load(file)
+    # TODO CLEAN
     global_config = configs["global"]
     for attribute in configs.keys():
         if type(configs[attribute]) == dict:
