@@ -2,7 +2,16 @@ import os
 import time
 import uuid
 
-from flask import Flask, request, jsonify, redirect, url_for, make_response, abort, send_from_directory
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    redirect,
+    url_for,
+    make_response,
+    abort,
+    send_from_directory,
+)
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
@@ -34,6 +43,13 @@ def bad_request(error):
     return make_response(
         jsonify({"error": "Bad Request sowwy - " + error.description}), 406
     )
+
+
+@app.before_first_request
+def bootboot():
+    dir = "tmp"
+    if not os.path.exists(dir):
+        os.makedirs(dir)
 
 
 @app.route("/healthz")
@@ -71,8 +87,8 @@ def demo():
         and data["gpx_id"] is not None
     ):
         print("seemingly okay???")
-        config_id = data['config_id']
-        gpx_id = data['gpx_id']
+        config_id = data["config_id"]
+        gpx_id = data["gpx_id"]
         config_filename = file_map[config_id]
         # config_filename = "safa_brian_a_4k.json"
         gpx_filename = file_map[gpx_id]
@@ -92,8 +108,9 @@ def demo():
         # kscene.update_configs(template_filename)
     return jsonify({"data": id})
 
-@app.route('/images/<file_id>')
+
+@app.route("/images/<file_id>")
 def serve_image(file_id):
     filename = file_map[file_id]
     # safe_path = safe_join('frames', filename)
-    return send_from_directory('frames', filename)
+    return send_from_directory("frames", filename)
