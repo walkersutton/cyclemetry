@@ -24,7 +24,7 @@ export default function FlaskServerStatus() {
       } else {
         clearInterval(interval);
       }
-    }, 5000);
+    }, 5000); // TODO: it takes about 8 pings to wake up
 
     // Cleanup function to clear the interval if the component unmounts
     return () => clearInterval(interval);
