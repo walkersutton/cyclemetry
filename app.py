@@ -45,13 +45,6 @@ def bad_request(error):
     )
 
 
-@app.before_first_request
-def bootboot():
-    dir = "tmp"
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-
 @app.route("/healthz")
 def healthz():
     return "OK", 200
@@ -114,3 +107,13 @@ def serve_image(file_id):
     filename = file_map[file_id]
     # safe_path = safe_join('frames', filename)
     return send_from_directory("frames", filename)
+
+
+def bootboot():
+    dir = "tmp"
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+
+with app.app_context():
+    bootboot()
