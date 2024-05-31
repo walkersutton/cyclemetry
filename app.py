@@ -80,8 +80,13 @@ def demo():
         and data["gpx_id"] is not None
     ):
         print("seemingly okay???")
+        # seeing a key error here when we pass config_id
+        # TODO - maybe inspect the file_map here
         config_id = data["config_id"]
         gpx_id = data["gpx_id"]
+        print(config_id)
+        print(gpx_id)
+        print(file_map)
         config_filename = file_map[config_id]
         # config_filename = "safa_brian_a_4k.json"
         gpx_filename = file_map[gpx_id]
