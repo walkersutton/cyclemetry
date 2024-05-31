@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { JSONEditor } from "@json-editor/json-editor";
 import axios from "axios";
 
-function Editor({ configFileId, gpxFileId, setFileId }) {
+function Editor({ configFile, gpxFile, setImageFilename }) {
   const config = {
     use_name_attributes: false,
     theme: "bootstrap4",
@@ -107,16 +107,19 @@ function Editor({ configFileId, gpxFileId, setFileId }) {
 
   const editorRef = useRef(null);
 
-  const generateDemoFrame = async (configId, gpxId) => {
-    const data = { config_id: configId, gpx_id: gpxId };
-    if (configId && gpxId) {
+  const generateDemoFrame = async (configFile, gpxFile) => {
+    if (configFile && gpxFile) {
+      const data = {
+        config_filename: "./tmp/" + configFile.name,
+        gpx_filename: "./tmp/" + gpxFile.name,
+      };
       await axios
         .post(process.env.REACT_APP_FLASK_SERVER_URL + "/demo", data)
         .then((response) => {
-          setFileId(response.data.data);
+          setImageFilename(response.data.data);
         })
         .catch((error) => {
-          console.log("bad bad bad");
+          console.log("Editor:generateDemoFrame");
           console.log(error);
         });
     }
@@ -125,15 +128,14 @@ function Editor({ configFileId, gpxFileId, setFileId }) {
   useEffect(() => {
     const editor = new JSONEditor(editorRef.current, config);
     editor.on("change", function () {
-      generateDemoFrame(configFileId, gpxFileId);
+      generateDemoFrame(configFile, gpxFile);
 
-      // TODO trigger image generation - in backend
       // document.querySelector('#input').value = JSON.stringify(editor.getValue())
     });
     return () => {
       editor.destroy(); // Destroy the JSONEditor instance when component unmounts
     };
-  }, [configFileId, gpxFileId]); // Empty dependency array to run the effect only once after the initial render
+  }, [configFile, gpxFile]); // Empty dependency array to run the effect only once after the initial render
 
   return <div ref={editorRef} />;
 }

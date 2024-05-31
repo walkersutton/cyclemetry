@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import axios from "axios";
 
 const configs = {
@@ -16,7 +16,7 @@ const configs = {
   },
 };
 
-async function handleUpload(file, setFile, setFileId) {
+async function handleUpload(file, setFile) {
   const postData = new FormData();
   postData.append("file", file);
   await axios
@@ -26,32 +26,26 @@ async function handleUpload(file, setFile, setFileId) {
       },
     })
     .then((response) => {
-      setFileId(response.data.data);
+      setFile(file);
     })
     .catch((error) => {
+      console.log("FileUpload:handleUpload");
+      console.log(error);
       setFile(null);
     });
 }
 
-function FileUpload({ type, setFileId }) {
-  const [file, setFile] = useState(null);
-
+function FileUpload({ type, file, setFile }) {
   const config = configs[type];
 
   const handleFileChange = (event) => {
     const f = event.target.files[0];
     if (f && f.type === config.allowedType) {
-      setFile(f);
+      handleUpload(f, setFile);
     } else {
       alert("Invalid file type. Please select a " + config.name + " file.");
     }
   };
-
-  useEffect(() => {
-    if (file) {
-      handleUpload(file, setFile, setFileId);
-    }
-  }, [file, setFile]);
 
   return (
     <div className="file-upload-container">

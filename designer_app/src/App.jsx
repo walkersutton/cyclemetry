@@ -6,18 +6,18 @@ import FlaskServerStatus from "./FlaskServerStatus";
 import illyimg from "./test.png";
 
 function App() {
-  const [configFileId, setConfigFileId] = useState(null);
-  const [gpxFileId, setGpxFileId] = useState(null);
-  const [imageFileId, setImageFileId] = useState(null);
+  const [configFile, setConfigFile] = useState(null);
+  const [gpxFile, setGpxFile] = useState(null);
+  const [imageFilename, setImageFilename] = useState(null);
 
-  const handleConfigFileIdStateChange = (state) => {
-    setConfigFileId(state);
+  const handleConfigFileStateChange = (state) => {
+    setConfigFile(state);
   };
-  const handleGpxFileIdStateChange = (state) => {
-    setGpxFileId(state);
+  const handleGpxFileStateChange = (state) => {
+    setGpxFile(state);
   };
-  const handleImageFileIdStateChange = (state) => {
-    setImageFileId(state);
+  const handleImageFileStateChange = (state) => {
+    setImageFilename(state);
   };
 
   return (
@@ -27,27 +27,32 @@ function App() {
 
         <FlaskServerStatus />
 
-        {/* {gpxFileId && configFileId && ( */}
+        {/* {gpxFile && configFile && ( */}
         <div className="row">
           <div className="col-3">
             <Editor
-              configFileId={configFileId}
-              gpxFileId={gpxFileId}
-              setFileId={handleImageFileIdStateChange}
+              configFile={configFile}
+              gpxFile={gpxFile}
+              setImageFilename={handleImageFileStateChange}
             />
             <div className="border border-primary d-flex">
-              <FileUpload type="gpx" setFileId={handleGpxFileIdStateChange} />
+              <FileUpload
+                type="gpx"
+                file={gpxFile}
+                setFile={handleGpxFileStateChange}
+              />
               <FileUpload
                 type="config"
-                setFileId={handleConfigFileIdStateChange}
+                file={configFile}
+                setFile={handleConfigFileStateChange}
               />
             </div>
           </div>
           <div className="col-9 bg-dark">
-            {imageFileId ? (
+            {imageFilename ? (
               <img
                 className="img-fluid"
-                src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFileId}`}
+                src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFilename}`}
                 alt="generated cyclemetry image"
               />
             ) : (

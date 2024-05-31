@@ -1,25 +1,17 @@
 import os
 import time
-import uuid
 
 from flask import (
     Flask,
     request,
     jsonify,
-    redirect,
-    url_for,
     make_response,
-    abort,
     send_from_directory,
 )
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from designer import demo_frame
-
-
-def gen_file_identifier():
-    return f"{uuid.uuid4()}{int(time.time())}"
 
 
 ALLOWED_EXTENSIONS = {"json", "gpx"}
@@ -29,9 +21,6 @@ app = Flask(__name__)
 CORS(app)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-
-file_map = {}
 
 
 def allowed_file(filename):
@@ -61,9 +50,7 @@ def upload():
         filename = secure_filename(file.filename)
         path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(path)
-        id = gen_file_identifier()
-        file_map[id] = path
-        return jsonify({"data": id})
+        return jsonify({"data": "file uploaded"})
     return make_response(jsonify({"error": "very bad"}), 400)
 
 
@@ -74,43 +61,27 @@ def demo():
 
     if (
         data
-        and "config_id" in data
-        and "gpx_id" in data
-        and data["config_id"] is not None
-        and data["gpx_id"] is not None
+        and "config_filename" in data
+        and "gpx_filename" in data
+        and data["config_filename"] is not None
+        and data["gpx_filename"] is not None
     ):
-        print("seemingly okay???")
-        # seeing a key error here when we pass config_id
-        # TODO - maybe inspect the file_map here
-        config_id = data["config_id"]
-        gpx_id = data["gpx_id"]
-        print(config_id)
-        print(gpx_id)
-        print(file_map)
-        config_filename = file_map[config_id]
-        # config_filename = "safa_brian_a_4k.json"
-        gpx_filename = file_map[gpx_id]
+        config_filename = data["config_filename"]
+        gpx_filename = data["gpx_filename"]
 
-        print(config_filename, gpx_filename)
         scene = demo_frame(
             gpx_filename, config_filename, 20
-        )  # TODO replace with param for second value
+        )  # TODO replace with param for third value
+
         img_filepath = scene.frames[0].full_path()
-
-        print(img_filepath)
-
-        # something like ./frames/00600.png
-
-        id = gen_file_identifier()
-        file_map[id] = os.path.basename(img_filepath)
-        # kscene.update_configs(template_filename)
-    return jsonify({"data": id})
+        obf_filepath = f"./frames/{int(time.time())}.png"
+        os.rename(img_filepath, obf_filepath)
+        filename = os.path.basename(obf_filepath)
+    return jsonify({"data": filename})
 
 
-@app.route("/images/<file_id>")
-def serve_image(file_id):
-    filename = file_map[file_id]
-    # safe_path = safe_join('frames', filename)
+@app.route("/images/<filename>")
+def serve_image(filename):
     return send_from_directory("frames", filename)
 
 
