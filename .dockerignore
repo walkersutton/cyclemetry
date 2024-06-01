@@ -1,0 +1,13 @@
+designer_app/
+templates/
+frames/
+tmp/
+venv/
+jupyter/
+__pycache__/
+
+.DS_Store
+.tool-versions
+*.swp
+
+requirements_jupyter.txt

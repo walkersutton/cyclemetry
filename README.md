@@ -12,7 +12,7 @@
 (venv) $ python main.py <gpx_file> <template_filename>
 ```
 ## Templates
-* [Safa Brian A](https://github.com/walkersutton/cyclemetry/blob/main/templates/safa_brian_a.json) (featured image on readme)
+* [Safa Brian A](https://github.com/walkersutton/cyclemetry/blob/main/templates/safa_brian_a_4k.json) (featured image on readme)
 
 ### Designing Templates - UNDER DEVELOPMENT
 [Template Designer](https://walkersutton.com/cyclemetry/)
