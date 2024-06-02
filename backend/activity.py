@@ -8,11 +8,14 @@ from scipy.interpolate import interp1d
 import constant
 from gradient import gradient, smooth_gradients
 
-
-def gpx_attribute_map(filename="gpx_attribute_map.json"):
-    with open(filename, "r") as file:
-        return json.load(file)
-
+ATTRIBUTE_MAP = {
+    "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}atemp": "temperature",
+    "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}hr": "heartrate",
+    "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}cad": "cadence",
+    "{http://www.garmin.com/xmlschemas/PowerExtension/v1}PowerInWatts": "power",
+    "power": "power",
+    "{http://www.garmin.com/xmlschemas/GpxExtensions/v3}Temperature": "temperature",
+}
 
 class Activity:
     def __init__(self, filename):
@@ -22,7 +25,7 @@ class Activity:
 
     def set_valid_attributes(self):
         attributes = set()
-        attribute_map = gpx_attribute_map()
+        attribute_map = ATTRIBUTE_MAP
         tag_map = {}
         track_points = self.gpx.tracks[0].segments[0].points
         # not all extensions are present in all track points

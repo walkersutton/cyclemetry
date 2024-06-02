@@ -1,9 +1,9 @@
-designer_app/
 templates/
 frames/
 tmp/
 venv/
 jupyter/
+experiments/
 __pycache__/
 
 .DS_Store
