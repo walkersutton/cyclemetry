@@ -53,7 +53,7 @@ function App() {
               <img
                 className="img-fluid"
                 src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFilename}`}
-                alt="generated cyclemetry image"
+                alt="generated overlay"
               />
             ) : (
               <img src={illyimg} alt="demo frame heyooo" />
