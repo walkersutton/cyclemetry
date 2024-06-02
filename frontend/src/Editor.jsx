@@ -3,8 +3,7 @@ import { JSONEditor } from "@json-editor/json-editor";
 import axios from "axios";
 
 function Editor({ configFile, gpxFile, setImageFilename }) {
-  const [editorExists, setEditorExists] = useState(false);
-
+  const editorRef = useRef(null);
   const config = {
     use_name_attributes: false,
     theme: "bootstrap4",
@@ -107,8 +106,6 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
     },
   };
 
-  const editorRef = useRef(null);
-
   const generateDemoFrame = async (configFile, gpxFile) => {
     if (configFile && gpxFile) {
       const data = {
@@ -129,7 +126,6 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
 
   useEffect(() => {
     const editor = new JSONEditor(editorRef.current, config);
-    setEditorExists(true);
 
     editor.on("change", function () {
       generateDemoFrame(configFile, gpxFile);
@@ -137,9 +133,8 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
     });
     return () => {
       editor.destroy(); // Destroy the JSONEditor instance when component unmounts
-      setEditorExists(false);
     };
-  }, [editorExists, configFile, gpxFile]); // Empty dependency array to run the effect only once after the initial render
+  }, [configFile, gpxFile]); // Empty dependency array to run the effect only once after the initial render
 
   return <div ref={editorRef} />;
 }
