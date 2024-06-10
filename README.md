@@ -14,7 +14,7 @@
 
 - Use the [Cyclemetry App](https://walkersutton.com/cyclemetry/) to design your own templates
 - Check out the community [templates](https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md)
-- Feel free to [submit your templates](https://github.com/walkersutton/cyclemetry/pulls) for others to use
+- [Share](https://github.com/walkersutton/cyclemetry/pulls) your templates for others to use
 
 ## Generating Video Overlays
 
