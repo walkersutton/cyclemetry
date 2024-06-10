@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 
 import Editor from "./Editor"; // Import the MyJsonEditor component
-import FileUpload from "./FileUpload";
+import PreviewPanel from "./PreviewPanel";
 import FlaskServerStatus from "./FlaskServerStatus";
-import illyimg from "./test.png";
 
 function App() {
   const [configFile, setConfigFile] = useState(null);
@@ -24,10 +23,7 @@ function App() {
     <div>
       <div className="container">
         <h1 className="text-center py-4">cyclemetry</h1>
-
         <FlaskServerStatus />
-
-        {/* {gpxFile && configFile && ( */}
         <div className="row">
           <div className="col-3">
             <Editor
@@ -35,32 +31,17 @@ function App() {
               gpxFile={gpxFile}
               setImageFilename={handleImageFileStateChange}
             />
-            <div className="border border-primary d-flex">
-              <FileUpload
-                type="gpx"
-                file={gpxFile}
-                setFile={handleGpxFileStateChange}
-              />
-              <FileUpload
-                type="config"
-                file={configFile}
-                setFile={handleConfigFileStateChange}
-              />
-            </div>
           </div>
           <div className="col-9 bg-dark">
-            {imageFilename ? (
-              <img
-                className="img-fluid"
-                src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFilename}`}
-                alt="generated overlay"
-              />
-            ) : (
-              <img src={illyimg} alt="demo frame heyooo" />
-            )}
+            <PreviewPanel
+              configFile={configFile}
+              gpxFile={gpxFile}
+              imageFilename={imageFilename}
+              handleConfigFileStateChange={handleConfigFileStateChange}
+              handleGpxFileStateChange={handleGpxFileStateChange}
+            />
           </div>
         </div>
-        {/* )} */}
       </div>
     </div>
   );
