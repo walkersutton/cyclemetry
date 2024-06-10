@@ -1,47 +1,33 @@
 # Cyclemetry - generate GPX video overlays
+
 ![The_Tremola_by Safa_Brian](https://github.com/walkersutton/cyclemetry/assets/25811783/71aa4902-dd29-453f-b4a5-a87ddabd2437)
 
 ## Features
-* Live course tracking
-* Live elevation profile
-* Cadence, elevation, gradient, heartrate, power, speed, etc.
-* Supports imperial and metric units
 
-## Running
-```sh
-(venv) $ python main.py <gpx_file> <template_filename>
-```
+- Live course tracking
+- Live elevation profile
+- Cadence, elevation, gradient, heartrate, power, speed, etc.
+- Supports imperial and metric units
+- professional templates
+
 ## Templates
-* [Safa Brian A](https://github.com/walkersutton/cyclemetry/blob/main/templates/safa_brian_a_4k.json) (featured image on readme)
 
-### Designing Templates - UNDER DEVELOPMENT
-[Template Designer](https://walkersutton.com/cyclemetry/)
+- Use the [Cyclemetry App](https://walkersutton.com/cyclemetry/) to design your own templates
+- Check out our community [templates](https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md)
+- Feel free to [submit your templates](https://github.com/walkersutton/cyclemetry/pulls) for others to use
 
-## Dependencies
-* [ffmpeg](https://FFmpeg.org/)
+## Generating Video Overlays
 
-## Setup
-Tested using Python 3.11.4 and 3.11.6 on MacOS Ventura and MacOS Sonoma
+I'm currently building a web app that will enable you to export video overlays. Until then, check out the backend [README](https://github.com/walkersutton/cyclemetry/blob/main/backend/README.md) for instructions on using CLI to export video overlays.
 
-**Not working on Python 3.12.0 (distutils dependency issue)**
+## How to design overlay templates
 
-```sh
-$ git clone https://github.com/walkersutton/cyclemetry.git
-$ cd cyclemetry
-$ python3 -m venv venv
-$ source venv/bin/activate
-(venv) $ pip install -r requirements.txt
-```
+## [Alternative Tools](https://alternativeto.net/software/garmin-virb-edit/)
 
-## How to
-
-I need to make Cyclemetry a bit easier to use. [Here's a video](https://youtu.be/gqn5MfcypH4) where I explain how I'm currently using the tool. I plan on writing a more concise user guide in the coming weeks.
-
-## Alternate Tools
-* [DashWare](http://www.dashware.net/) (only available on Windows)
-* [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
-* [GoPro Telemetry Extractor](https://goprotelemetryextractor.com/) ($150/$300? - fuck that)
+- [DashWare](http://www.dashware.net/) (only available on Windows)
+- [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
+- [GoPro Telemetry Extractor](https://goprotelemetryextractor.com/) ($150/$300? - fuck that)
 
 ## Contributors
-* All contributions are welcome
-* Feel free to [submit your templates](https://github.com/walkersutton/cyclemetry/pulls) for others to use
+
+- All contributions are welcome
