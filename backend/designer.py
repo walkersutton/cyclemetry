@@ -268,7 +268,7 @@ def test():
 	print("test success")
 
 
-def demo_frame(gpx_filename, template_filename, second):
+def demo_frame(gpx_filename, template_filename, second, headless):
     # bring the loop in here
     # open a browser window,
     # asked to specify which template and gpx file to consider
@@ -285,7 +285,8 @@ def demo_frame(gpx_filename, template_filename, second):
     activity.interpolate(scene.fps)
     scene.build_figures()
     scene.render_demo(end - start, second)
-    # subprocess.call(["open", scene.frames[0].full_path()])
+    if not headless:
+        subprocess.call(["open", scene.frames[0].full_path()])
     return scene
 
 

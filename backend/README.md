@@ -20,7 +20,8 @@ $ source venv/bin/activate
 # CLI
 
 ```sh
-(venv) $ python main.py <gpx_file> <template_filename>
+(venv) $ python main.py demo -gpx <gpx_file> -template <template_filename> -second <time to render demo frame>
+(venv) $ python main.py render -gpx <gpx_file> -template <template_filename>
 ```
 
 I need to make Cyclemetry a bit easier to use. [Here's a video](https://youtu.be/gqn5MfcypH4) where I explain how I use the tool. I'm building a [web app](https://walkersutton.com/cyclemetry/) that'll enable you to use a GUI to generate your video overlays.

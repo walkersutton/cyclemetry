@@ -70,7 +70,7 @@ def demo():
         gpx_filename = data["gpx_filename"]
 
         scene = demo_frame(
-            gpx_filename, config_filename, 20
+            gpx_filename, config_filename, 20, True
         )  # TODO replace with param for third value
 
         img_filepath = scene.frames[0].full_path()
