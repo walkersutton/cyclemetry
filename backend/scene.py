@@ -65,31 +65,34 @@ class Scene:
     def export_video(self):
         output_filename = self.template["scene"]["output_filename"]
         quicktime_compatible = self.template["scene"]["quicktime_compatible"]
+        width, height = (
+            self.template["scene"]["width"],
+            self.template["scene"]["height"],
+        )
         less_verbose = ["-loglevel", "warning"]
         framerate = ["-r", str(self.fps)]
-        fmt = ["-f", "image2pipe"]
+        fmt = ["-f", "rawvideo"]
         input_files = ["-i", "-"]
-        codec = ["-c:v", "prores_ks"] if quicktime_compatible else ["-c:v", "png"]
-        pixel_format = (
-            ["-pix_fmt", "yuva444p10le"]
-            if quicktime_compatible
-            else ["-pix_fmt", "rgba"]
-        )
+        codec = ["-c:v", "prores_ks"]  # helps with transparency
+        pixel_format = ["-pix_fmt", "rgba"]
+        size = ["-s", f"{width}x{height}"]
         output = ["-y", output_filename]
         p = Popen(
             ["ffmpeg"]
             + less_verbose
-            + framerate
             + fmt
+            + size
+            + pixel_format
+            + framerate
             + input_files
             + codec
-            + pixel_format
             + output,
             stdin=PIPE,
         )
-
+        # TODO optimization opportunity here?
         for frame in tqdm(self.frames, dynamic_ncols=True):
-            frame.draw(self.template, self.figs).save(p.stdin, "PNG")
+            image = frame.draw(self.template, self.figs)
+            p.stdin.write(image.tobytes())
 
         p.stdin.close()
         p.wait()
@@ -153,7 +156,7 @@ def template_dicts(filename):
     # TODO CLEAN
     configs = None
     # TODO improve filename path finding here
-    filename = './../templates/' + filename
+    filename = "./../templates/" + filename
     with open(filename, "r") as file:
         configs = json.load(file)
     # TODO CLEAN
