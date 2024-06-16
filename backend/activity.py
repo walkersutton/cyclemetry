@@ -80,7 +80,11 @@ class Activity:
                             extension = e
                             break
                     if extension is None:
-                        return -1.0 if index < len(extensions) else -2.0
+                        if index < len(extensions):
+                            print("wtf 1")
+                        else:
+                            print("wtf 2")
+                        return 0.0
             return float(extension.text)
 
         data = defaultdict(list)
