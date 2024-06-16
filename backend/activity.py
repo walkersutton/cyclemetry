@@ -16,6 +16,10 @@ ATTRIBUTE_MAP = {
     "power": "power",
     "{http://www.garmin.com/xmlschemas/GpxExtensions/v3}Temperature": "temperature",
 }
+PARENT_TAGS = {
+    "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}TrackPointExtension"
+}
+
 
 class Activity:
     def __init__(self, filename):
@@ -24,7 +28,7 @@ class Activity:
         self.parse_data()
 
     def set_valid_attributes(self):
-        attributes = set()
+        present_attributes = set()
         attribute_map = ATTRIBUTE_MAP
         tag_map = {}
         track_points = self.gpx.tracks[0].segments[0].points
@@ -36,44 +40,48 @@ class Activity:
             track_points[-1],
         ]
         for track_point in track_points:
-            (
-                attributes.update({constant.ATTR_COURSE, constant.ATTR_SPEED})
-                if track_point.latitude and track_point.longitude
-                else None
-            )
-            attributes.add(constant.ATTR_TIME) if track_point.time else None
-            attributes.add(constant.ATTR_ELEVATION) if track_point.elevation else None
+            if track_point.latitude and track_point.longitude:
+                present_attributes.update({constant.ATTR_COURSE, constant.ATTR_SPEED})
+            if track_point.time:
+                present_attributes.add(constant.ATTR_TIME)
+            if track_point.elevation:
+                present_attributes.add(constant.ATTR_ELEVATION)
+
             for ii, extension in enumerate(track_point.extensions):
                 if extension.tag in attribute_map.keys():
-                    attributes.add(attribute_map[extension.tag])
-                    tag_map[attribute_map[extension.tag]] = [ii]
+                    present_attributes.add(attribute_map[extension.tag])
+                    tag_map[attribute_map[extension.tag]] = ((ii, extension.tag),)
                 for jj, child_extension in enumerate(extension):
                     if child_extension.tag in attribute_map.keys():
-                        attributes.add(attribute_map[child_extension.tag])
-                        tag_map[attribute_map[child_extension.tag]] = [ii, jj]
-            if {constant.ATTR_COURSE, constant.ATTR_ELEVATION}.issubset(attributes):
-                attributes.add(constant.ATTR_GRADIENT)
+                        present_attributes.add(attribute_map[child_extension.tag])
+                        tag_map[attribute_map[child_extension.tag]] = (
+                            (ii, extension.tag),
+                            (jj, child_extension.tag),
+                        )
 
-        self.valid_attributes = list(attributes)
+        if {constant.ATTR_COURSE, constant.ATTR_ELEVATION}.issubset(present_attributes):
+            present_attributes.add(constant.ATTR_GRADIENT)
+
+        self.valid_attributes = list(present_attributes)
         self.tag_map = tag_map
 
     def parse_data(self):
-        def parse_attribute(index: tuple[int], trackpoint: gpxpy.gpx.GPXTrackPoint):
-            try:
-                value = trackpoint.extensions[index[0]]
-                if len(index) == 2:
-                    value = value[index[1]]  # index indicates it's a child extension
-            except Exception as e:
-                # print("probably an issue with power :(")
-                # print(e)
-                f = 0.0
-            try:
-                f = float(value.text)
-            except Exception as e:
-                # print("probably an issue with power :(")
-                # print(e)
-                f = 0.0
-            return f
+        def parse_attribute(
+            tag_map: tuple[int, str], trackpoint: gpxpy.gpx.GPXTrackPoint
+        ):
+            extension = None
+            for index, tag in tag_map:
+                extensions = extension if extension else trackpoint.extensions
+                if index < len(extensions) and tag == extensions[index].tag:
+                    extension = extensions[index]
+                else:
+                    for e in extensions:
+                        if e.tag == tag:
+                            extension = e
+                            break
+                    if extension is None:
+                        return -1.0 if index < len(extensions) else -2.0
+            return float(extension.text)
 
         data = defaultdict(list)
         track_segment = self.gpx.tracks[0].segments[0]
