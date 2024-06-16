@@ -1,20 +1,17 @@
 {
-  "cadence": {
-    "hide": true
-  },
   "course": {
     "dpi": 300,
     "x": -64,
     "y": -87,
     "hide": false,
     "line_width": 1.75,
-    "point_weight": 80,
+    "point_weight": 150,
     "width": 480,
     "height": 630,
     "color": "#f4f4f4",
     "margin": 0.1,
     "sub_point": {
-      "point_weight": 345,
+      "point_weight": 415,
       "opacity": 0.52
     },
     "rotation": 0
@@ -35,15 +32,16 @@
       "height": 100,
       "fill_opacity": 0.65,
       "rotation": 0,
-      "point_weight": 14,
+      "point_weight": 50,
       "point_label": {
+        "hide": true,
         "color": "#ffffffc8",
         "font": "Furore.otf",
         "round": 0,
         "x_offset": 20,
         "y_offset": 20,
         "font_size": 12.5,
-        "units": ["metric", "imperial"]
+        "units": []
       }
     }
   },
@@ -55,22 +53,43 @@
     "font_size": 192,
     "suffix": ""
   },
-  "heartrate": {
-	"color": "#ffffff96",
-	"x": 80,
-    "y": 1414,
-	"font_size": 255,
-	"hide": false,
-	"suffix": ""
-  },
-  "power": {
-    "color": "#ffffff96",
-    "x": 80,
-	"y": 1109,
-    "font_size": 255,
-    "hide": false,
-    "suffix": ""
-  },
+  "labels": [
+    {
+      "color": "#ffffff96",
+      "text": "MPH",
+      "x": 100,
+      "y": 700,
+      "hide": false,
+      "font_size": 60
+    },
+    {
+      "color": "#ffffff96",
+      "text": "PWR",
+      "x": 100,
+      "y": 990,
+      "hide": false,
+      "font_size": 60,
+      "opacity": 0.5
+    },
+    {
+      "color": "#ffffff96",
+      "text": "RPM",
+      "x": 100,
+      "y": 1280,
+      "hide": false,
+      "font_size": 60,
+      "opacity": 0.5
+    },
+    {
+      "color": "#ffffff96",
+      "text": "BPM",
+      "x": 100,
+      "y": 1570,
+      "hide": false,
+      "font_size": 60,
+      "opacity": 0.5
+    }
+  ],
   "speed": {
     "hide": false,
     "opacity": 0.3,
@@ -78,11 +97,35 @@
       "color": "#ffffff96",
       "opacity": 0.3,
       "x": 80,
-      "y": 804,
-      "font_size": 255,
+      "y": 730,
+      "font_size": 220,
       "hide": false,
       "suffix": ""
     }
+  },
+  "power": {
+    "color": "#ffffff96",
+    "x": 80,
+    "y": 1020,
+    "font_size": 220,
+    "hide": false,
+    "suffix": ""
+  },
+  "cadence": {
+    "color": "#ffffff96",
+    "x": 80,
+    "y": 1310,
+    "font_size": 220,
+    "hide": false,
+    "suffix": ""
+  },
+  "heartrate": {
+    "color": "#ffffff96",
+    "x": 80,
+    "y": 1600,
+    "font_size": 220,
+    "hide": false,
+    "suffix": ""
   },
   "time": {
     "hide": true
@@ -105,33 +148,5 @@
     "width": 3840,
     "quicktime_compatible": true,
     "output_filename": "out.mov"
-  },
-  "labels": [
-    {
-      "color": "#ffffff96",
-      "text": "MPH",
-      "x": 100,
-      "y": 775,
-      "hide": false,
-      "font_size": 70
-    },
-    {
-      "color": "#ffffff96",
-      "text": "PWR",
-      "x": 100,
-      "y": 1080,
-      "hide": false,
-      "font_size": 70,
-      "opacity": 0.5
-    },
-    {
-      "color": "#ffffff96",
-      "text": "BPM",
-      "x": 100,
-      "y": 1385,
-      "hide": false,
-      "font_size": 70,
-      "opacity": 0.5
-    }
-  ]
+  }
 }
