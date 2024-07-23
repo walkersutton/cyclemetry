@@ -10,8 +10,7 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
   const config = {
     use_name_attributes: false,
     theme: "bootstrap4",
-    disable_edit_json: false,
-    // once json config uploader is working, we can disable editing json directly
+    disable_edit_json: true,
     disable_properties: true,
     disable_collapse: false,
     schema: schema,
