@@ -16,6 +16,9 @@
 - Check out the community [templates](https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md)
 - [Share](https://github.com/walkersutton/cyclemetry/pulls) your templates for others to use
 
+## Demo
+[Cyclemetry Demo](https://walkersutton.com/cyclemetry/)
+
 ## Generating Video Overlays
 
 I'm currently building a web app that will enable you to export video overlays. Until then, check out the backend [README](https://github.com/walkersutton/cyclemetry/blob/main/backend/README.md) for instructions on using CLI to export video overlays.
