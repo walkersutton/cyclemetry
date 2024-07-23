@@ -6,7 +6,7 @@
 // * units -> list[str
 //     ]
 // * dpi, x, y, width, height, rotation, x_offset, y_offset, round, fps -> int
-// * line_width, point_weight, margin, opacity, fill_opacity, font_size -> float
+// * line_width, point_weight, margin, opacity, fill_opacity, font_size -> number
 // * color -> string(hex or ______)
 // * suffix, output_filename, text -> str
 // * quicktime_compatible -> true
@@ -46,7 +46,7 @@ function deepCopy(obj) {
 const opacity = {
   minimum: 0.0,
   maxiumum: 1.0,
-  type: "float",
+  type: "number",
   description:
     "how opaque the text is. 0 is transparent, 1 is not transparent at all",
 };
@@ -115,7 +115,7 @@ const base = {
     font_size: {
       title: "font size",
       minimum: 1.0,
-      type: "float",
+      type: "number",
     },
     opacity: { ...opacity },
   },
@@ -247,7 +247,7 @@ const graph = {
       properties: {
         width: {
           default: 1.75,
-          type: "float",
+          type: "number",
           description: "thickness of lines drawn",
         },
         opacity: { ...opacity },
@@ -258,7 +258,7 @@ const graph = {
     subPoint: deepCopy(point),
     margin: {
       required: false,
-      type: "float",
+      type: "number",
       description: "amount of marign surrounding graphic",
     },
     rotation: {
