@@ -32,7 +32,7 @@ function App() {
               setImageFilename={handleImageFileStateChange}
             />
           </div>
-          <div className="col-9 bg-dark">
+          <div className="col-9">
             <PreviewPanel
               gpxFile={gpxFile}
               imageFilename={imageFilename}

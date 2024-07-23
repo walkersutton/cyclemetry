@@ -47,6 +47,13 @@ function FileUpload({ type, file, setFile }) {
     }
   };
 
+  const mockit = (event) => {
+    const mockFile = new File([], "sweard20.gpx", {
+      type: "application/gpx+xml",
+    });
+    setFile(mockFile);
+  };
+
   return (
     <div className="file-upload-container">
       <input
@@ -63,6 +70,17 @@ function FileUpload({ type, file, setFile }) {
       >
         {file ? file.name : "upload " + config.name + " file"}
       </label>
+      {file === null && (
+        <div className="pt-4">
+          <p>or</p>
+          <button
+            onClick={mockit}
+            className="file-upload-button"
+          >
+            {file ? null : "use a playground " + config.name + " file"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

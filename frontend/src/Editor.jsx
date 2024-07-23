@@ -58,6 +58,7 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
         .catch((error) => {
           console.log("Editor:generateDemoFrame");
           console.log(error);
+          alert("invalid config :(");
         });
     }
   };

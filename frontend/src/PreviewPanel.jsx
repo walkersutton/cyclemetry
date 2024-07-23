@@ -1,15 +1,11 @@
 import React from "react";
 import FileUpload from "./FileUpload";
 
-function PreviewPanel({
-  gpxFile,
-  handleGpxFileStateChange,
-  imageFilename,
-}) {
+function PreviewPanel({ gpxFile, handleGpxFileStateChange, imageFilename }) {
   return imageFilename ? (
     // TODO: this image needs to stay on the screen as user scrolls down to modify other template config. figure that out
     <img
-      className="img-fluid"
+      className="img-fluid sticky-top pt-4 bg-dark"
       src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFilename}`}
       alt="generated overlay"
     />
