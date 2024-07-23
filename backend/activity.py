@@ -81,9 +81,11 @@ class Activity:
                             break
                     if extension is None:
                         if index < len(extensions):
-                            print("wtf 1")
+                            pass
+                            # print("wtf 1")
                         else:
-                            print("wtf 2")
+                            pass
+                            # print("wtf 2")
                         return 0.0
             return float(extension.text)
 

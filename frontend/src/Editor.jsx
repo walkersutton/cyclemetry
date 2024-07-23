@@ -15,11 +15,39 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
     schema: schema,
   };
 
-  const generateDemoFrame = async (configFile, gpxFile) => {
-    if (configFile && gpxFile) {
+  const generateDemoFrame = async (config, gpxFile) => {
+    if (config && gpxFile) {
+      const configJson = JSON.stringify(config);
+      // TODO - remove this shitty hack of an upload pattern
+      const configFilename = "myconfig.json";
+      const configFile = new File([configJson], configFilename, {
+        type: "application/json",
+      });
+      const postData = new FormData();
+      postData.append("file", configFile);
+      await axios
+        .post(process.env.REACT_APP_FLASK_SERVER_URL + "/upload", postData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        .then((response) => {
+          console.log("good config file upload");
+          console.log(response);
+        })
+        .catch((error) => {
+          console.log(
+            "Editor:generateDemoFrame attempting to upload config file"
+          );
+          console.log(error);
+        });
+
       const data = {
         config_filename: "./tmp/" + configFile.name,
         gpx_filename: "./tmp/" + gpxFile.name,
+        // TODO fix this with backend - currently don't want to break docker image
+        // config_filename: configFilename,
+        // gpx_filename: gpxFile.name,
       };
       await axios
         .post(process.env.REACT_APP_FLASK_SERVER_URL + "/demo", data)
@@ -35,9 +63,10 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
 
   useEffect(() => {
     const editor = new JSONEditor(editorRef.current, config);
-
+    // TODO
+    // add override to upload config from file system
     editor.on("change", function () {
-      generateDemoFrame(configFile, gpxFile);
+      generateDemoFrame(editor.getValue(), gpxFile);
       // document.querySelector('#input').value = JSON.stringify(editor.getValue())
     });
     return () => {

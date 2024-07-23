@@ -155,8 +155,9 @@ def template_dicts(filename):
     # configs = raw_template(filename) TODO just for templates in tmp folder
     # TODO CLEAN
     configs = None
-    # TODO improve filename path finding here
-    filename = "./../templates/" + filename
+    # this handles both locally running with templates in template folder and api call when templates are stored in tmp directory. TODO handle more gracefully
+    if not os.path.exists(filename):
+        filename = "./../templates/" + filename
     with open(filename, "r") as file:
         configs = json.load(file)
     # TODO CLEAN

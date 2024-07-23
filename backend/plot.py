@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 
-mpl.use('agg')
+mpl.use("agg")
 
 import numpy as np
 from PIL import Image

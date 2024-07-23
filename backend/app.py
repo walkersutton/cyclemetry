@@ -56,9 +56,7 @@ def upload():
 
 @app.route("/demo", methods=["POST"])
 def demo():
-
     data = request.json
-
     if (
         data
         and "config_filename" in data
@@ -68,6 +66,9 @@ def demo():
     ):
         config_filename = data["config_filename"]
         gpx_filename = data["gpx_filename"]
+        # TODO fix this file storage issue w/ frontend demo call
+        # config_filename = "tmp/" + data["config_filename"]
+        # gpx_filename = "tmp/" + data["gpx_filename"]
 
         scene = demo_frame(
             gpx_filename, config_filename, 20, True

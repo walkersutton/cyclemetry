@@ -14,7 +14,7 @@ $ cd cyclemetry/backend
 $ python3 -m venv venv
 $ source venv/bin/activate
 (venv) $ pip install -r requirements.txt
-(venv) $ flask run
+(venv) $ flask run -p 5001
 ```
 
 # CLI

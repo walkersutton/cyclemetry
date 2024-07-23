@@ -2,8 +2,6 @@ import React from "react";
 import FileUpload from "./FileUpload";
 
 function PreviewPanel({
-  configFile,
-  handleConfigFileStateChange,
   gpxFile,
   handleGpxFileStateChange,
   imageFilename,
@@ -22,11 +20,6 @@ function PreviewPanel({
         type="gpx"
         file={gpxFile}
         setFile={handleGpxFileStateChange}
-      />
-      <FileUpload
-        type="config"
-        file={configFile}
-        setFile={handleConfigFileStateChange}
       />
     </div>
   );

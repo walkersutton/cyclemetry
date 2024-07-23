@@ -34,10 +34,8 @@ function App() {
           </div>
           <div className="col-9 bg-dark">
             <PreviewPanel
-              configFile={configFile}
               gpxFile={gpxFile}
               imageFilename={imageFilename}
-              handleConfigFileStateChange={handleConfigFileStateChange}
               handleGpxFileStateChange={handleGpxFileStateChange}
             />
           </div>
