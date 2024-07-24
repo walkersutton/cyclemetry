@@ -44,6 +44,7 @@ function deepCopy(obj) {
   return objCopy;
 }
 const opacity = {
+  default: 1.0,
   minimum: 0.0,
   maxiumum: 1.0,
   type: "number",
@@ -80,6 +81,18 @@ const scene = {
       description:
         "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
     },
+    start: {
+      type: "integer",
+      default: 0,
+      minimum: 0,
+      description: "second to start render from (affects plots for demo)",
+    },
+    end: {
+      type: "integer",
+      default: 1000,
+      minimum: 0,
+      description: "second to end render from (affects plots for demo)",
+    },
     // outputFilename: {
     //   title: "Rendered filename",
     //   default: "out.mov",
@@ -90,18 +103,16 @@ const scene = {
 };
 
 const base = {
-  title: "base values",
+  title: "global values", // title only used for global, pretty sure
   type: "object",
   required: [],
   properties: {
     round: {
-      title: "value rounding",
       type: "integer",
       minimum: 0,
       description: "number of decimals to round values to",
     },
     color: {
-      title: "global color",
       type: "string",
       format: "color",
       description:
@@ -109,10 +120,11 @@ const base = {
     },
     font: {
       type: "string",
-      enum: ["Arial"],
+      enum: ["arial.otf", "Evogria.otf"], // "Arial"
       description: "the font type to render this text in",
     },
     font_size: {
+      default: 12,
       title: "font size",
       minimum: 1.0,
       type: "number",
@@ -125,6 +137,7 @@ let standardText = deepCopy(base);
 standardText["title"] = "Standard Text";
 standardText["required"].push(...["x", "y"]);
 const standardTextExtension = {
+  // probbaly can abstract out x/y to a position object and .. into the dict
   x: {
     type: "integer",
     default: 0,
@@ -270,17 +283,48 @@ const graph = {
   },
 };
 
+const valueExtension = {
+  value: {
+    type: "string",
+    enum: ["cadence", "power", "speed"],
+  },
+};
+
+const values = {
+  type: "array",
+  required: [],
+  items: {
+    properties: {
+      ...standardText["properties"],
+      ...valueExtension,
+    },
+  },
+};
+
+// const labels = {
+//   type: "array",
+//   required: [],
+//   properties: {
+//     hide: {
+//       type: "boolean",
+//       default: true,
+//     },
+//   },
+// };
+
 const schema = {
   title: "root schema",
   type: "object",
-  required: ["scene", "base"],
+  required: ["scene"],
   properties: {
     scene: scene,
-    base: base,
-    standardText: standardText,
-    labelText: labelText,
-    point: point,
-    graph: graph,
+    global: base,
+    // standardText: standardText,
+    // labelText: labelText,
+    // point: point,
+    // graph: graph,
+    // labels: labels,
+    values: values,
   },
 };
 

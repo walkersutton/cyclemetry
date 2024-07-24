@@ -3,7 +3,8 @@ import { JSONEditor } from "@json-editor/json-editor";
 import axios from "axios";
 
 // made a hack schema to get UI working - TODO fix how backend config is structured
-import schema from "./config_schema_hack.jsx";
+// import schema from "./config_schema_hack.jsx";
+import schema from "./config_schema.jsx";
 
 function Editor({ configFile, gpxFile, setImageFilename }) {
   const editorRef = useRef(null);

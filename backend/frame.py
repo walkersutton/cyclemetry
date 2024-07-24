@@ -72,45 +72,53 @@ class Frame:
 
     def draw(self, configs, figures):
         img = Image.new("RGBA", (self.width, self.height))
-        for attribute in self.attributes:
-            config = configs[attribute]
-            if "hide" not in config.keys() or not config["hide"]:
-                if any(elem in config.keys() for elem in {"imperial", "metric"}):
-                    if "imperial" in config.keys():
-                        value = getattr(self, attribute)
-                        if attribute == constant.ATTR_SPEED:
-                            value *= constant.MPH_CONVERSION
-                        elif attribute == constant.ATTR_ELEVATION:
-                            value *= constant.FT_CONVERSION
-                        img = self.draw_value(img, value, config["imperial"])
-                    if "metric" in config.keys():
-                        value = getattr(self, attribute)
-                        if attribute == constant.ATTR_SPEED:
-                            value *= constant.KMH_CONVERSION
-                        img = self.draw_value(img, value, config["metric"])
-                else:
-                    value = getattr(self, attribute)
-                    if attribute == constant.ATTR_COURSE:
-                        img = self.draw_figure(
-                            img, config, attribute, figures[attribute]
-                        )
-                    elif attribute == constant.ATTR_ELEVATION:
-                        img = self.draw_figure(
-                            img,
-                            config["profile"],
-                            attribute,
-                            figures[attribute],
-                            fps=configs["scene"]["fps"],
-                        )
-                    else:
-                        if attribute == constant.ATTR_TIME:
-                            # TODO - try to use timezone instead of offset
-                            value += timedelta(hours=config["hours_offset"])
-                            value = value.strftime(config["format"])
-                        img = self.draw_value(img, value, config)
-        for label in self.labels:
-            if "hide" not in label.keys() or not label["hide"]:
-                img = self.draw_value(img, label["text"], label)
+        for value_config in configs["values"]:
+            print("HIHIHHIHIIH")
+            print(value_config)
+            attribute = value_config["value"]
+            if attribute in self.valid_attributes:
+                # TODO might need to perform some conversion
+                value = getattr(self, attribute)
+                img = self.draw_value(img, value, value_config)
+        # for attribute in self.valid_attributes:
+        #     if attribute in configs.keys():
+        #         config = configs[attribute]
+        #         if any(elem in config.keys() for elem in {"imperial", "metric"}):
+        #             if "imperial" in config.keys():
+        #                 value = getattr(self, attribute)
+        #                 if attribute == constant.ATTR_SPEED:
+        #                     value *= constant.MPH_CONVERSION
+        #                 elif attribute == constant.ATTR_ELEVATION:
+        #                     value *= constant.FT_CONVERSION
+        #                 img = self.draw_value(img, value, config["imperial"])
+        #             if "metric" in config.keys():
+        #                 value = getattr(self, attribute)
+        #                 if attribute == constant.ATTR_SPEED:
+        #                     value *= constant.KMH_CONVERSION
+        #                 img = self.draw_value(img, value, config["metric"])
+        #         else:
+        #             value = getattr(self, attribute)
+        #             if attribute == constant.ATTR_COURSE:
+        #                 img = self.draw_figure(
+        #                     img, config, attribute, figures[attribute]
+        #                 )
+        #             elif attribute == constant.ATTR_ELEVATION:
+        #                 img = self.draw_figure(
+        #                     img,
+        #                     config["profile"],
+        #                     attribute,
+        #                     figures[attribute],
+        #                     fps=configs["scene"]["fps"],
+        #                 )
+        #             else:
+        #                 if attribute == constant.ATTR_TIME:
+        #                     # TODO - try to use timezone instead of offset
+        #                     value += timedelta(hours=config["hours_offset"])
+        #                     value = value.strftime(config["format"])
+        #                 img = self.draw_value(img, value, config)
+        # if hasattr(self, "labels"):
+        #     for label in self.labels:
+        #         img = self.draw_value(img, label["text"], label)
         return img
 
     def profile_label_text(self, config):
