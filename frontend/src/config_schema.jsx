@@ -53,7 +53,7 @@ const opacity = {
 };
 const scene = {
   type: "object",
-  required: [],
+  required: ["fps", "height", "width"],
   properties: {
     fps: {
       type: "integer",
@@ -89,7 +89,7 @@ const scene = {
     },
     end: {
       type: "integer",
-      default: 1000,
+      default: 60,
       minimum: 0,
       description: "second to end render from (affects plots for demo)",
     },
@@ -311,7 +311,7 @@ const labels = {
 };
 
 const schema = {
-  title: "root schema",
+  title: "Cycl schema",
   type: "object",
   required: ["scene"],
   properties: {

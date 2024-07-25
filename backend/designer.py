@@ -42,24 +42,26 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     # right side of browser shows updated frame
     # should be accessed simply using ./demo or a similary simple command
 
-    spec = {"start", "end"}
-
+    configs = build_configs(template_filename)
     activity = Activity(gpx_filename)
-    template = build_configs(template_filename)
 
-    scene = Scene(activity, template)
-    # TODO start/end should be optional
-    if "start" in spec:
-        start = scene.template["scene"]["start"]
+    start = configs["scene"]["start"] if "start" in configs["scene"] else 0
+
+    if "end" in configs["scene"]:
+        end = configs["scene"]["end"]
     else:
-        pass
-    if "end" in spec:
-        end = scene.template["scene"]["end"]
-    else:
-        pass
+        attributes = activity.valid_attributes
+        if attributes:
+            end = len(getattr(activity, attributes[0]))
+        else:
+            print("wtf")
+            end = 69
+
     activity.trim(start, end)
-    activity.interpolate(scene.fps)
-    if "plots" in spec:
+    activity.interpolate(configs["scene"]["fps"])
+    scene = Scene(activity, configs)
+
+    if "plots" in configs.keys():
         # TODO maybe a for plot in plots
         scene.build_figures()
     scene.render_demo(end - start, second)
@@ -69,11 +71,7 @@ def demo_frame(gpx_filename, template_filename, second, headless):
 
 
 if __name__ == "__main__":
-    test()
     exit()
-    gpx_filename = "pinosaltos.gpx"
-    template_filename = "safa_brian_a_4k.json"
-    # template_filename = "safa_brian_a_1280_720.json"
     second = (
         int(sys.argv[1]) if len(sys.argv) == 2 else 0
     )  # probably move this to the gui
