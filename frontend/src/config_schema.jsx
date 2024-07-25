@@ -137,8 +137,8 @@ const base = {
 
 let standardText = deepCopy(base);
 standardText["title"] = "Standard Text";
-standardText["required"].push(...["x", "y"]);
-standardText["defaultProperties"].push(...["x", "y"]);
+standardText["required"].push(...["x", "y", "font_size", "font"]);
+standardText["defaultProperties"].push(...["x", "y", "font_size", "font"]);
 const standardTextExtension = {
   // probbaly can abstract out x/y to a position object and .. into the dict
   x: {

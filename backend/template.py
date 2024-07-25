@@ -25,31 +25,33 @@ def components(template):
 
 
 def merge_configs(parent_config, child_config):
-    # TODO implement
-    pass
+    # not handling nested - not sure if will need to in the future
+    for k, v in parent_config.items():
+        if k not in child_config.keys():
+            child_config[k] = v
+    return child_config
 
 
 def build_configs(filename):
     # TODO CLEAN
     template = None
-    # this handles both locally running with templates in template folder and api call when templates are stored in tmp directory. TODO handle more gracefully
+    # TODO handle more gracefully
+    # this handles both locally running with templates in template folder and api call when templates are stored in tmp directory.
     if not os.path.exists(filename):
         filename = "./../templates/" + filename
     with open(filename, "r") as f:
         template = json.load(f)
 
     configs = {}
-    for k, v in template.items():
-        if k == "scene":
-            configs[k] = v
-        elif k == "global":
-            pass
-        else:
-            if len(v) > 0:
-                configs[k] = []
-                for obj in v:
-                    configs[k].append(obj)
-                    # TODO configs[k].append(merge_configs(global_config, obj))
+    global_config = template["global"]
+    for clas, config in template.items():
+        if clas == "scene":
+            configs[clas] = config
+        elif clas in ("values", "labels", "plots"):
+            if len(config) > 0:
+                configs[clas] = []
+                for sub_config in config:
+                    configs[clas].append(merge_configs(global_config, sub_config))
     return configs
 
     configs["scene"] = template["scene"]
