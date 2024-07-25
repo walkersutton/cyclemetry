@@ -71,54 +71,65 @@ class Frame:
         return img
 
     def draw(self, configs, figures):
+        def convert_value(value, attribute, config):
+            unit = config["unit"]
+            match attribute:
+                case constant.ATTR_SPEED:
+                    if unit == "imperial":
+                        value *= constant.MPH_CONVERSION
+                    elif unit == "metric":
+                        value *= constant.KMH_CONVERSION
+                    else:
+                        print("wtf is that unit")
+                case constant.ATTR_ELEVATION:
+                    if unit == "imperial":
+                        value *= constant.FT_CONVERSION
+                    elif unit == "metric":
+                        pass
+                    else:
+                        print("wtf is that unit")
+                case constant.ATTR_TIME:
+                    # TODO - try to use timezone instead of offset. maybe? idk if this is a good TODO
+                    hours_offset = config["hours_offset"]
+                    time_format = config["time_format"]
+                    value += timedelta(hours=hours_offset)
+                    value = value.strftime(time_format)
+            return value
+
         img = Image.new("RGBA", (self.width, self.height))
-        for value_config in configs["values"]:
-            print("HIHIHHIHIIH")
-            print(value_config)
-            attribute = value_config["value"]
-            if attribute in self.valid_attributes:
-                # TODO might need to perform some conversion
-                value = getattr(self, attribute)
-                img = self.draw_value(img, value, value_config)
-        # for attribute in self.valid_attributes:
-        #     if attribute in configs.keys():
-        #         config = configs[attribute]
-        #         if any(elem in config.keys() for elem in {"imperial", "metric"}):
-        #             if "imperial" in config.keys():
-        #                 value = getattr(self, attribute)
-        #                 if attribute == constant.ATTR_SPEED:
-        #                     value *= constant.MPH_CONVERSION
-        #                 elif attribute == constant.ATTR_ELEVATION:
-        #                     value *= constant.FT_CONVERSION
-        #                 img = self.draw_value(img, value, config["imperial"])
-        #             if "metric" in config.keys():
-        #                 value = getattr(self, attribute)
-        #                 if attribute == constant.ATTR_SPEED:
-        #                     value *= constant.KMH_CONVERSION
-        #                 img = self.draw_value(img, value, config["metric"])
-        #         else:
-        #             value = getattr(self, attribute)
-        #             if attribute == constant.ATTR_COURSE:
-        #                 img = self.draw_figure(
-        #                     img, config, attribute, figures[attribute]
-        #                 )
-        #             elif attribute == constant.ATTR_ELEVATION:
-        #                 img = self.draw_figure(
-        #                     img,
-        #                     config["profile"],
-        #                     attribute,
-        #                     figures[attribute],
-        #                     fps=configs["scene"]["fps"],
-        #                 )
-        #             else:
-        #                 if attribute == constant.ATTR_TIME:
-        #                     # TODO - try to use timezone instead of offset
-        #                     value += timedelta(hours=config["hours_offset"])
-        #                     value = value.strftime(config["format"])
-        #                 img = self.draw_value(img, value, config)
-        # if hasattr(self, "labels"):
-        #     for label in self.labels:
-        #         img = self.draw_value(img, label["text"], label)
+        if "values" in configs.keys():
+            for config in configs["values"]:
+                attribute = config["value"]
+                if attribute in self.valid_attributes:
+                    value = getattr(self, attribute)
+                    if (
+                        "unit" in config.keys()
+                        or ("hours_offset" and "time_format") in config.keys()
+                    ):
+                        value = convert_value(value, attribute, config)
+                    img = self.draw_value(img, value, config)
+        if "labels" in configs.keys():
+            for config in configs["labels"]:
+                # TODO probably can get rid of storing labels on the frame if all info we need is in config
+                # also, this is static, so probably don't need to do this work N times if copying is more performant
+                # for label in self.labels:
+                img = self.draw_value(img, config["text"], config)
+        if "plots" in configs.keys():
+            for config in configs["plots"]:
+                attribute = config["value"]
+                if attribute in self.valid_attributes:
+                    if attribute == constant.ATTR_COURSE:
+                        img = self.draw_figure(
+                            img, config, attribute, figures[attribute]
+                        )
+                    elif attribute == constant.ATTR_ELEVATION:
+                        img = self.draw_figure(
+                            img,
+                            config["profile"],
+                            attribute,
+                            figures[attribute],
+                            fps=configs["scene"]["fps"],
+                        )
         return img
 
     def profile_label_text(self, config):

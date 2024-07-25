@@ -120,7 +120,7 @@ const base = {
     },
     font: {
       type: "string",
-      enum: ["arial.otf", "Evogria.otf"], // "Arial"
+      enum: ["Arial", "Evogria.otf"],
       description: "the font type to render this text in",
     },
     font_size: {
@@ -286,7 +286,7 @@ const graph = {
 const valueExtension = {
   value: {
     type: "string",
-    enum: ["cadence", "power", "speed"],
+    enum: ["cadence", "power", "speed"], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
   },
 };
 
@@ -294,23 +294,21 @@ const values = {
   type: "array",
   required: [],
   items: {
+    title: "value",
     properties: {
       ...standardText["properties"],
       ...valueExtension,
     },
   },
 };
-
-// const labels = {
-//   type: "array",
-//   required: [],
-//   properties: {
-//     hide: {
-//       type: "boolean",
-//       default: true,
-//     },
-//   },
-// };
+const labels = {
+  type: "array",
+  required: [],
+  items: {
+    title: "label",
+    properties: labelText["properties"],
+  },
+};
 
 const schema = {
   title: "root schema",
@@ -323,7 +321,7 @@ const schema = {
     // labelText: labelText,
     // point: point,
     // graph: graph,
-    // labels: labels,
+    labels: labels,
     values: values,
   },
 };
