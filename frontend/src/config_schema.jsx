@@ -54,6 +54,7 @@ const opacity = {
 const scene = {
   type: "object",
   required: ["fps", "height", "width"],
+  defaultProperties: ["fps", "height", "width"],
   properties: {
     fps: {
       type: "integer",
@@ -106,6 +107,7 @@ const base = {
   title: "global values", // title only used for global, pretty sure
   type: "object",
   required: [],
+  defaultProperties: [],
   properties: {
     round: {
       type: "integer",
@@ -136,6 +138,7 @@ const base = {
 let standardText = deepCopy(base);
 standardText["title"] = "Standard Text";
 standardText["required"].push(...["x", "y"]);
+standardText["defaultProperties"].push(...["x", "y"]);
 const standardTextExtension = {
   // probbaly can abstract out x/y to a position object and .. into the dict
   x: {
@@ -160,7 +163,8 @@ standardText["properties"] = {
 
 let labelText = deepCopy(standardText);
 labelText["title"] = "Label Text";
-labelText["required"] = ["text"];
+labelText["required"].push(...["text"]);
+labelText["defaultProperties"].push(...["text"]);
 const labelTextExtension = {
   text: {
     type: "string",
@@ -172,9 +176,25 @@ labelText["properties"] = {
   ...labelTextExtension,
 };
 
+let valueText = deepCopy(standardText);
+valueText["title"] = "Value Text";
+valueText["required"].push(...["value"]);
+valueText["defaultProperties"].push(...["value"]);
+const valueTextExtension = {
+  value: {
+    type: "string",
+    enum: ["cadence", "power", "speed"], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
+  },
+};
+valueText["properties"] = {
+  ...valueText["properties"],
+  ...valueTextExtension,
+};
+
 let pointLabel = deepCopy(base);
 pointLabel["title"] = "point label";
 pointLabel["required"].push(...["xOffset", "yOffset"]);
+pointLabel["defaultProperties"].push(...["xOffset", "yOffset"]);
 const pointLabelExtension = {
   xOffset: {
     default: 20,
@@ -197,6 +217,7 @@ pointLabel["properties"] = {
 const point = {
   type: "object",
   required: [],
+  defaultProperties: [],
   properties: {
     weight: {
       minimum: 0,
@@ -221,6 +242,7 @@ const point = {
 const graph = {
   type: "object",
   required: [],
+  defaultProperties: [],
   properties: {
     dpi: {
       default: 300,
@@ -283,32 +305,19 @@ const graph = {
   },
 };
 
-const valueExtension = {
-  value: {
-    type: "string",
-    enum: ["cadence", "power", "speed"], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
-  },
-};
-
 const values = {
   type: "array",
-  required: [],
-  items: {
-    title: "value",
-    properties: {
-      ...standardText["properties"],
-      ...valueExtension,
-    },
-  },
+  items: valueText,
 };
+
 const labels = {
   type: "array",
-  required: [],
-  items: {
-    title: "label",
-    properties: labelText["properties"],
-  },
+  items: labelText,
 };
+
+global = deepCopy(base);
+global["required"] = ["color"];
+global["defaultProperties"] = ["color"];
 
 const schema = {
   title: "Cycl schema",
@@ -316,7 +325,7 @@ const schema = {
   required: ["scene"],
   properties: {
     scene: scene,
-    global: base,
+    global: global,
     // standardText: standardText,
     // labelText: labelText,
     // point: point,
