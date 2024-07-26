@@ -20,28 +20,26 @@ function App() {
   };
 
   return (
-    <div>
-      <div className="container">
-        <h1 className="text-center py-4">cyclemetry</h1>
-        <FlaskServerStatus />
-        <div className="row">
-          <div className="col-3">
-            <Editor
-              configFile={configFile}
-              gpxFile={gpxFile}
-              setImageFilename={handleImageFileStateChange}
-            />
-          </div>
-          <div className="col-9">
-            <PreviewPanel
-              gpxFile={gpxFile}
-              imageFilename={imageFilename}
-              handleGpxFileStateChange={handleGpxFileStateChange}
-            />
-          </div>
+    <>
+      <FlaskServerStatus />
+      <main>
+        <div class="d-flex flex-column p-3" style={{ width: "200px;" }}>
+          <h1>Cyclemetry</h1>
+          <Editor
+            configFile={configFile}
+            gpxFile={gpxFile}
+            setImageFilename={handleImageFileStateChange}
+          />
         </div>
-      </div>
-    </div>
+        <div>
+          <PreviewPanel
+            gpxFile={gpxFile}
+            imageFilename={imageFilename}
+            handleGpxFileStateChange={handleGpxFileStateChange}
+          />
+        </div>
+      </main>
+    </>
   );
 }
 

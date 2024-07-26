@@ -54,6 +54,7 @@ const opacity = {
 const scene = {
   type: "object",
   required: ["fps", "height", "width"],
+  // for demo purposes, fps doesn't reallllly matter, but it's required to generate frame, so maybe we should think about setting a defualt fps so that people don't have to worry about it when generating demo stills
   defaultProperties: ["fps", "height", "width"],
   properties: {
     fps: {
@@ -320,7 +321,7 @@ global["required"] = ["color"];
 global["defaultProperties"] = ["color"];
 
 const schema = {
-  title: "Cycl schema",
+  title: "hidden using css",
   type: "object",
   required: ["scene"],
   properties: {

@@ -32,9 +32,19 @@ export default function FlaskServerStatus() {
 
   if (!state) {
     return (
-      <div>
-        <div className={`status-bar orange`}>Systems are booting up</div>
+      <div class="progress">
+        <div
+          class="progress-bar progress-bar-striped bg-warning"
+          role="progressbar"
+          style={{ width: "100%" }}
+          aria-valuenow="100"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        ></div>
       </div>
+      // <div>
+      //   <div className={`status-bar orange`}>Systems are booting up</div>
+      // </div>
     );
   }
 }
