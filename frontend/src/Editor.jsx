@@ -67,8 +67,6 @@ function Editor({ configFile, gpxFile, setImageFilename, setEditor }) {
   useEffect(() => {
     const editor = new JSONEditor(editorRef.current, config);
     setEditor(editor);
-    // TODO
-    // add override to upload config from file system
     editor.on("change", function () {
       generateDemoFrame(editor.getValue(), gpxFile);
       // document.querySelector('#input').value = JSON.stringify(editor.getValue())

@@ -34,6 +34,40 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const templateSchema = {
+    allowedType: "application/json",
+    extension: ".json",
+    inputId: "file-upload-template",
+  };
+
+  const uploadTemplate = (event) => {
+    // TODO make this a tooltip with react-bootstrap
+    // alert(
+    //   "uploading a template will overwrite your existing template configuration"
+    // );
+    const f = event.target.files[0];
+    if (f && f.type === templateSchema.allowedType) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const fileContent = e.target.result;
+        try {
+          const jsonContent = JSON.parse(fileContent);
+          editor.setValue(jsonContent);
+          // setConfigFile(f);
+          // having an issue where sometimes, before gpx file is set, template editor doesn't update values with uploaded tempalte values
+        } catch (error) {
+          console.error("Error parsing JSON:", error);
+        }
+      };
+      reader.onerror = function (e) {
+        console.error("Error reading file:", e.target.error);
+      };
+      reader.readAsText(f);
+    } else {
+      console.log("oh shit.");
+    }
+  };
+
   return (
     <>
       <FlaskServerStatus />
@@ -43,10 +77,19 @@ function App() {
             <a href="/" className="text-decoration-none text-dark">
               Cyclemetry
             </a>
-            <button type="button" className="btn btn-warning ms-4">
-              {/* warn user they will lose current template content if they upload  */}
+            <input
+              accept={templateSchema.extension}
+              type="file"
+              id={templateSchema.inputId}
+              className="file-input"
+              onChange={uploadTemplate}
+            />
+            <label
+              htmlFor={templateSchema.inputId}
+              className="btn btn-warning ms-4"
+            >
               Upload Template
-            </button>
+            </label>
             <button
               type="button"
               className="btn btn-primary ms-3"
