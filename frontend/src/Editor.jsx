@@ -6,7 +6,7 @@ import axios from "axios";
 // import schema from "./config_schema_hack.jsx";
 import schema from "./config_schema.jsx";
 
-function Editor({ configFile, gpxFile, setImageFilename }) {
+function Editor({ configFile, gpxFile, setImageFilename, setEditor }) {
   const editorRef = useRef(null);
   const config = {
     use_name_attributes: false,
@@ -66,6 +66,7 @@ function Editor({ configFile, gpxFile, setImageFilename }) {
 
   useEffect(() => {
     const editor = new JSONEditor(editorRef.current, config);
+    setEditor(editor);
     // TODO
     // add override to upload config from file system
     editor.on("change", function () {
