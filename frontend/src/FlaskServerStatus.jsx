@@ -32,9 +32,9 @@ export default function FlaskServerStatus() {
 
   if (!state) {
     return (
-      <div class="progress">
+      <div className="progress">
         <div
-          class="progress-bar progress-bar-animated progress-bar-striped bg-warning"
+          className="progress-bar progress-bar-animated progress-bar-striped bg-warning"
           role="progressbar"
           style={{ width: "100%" }}
           aria-valuenow="100"

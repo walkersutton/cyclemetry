@@ -38,18 +38,18 @@ function App() {
     <>
       <FlaskServerStatus />
       <main>
-        <div class="d-flex flex-column p-3" style={{ width: "200px;" }}>
+        <div className="d-flex flex-column p-3" style={{ width: "200px" }}>
           <h1>
             <a href="/" className="text-decoration-none text-dark">
               Cyclemetry
             </a>
-            <button type="button" class="btn btn-warning ms-4">
+            <button type="button" className="btn btn-warning ms-4">
               {/* warn user they will lose current template content if they upload  */}
               Upload Template
             </button>
             <button
               type="button"
-              class="btn btn-primary ms-3"
+              className="btn btn-primary ms-3"
               onClick={downloadTemplate}
             >
               Download Template
