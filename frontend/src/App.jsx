@@ -24,7 +24,11 @@ function App() {
       <FlaskServerStatus />
       <main>
         <div class="d-flex flex-column p-3" style={{ width: "200px;" }}>
-          <h1>Cyclemetry</h1>
+          <h1>
+            <a href="/" className="text-decoration-none text-dark">
+              Cyclemetry
+            </a>
+          </h1>
           <Editor
             configFile={configFile}
             gpxFile={gpxFile}

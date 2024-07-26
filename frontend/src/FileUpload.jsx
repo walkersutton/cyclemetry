@@ -65,18 +65,13 @@ function FileUpload({ type, file, setFile }) {
       />
       <label
         htmlFor={config.inputId}
-        className="file-upload-button"
-        style={{ backgroundColor: file ? "green" : "red" }}
+        className="btn btn-primary"
       >
         {file ? file.name : "upload " + config.name + " file"}
       </label>
       {file === null && (
         <div className="pt-4">
-          <p>or</p>
-          <button
-            onClick={mockit}
-            className="file-upload-button"
-          >
+          <button type="button" onClick={mockit} className="btn btn-primary">
             {file ? null : "use a playground " + config.name + " file"}
           </button>
         </div>

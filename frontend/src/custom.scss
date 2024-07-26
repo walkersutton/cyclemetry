@@ -86,24 +86,7 @@
   display: none;
 }
 
-// make this a css library button
-.file-upload-button {
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
-}
-
-.file-upload-button:hover {
-  background-color: #0056b3;
-}
-
 // bootstrap5 sidebar example css
-
 body {
   min-height: 100vh;
   min-height: -webkit-fill-available;

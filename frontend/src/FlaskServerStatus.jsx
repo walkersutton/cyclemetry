@@ -34,7 +34,7 @@ export default function FlaskServerStatus() {
     return (
       <div class="progress">
         <div
-          class="progress-bar progress-bar-striped bg-warning"
+          class="progress-bar progress-bar-animated progress-bar-striped bg-warning"
           role="progressbar"
           style={{ width: "100%" }}
           aria-valuenow="100"
