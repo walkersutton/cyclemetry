@@ -38,7 +38,7 @@ function App() {
     <>
       <FlaskServerStatus />
       <main>
-        <div className="d-flex flex-column p-3" style={{ width: "200px" }}>
+        <div className="d-flex flex-column p-3">
           <h1>
             <a href="/" className="text-decoration-none text-dark">
               Cyclemetry
