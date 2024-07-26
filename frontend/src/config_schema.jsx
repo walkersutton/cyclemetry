@@ -52,6 +52,8 @@ const opacity = {
     "how opaque the text is. 0 is transparent, 1 is not transparent at all",
 };
 const scene = {
+  title: "Scene",
+  description: "TODO description",
   type: "object",
   required: ["fps", "height", "width"],
   // for demo purposes, fps doesn't reallllly matter, but it's required to generate frame, so maybe we should think about setting a defualt fps so that people don't have to worry about it when generating demo stills
@@ -105,7 +107,7 @@ const scene = {
 };
 
 const base = {
-  title: "global values", // title only used for global, pretty sure
+  title: "base",
   type: "object",
   required: [],
   defaultProperties: [],
@@ -309,14 +311,17 @@ const graph = {
 const values = {
   type: "array",
   items: valueText,
+  title: "Values",
 };
 
 const labels = {
   type: "array",
+  title: "Labels",
   items: labelText,
 };
 
 global = deepCopy(base);
+global["title"] = "Globals";
 global["required"] = ["color"];
 global["defaultProperties"] = ["color"];
 
