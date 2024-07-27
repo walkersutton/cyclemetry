@@ -2,6 +2,8 @@ import React from "react";
 import FileUpload from "./FileUpload";
 
 import { Button } from "react-bootstrap";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
 function UploadTemplateButton({ editor }) {
   const templateSchema = {
@@ -10,10 +12,6 @@ function UploadTemplateButton({ editor }) {
     inputId: "file-upload-template",
   };
   const uploadTemplate = (event) => {
-    // TODO make this a tooltip with react-bootstrap
-    // alert(
-    //   "uploading a template will overwrite your existing template configuration"
-    // );
     const f = event.target.files[0];
     if (f && f.type === templateSchema.allowedType) {
       const reader = new FileReader();
@@ -45,9 +43,22 @@ function UploadTemplateButton({ editor }) {
         className="file-input"
         onChange={uploadTemplate}
       />
-      <label htmlFor={templateSchema.inputId} className="btn btn-warning ms-4">
-        Upload Template
-      </label>
+      <OverlayTrigger
+        overlay={
+          <Tooltip id="tooltip-top">
+            WARNING: Uploading a template will overwrite your existing
+            configuration
+          </Tooltip>
+        }
+        placement={"top"}
+      >
+        <label
+          htmlFor={templateSchema.inputId}
+          className="btn btn-warning ms-4"
+        >
+          Upload Template
+        </label>
+      </OverlayTrigger>
     </>
   );
 }
@@ -64,11 +75,7 @@ function DownloadTemplateButton({ editor }) {
     URL.revokeObjectURL(url);
   };
   return (
-    <Button
-      type="button"
-      className="btn btn-primary ms-3"
-      onClick={downloadTemplate}
-    >
+    <Button variant="primary" className="ms-3" onClick={downloadTemplate}>
       Download Template
     </Button>
   );
@@ -100,9 +107,7 @@ function PreviewPanel({
       )}
       <div>
         {/* use red to indicate user needs to perform some action */}
-        <Button type="button" className="btn btn-primary">
-          gpx: upload file
-        </Button>
+        <Button variant="primary">gpx: upload file</Button>
         <UploadTemplateButton editor={editor} />
         <DownloadTemplateButton editor={editor} />
       </div>
