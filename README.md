@@ -1,4 +1,11 @@
-# Cyclemetry - generate GPX video overlays
+<div align="center" style="text-align: center;">
+  <img src="https://i.imgur.com/O7GvHXd.png"/ style="width: 69px;">
+  <h1>cyclemetry</h1>
+  <p>
+    <b>cyclemetry is a tool for generating telemetry video overlays.</b>  
+  </p>
+</div>
+
 
 ![The_Tremola_by Safa_Brian](https://github.com/walkersutton/cyclemetry/assets/25811783/71aa4902-dd29-453f-b4a5-a87ddabd2437)
 
