@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 
-import Editor from "./Editor"; // Import the MyJsonEditor component
+import Editor from "./Editor";
 import PreviewPanel from "./PreviewPanel";
 import FlaskServerStatus from "./FlaskServerStatus";
+import logo from "./logo.webp";
 
 function App() {
   const [configFile, setConfigFile] = useState(null);
@@ -73,9 +74,10 @@ function App() {
       <FlaskServerStatus />
       <main>
         <div className="d-flex flex-column p-3">
-          <h1>
+          <div className="card bg-light p-3 mb-3">
             <a href="/" className="text-decoration-none text-dark">
-              Cyclemetry
+              <img src={logo} alt="Cyclemetry logo" className="logo" />
+              <strong>cyclemetry</strong>
             </a>
             <input
               accept={templateSchema.extension}
@@ -97,7 +99,7 @@ function App() {
             >
               Download Template
             </button>
-          </h1>
+          </div>
           <Editor
             configFile={configFile}
             gpxFile={gpxFile}
