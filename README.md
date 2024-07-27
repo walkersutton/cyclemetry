@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/O7GvHXd.png"/ style="width: 69px;">
   <h1>cyclemetry</h1>
   <p>
-    <b>cyclemetry is a tool for generating telemetry video overlays.</b>  
+    <b>cyclemetry is a tool for creating telemetry video overlays.</b>  
   </p>
 </div>
 
