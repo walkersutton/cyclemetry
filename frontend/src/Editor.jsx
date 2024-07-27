@@ -6,7 +6,7 @@ import axios from "axios";
 // import schema from "./config_schema_hack.jsx";
 import schema from "./config_schema.jsx";
 
-function Editor({ configFile, gpxFile, setImageFilename, setEditor }) {
+function Editor({ gpxFile, setImageFilename, setEditor }) {
   const editorRef = useRef(null);
   const config = {
     use_name_attributes: false,
@@ -74,7 +74,7 @@ function Editor({ configFile, gpxFile, setImageFilename, setEditor }) {
     return () => {
       editor.destroy(); // Destroy the JSONEditor instance when component unmounts
     };
-  }, [configFile, gpxFile]); // Empty dependency array to run the effect only once after the initial render
+  }, [gpxFile]); // Empty dependency array to run the effect only once after the initial render
 
   return <div ref={editorRef} />;
 }

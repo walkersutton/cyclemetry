@@ -7,14 +7,10 @@ import FlaskServerStatus from "./FlaskServerStatus";
 import logo from "./logo.webp";
 
 function App() {
-  const [configFile, setConfigFile] = useState(null);
   const [gpxFile, setGpxFile] = useState(null);
   const [imageFilename, setImageFilename] = useState(null);
   const [editor, setEditor] = useState(null);
 
-  const handleConfigFileStateChange = (state) => {
-    setConfigFile(state);
-  };
   const handleGpxFileStateChange = (state) => {
     setGpxFile(state);
   };
@@ -37,7 +33,6 @@ function App() {
             </a>
           </div>
           <Editor
-            configFile={configFile}
             gpxFile={gpxFile}
             setImageFilename={handleImageFileStateChange}
             setEditor={handleEditorStateChange}
