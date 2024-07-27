@@ -24,13 +24,14 @@ function App() {
   return (
     <>
       <FlaskServerStatus />
-      <main>
-        <div className="d-flex flex-column p-3">
+      <main className="p-3">
+        <div className="d-flex flex-column">
           <div className="card bg-light p-3 mb-3">
             <a href="/" className="text-decoration-none text-dark">
               <img src={logo} alt="Cyclemetry logo" className="logo" />
               <strong>cyclemetry</strong>
             </a>
+            {/* TODO maybe put gpx filename and template filename as statuses here to show what they're currently modifying */}
           </div>
           <Editor
             gpxFile={gpxFile}
@@ -38,7 +39,7 @@ function App() {
             setEditor={handleEditorStateChange}
           />
         </div>
-        <div>
+        <div id="currently-need-this-div-for-sticky-top-to-work">
           <PreviewPanel
             gpxFile={gpxFile}
             imageFilename={imageFilename}
