@@ -3,13 +3,14 @@ import React from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
+const templateSchema = {
+  allowedType: "application/json",
+  extension: ".json",
+  inputId: "file-upload-template",
+};
+
 function UploadTemplateButton({ editor }) {
-  const templateSchema = {
-    allowedType: "application/json",
-    extension: ".json",
-    inputId: "file-upload-template",
-  };
-  const uploadTemplate = (event) => {
+  const handleFileChange = (event) => {
     const f = event.target.files[0];
     if (f && f.type === templateSchema.allowedType) {
       const reader = new FileReader();
@@ -19,7 +20,7 @@ function UploadTemplateButton({ editor }) {
           const jsonContent = JSON.parse(fileContent);
           editor.setValue(jsonContent);
           // setConfigFile(f);
-          // having an issue where sometimes, before gpx file is set, template editor doesn't update values with uploaded tempalte values
+          // BIG TODO having an issue where sometimes, before gpx file is set, template editor doesn't update values with uploaded tempalte values
         } catch (error) {
           console.error("Error parsing JSON:", error);
         }
@@ -39,7 +40,7 @@ function UploadTemplateButton({ editor }) {
         type="file"
         id={templateSchema.inputId}
         className="file-input"
-        onChange={uploadTemplate}
+        onChange={handleFileChange}
       />
       <OverlayTrigger
         overlay={
@@ -52,7 +53,7 @@ function UploadTemplateButton({ editor }) {
       >
         <label
           htmlFor={templateSchema.inputId}
-          className="btn btn-warning ms-4"
+          className="btn btn-warning"
         >
           Upload Template
         </label>
