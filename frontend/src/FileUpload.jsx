@@ -63,10 +63,7 @@ function FileUpload({ type, file, setFile }) {
         className="file-input"
         onChange={handleFileChange}
       />
-      <label
-        htmlFor={config.inputId}
-        className="btn btn-primary"
-      >
+      <label htmlFor={config.inputId} className="btn btn-primary">
         {file ? file.name : "upload " + config.name + " file"}
       </label>
       {file === null && (
