@@ -1,6 +1,8 @@
 import React from "react";
 import FileUpload from "./FileUpload";
 
+import { Button } from "react-bootstrap";
+
 function UploadTemplateButton({ editor }) {
   const templateSchema = {
     allowedType: "application/json",
@@ -62,13 +64,13 @@ function DownloadTemplateButton({ editor }) {
     URL.revokeObjectURL(url);
   };
   return (
-    <button
+    <Button
       type="button"
       className="btn btn-primary ms-3"
       onClick={downloadTemplate}
     >
       Download Template
-    </button>
+    </Button>
   );
 }
 
@@ -98,9 +100,9 @@ function PreviewPanel({
       )}
       <div>
         {/* use red to indicate user needs to perform some action */}
-        <button type="button" className="btn btn-primary">
+        <Button type="button" className="btn btn-primary">
           gpx: upload file
-        </button>
+        </Button>
         <UploadTemplateButton editor={editor} />
         <DownloadTemplateButton editor={editor} />
       </div>
