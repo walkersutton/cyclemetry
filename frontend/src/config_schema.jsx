@@ -51,60 +51,6 @@ const opacity = {
   description:
     "how opaque the text is. 0 is transparent, 1 is not transparent at all",
 };
-const scene = {
-  title: "Scene",
-  description: "TODO description",
-  type: "object",
-  required: ["fps", "height", "width"],
-  // for demo purposes, fps doesn't reallllly matter, but it's required to generate frame, so maybe we should think about setting a defualt fps so that people don't have to worry about it when generating demo stills
-  defaultProperties: ["fps", "height", "width"],
-  properties: {
-    fps: {
-      type: "integer",
-      default: 30,
-      minimum: 1,
-      description: "# of frames / second to render video overlay with",
-    },
-    height: {
-      type: "integer",
-      default: 1080,
-      minimum: 1,
-      description: "height in pixels of rendered video overlay",
-    },
-    width: {
-      type: "integer",
-      default: 1920,
-      minimum: 1,
-      description: "width in pixels of rendered video overlay",
-    },
-    quicktimeCompatible: {
-      title: "QuickTime compatible",
-      default: true,
-      type: "string",
-      enum: ["yes", "no"],
-      description:
-        "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
-    },
-    start: {
-      type: "integer",
-      default: 0,
-      minimum: 0,
-      description: "second to start render from (affects plots for demo)",
-    },
-    end: {
-      type: "integer",
-      default: 60,
-      minimum: 0,
-      description: "second to end render from (affects plots for demo)",
-    },
-    // outputFilename: {
-    //   title: "Rendered filename",
-    //   default: "out.mov",
-    //   type: "string",
-    //   description: "the filename of the rendered video overlay",
-    // },
-  },
-};
 
 const base = {
   title: "base",
@@ -136,6 +82,63 @@ const base = {
     },
     opacity: { ...opacity },
   },
+};
+
+const scene = deepCopy(base);
+scene["description"] = "TODO description";
+scene["defaultProperties"] = ["fps", "height", "width", "color"];
+scene["required"] = ["fps", "height", "width", "color"];
+scene["title"] = "Scene";
+
+const sceneExtension = {
+  fps: {
+    type: "integer",
+    default: 30,
+    minimum: 1,
+    description: "# of frames / second to render video overlay with",
+  },
+  height: {
+    type: "integer",
+    default: 1080,
+    minimum: 1,
+    description: "height in pixels of rendered video overlay",
+  },
+  width: {
+    type: "integer",
+    default: 1920,
+    minimum: 1,
+    description: "width in pixels of rendered video overlay",
+  },
+  quicktimeCompatible: {
+    title: "QuickTime compatible",
+    default: true,
+    type: "string",
+    enum: ["yes", "no"],
+    description:
+      "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
+  },
+  start: {
+    type: "integer",
+    default: 0,
+    minimum: 0,
+    description: "second to start render from (affects plots for demo)",
+  },
+  end: {
+    type: "integer",
+    default: 60,
+    minimum: 0,
+    description: "second to end render from (affects plots for demo)",
+  },
+  // outputFilename: {
+  //   title: "Rendered filename",
+  //   default: "out.mov",
+  //   type: "string",
+  //   description: "the filename of the rendered video overlay",
+  // },
+};
+scene["properties"] = {
+  ...scene["properties"],
+  ...sceneExtension,
 };
 
 let standardText = deepCopy(base);
@@ -321,18 +324,12 @@ const labels = {
   items: labelText,
 };
 
-const global = deepCopy(base);
-global["title"] = "Global";
-global["required"] = ["color"];
-global["defaultProperties"] = ["color"];
-
 const schema = {
   title: "hidden using css",
   type: "object",
-  required: ["scene", "global"], // scene and global are very similar - consider merging
+  required: ["scene"],
   properties: {
     scene: scene,
-    global: global,
     // standardText: standardText,
     // labelText: labelText,
     // point: point,

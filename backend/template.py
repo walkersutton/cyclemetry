@@ -43,7 +43,7 @@ def build_configs(filename):
         template = json.load(f)
 
     configs = {}
-    global_config = template["global"]
+    scene_config = template["scene"]
     for clas, config in template.items():
         if clas == "scene":
             configs[clas] = config
@@ -51,7 +51,7 @@ def build_configs(filename):
             if len(config) > 0:
                 configs[clas] = []
                 for sub_config in config:
-                    configs[clas].append(merge_configs(global_config, sub_config))
+                    configs[clas].append(merge_configs(scene_config, sub_config))
     return configs
 
     configs["scene"] = template["scene"]
