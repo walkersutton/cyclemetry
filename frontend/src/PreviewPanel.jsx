@@ -39,7 +39,6 @@ function PreviewPanel({
           />
         </Stack>
         <Stack className="card bg-light mx-auto p-3" gap={3}>
-          <h3>Template Area</h3>
           <Stack direction="horizontal" gap={2}>
             <Button
               variant="info"
