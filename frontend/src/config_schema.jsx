@@ -86,7 +86,7 @@ const base = {
 
 const scene = deepCopy(base);
 scene["description"] = "TODO description";
-scene["defaultProperties"] = ["fps", "height", "width", "color"];
+scene["defaultProperties"] = ["fps", "height", "width", "color", "font"];
 scene["required"] = ["fps", "height", "width", "color"];
 scene["title"] = "Scene";
 
@@ -143,8 +143,8 @@ scene["properties"] = {
 
 let standardText = deepCopy(base);
 standardText["title"] = "Standard Text";
-standardText["required"].push(...["x", "y", "font_size", "font"]);
-standardText["defaultProperties"].push(...["x", "y", "font_size", "font"]);
+standardText["required"].push(...["x", "y", "font_size"]);
+standardText["defaultProperties"].push(...["x", "y", "font_size"]);
 const standardTextExtension = {
   // probbaly can abstract out x/y to a position object and .. into the dict
   x: {
@@ -188,7 +188,16 @@ valueText["defaultProperties"].push(...["value"]);
 const valueTextExtension = {
   value: {
     type: "string",
-    enum: ["cadence", "power", "speed"], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
+    enum: [
+      "cadence",
+      "elevation",
+      "gradient",
+      "heartrate",
+      "power",
+      "temperature",
+      "time",
+      "speed",
+    ], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
   },
 };
 valueText["properties"] = {

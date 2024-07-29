@@ -32,6 +32,17 @@ def merge_configs(parent_config, child_config):
     return child_config
 
 
+def validate_scene_config(config):
+    """
+    scene keys with backend defaults:
+    - font
+    """
+    keys = config.keys()
+    if "font" not in keys:
+        config["font"] = "Arial"
+    return config
+
+
 def build_configs(filename):
     # TODO CLEAN
     template = None
@@ -44,6 +55,7 @@ def build_configs(filename):
 
     configs = {}
     scene_config = template["scene"]
+    scene_config = validate_scene_config(scene_config)
     for clas, config in template.items():
         if clas == "scene":
             configs[clas] = config
