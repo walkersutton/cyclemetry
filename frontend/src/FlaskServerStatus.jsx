@@ -1,50 +1,42 @@
 import React, { useEffect, useState } from "react";
+import ProgressBar from "react-bootstrap/ProgressBar";
 import axios from "axios";
 
 export default function FlaskServerStatus() {
-  const [state, setState] = useState(false);
+  const [serverReady, setServerReady] = useState(false);
 
   const pingFlaskServer = async () => {
     await axios
       .get(process.env.REACT_APP_FLASK_SERVER_URL + "/healthz")
       .then((response) => {
         if (response.data === "OK") {
-          setState(true);
+          setServerReady(true);
         }
       })
       .catch((error) => {
-        setState(false);
+        setServerReady(false);
       });
   };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!state) {
+      if (!serverReady) {
         pingFlaskServer();
       } else {
         clearInterval(interval);
       }
-    }, 5000); // TODO: it takes about 8 pings to wake up
-
-    // Cleanup function to clear the interval if the component unmounts
+    }, 2000);
     return () => clearInterval(interval);
-  }, [state]);
+  }, [serverReady]);
 
-  if (!state) {
+  if (!serverReady) {
     return (
-      <div className="progress">
-        <div
-          className="progress-bar progress-bar-animated progress-bar-striped bg-warning"
-          role="progressbar"
-          style={{ width: "100%" }}
-          aria-valuenow="100"
-          aria-valuemin="0"
-          aria-valuemax="100"
-        ></div>
-      </div>
-      // <div>
-      //   <div className={`status-bar orange`}>Systems are booting up</div>
-      // </div>
+      <ProgressBar
+        striped
+        variant="warning"
+        now={100}
+        label={"connecting to server"}
+      />
     );
   }
 }
