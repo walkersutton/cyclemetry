@@ -27,20 +27,10 @@ function App() {
       <main className="p-3">
         <div className="d-flex flex-column">
           <div className="card bg-light p-3 mb-3">
-            <div className="row">
-              {/* TOOD move gpx info to PreviewPanel */}
-              <a href="/" className="col text-decoration-none text-dark">
-                <img src={logo} alt="Cyclemetry logo" className="logo" />
-                <strong>cyclemetry</strong>
-              </a>
-              <div className="col">
-                <p>
-                  <strong>gpxFilename: </strong>
-                  {gpxFilename ? gpxFilename : "missing gpx activity"}
-                </p>
-              </div>
-            </div>
-            {/* TODO maybe put gpx filename and template filename as statuses here to show what they're currently modifying */}
+            <a href="/" className="col text-decoration-none text-dark">
+              <img src={logo} alt="Cyclemetry logo" className="logo" />
+              <strong>cyclemetry</strong>
+            </a>
           </div>
           <Editor
             gpxFilename={gpxFilename}
@@ -50,11 +40,13 @@ function App() {
         </div>
         <div id="todo-fix-styling-currently-need-this-div-for-sticky-top-to-work">
           <PreviewPanel
-            imageFilename={imageFilename}
-            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             editor={editor}
+            gpxFilename={gpxFilename}
+            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
+            imageFilename={imageFilename}
           />
         </div>
+        {/* TODO add link to repo */}
       </main>
     </>
   );
