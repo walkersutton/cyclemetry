@@ -37,7 +37,6 @@ function PreviewPanel({
           <PlaygroundGpxButton
             handleGpxFilenameStateChange={handleGpxFilenameStateChange}
           />
-          {/* TODO add a reset config button */}
         </Stack>
         <Stack className="card bg-light mx-auto p-3" gap={3}>
           <DownloadTemplateButton editor={editor} />
