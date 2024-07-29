@@ -43,13 +43,14 @@ function deepCopy(obj) {
 
   return objCopy;
 }
+
+// TODO doesn't seem like this is affecting opacity of text right now. need to investigate
 const opacity = {
   default: 1.0,
   minimum: 0.0,
   maxiumum: 1.0,
   type: "number",
-  description:
-    "how opaque the text is. 0 is transparent, 1 is not transparent at all",
+  description: "0.0 (transparent) <= opacity <= 1.0 (opaque)",
 };
 
 const base = {
@@ -58,10 +59,11 @@ const base = {
   required: [],
   defaultProperties: [],
   properties: {
-    round: {
-      type: "integer",
-      minimum: 0,
+    decimal_rounding: {
       description: "number of decimals to round values to",
+      minimum: 0,
+      title: "decimal rounding",
+      type: "integer",
     },
     color: {
       default: "#ffffff",
