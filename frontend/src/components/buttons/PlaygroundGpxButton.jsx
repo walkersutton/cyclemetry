@@ -11,7 +11,7 @@ function PlaygroundGpxButton({ handleGpxFilenameStateChange }) {
 
   return (
     <Button variant="primary" onClick={configurePlaygroundGpxFile}>
-      Use GPX Demo
+      GPX Demo
     </Button>
   );
 }
