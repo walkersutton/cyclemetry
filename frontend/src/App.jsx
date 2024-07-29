@@ -3,7 +3,6 @@ import React, { useState } from "react";
 
 import Editor from "./Editor";
 import PreviewPanel from "./PreviewPanel";
-import FlaskServerStatus from "./FlaskServerStatus";
 import logo from "./logo.webp";
 
 function App() {
