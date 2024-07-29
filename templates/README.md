@@ -1,5 +1,14 @@
 # Templates
 
+## Schema
+todo
+### Scene
+todo
+### Labels
+todo
+### Values
+todo
+
 [Publish your templates](https://github.com/walkersutton/cyclemetry/pulls) for the community to use!
 
 | name           | source                                                                                                      | preview                                                                                                                                                                       |
