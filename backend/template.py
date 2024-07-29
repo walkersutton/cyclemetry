@@ -36,10 +36,15 @@ def validate_scene_config(config):
     """
     scene keys with backend defaults:
     - font
+    - fps
     """
-    keys = config.keys()
-    if "font" not in keys:
-        config["font"] = "Arial"
+    defaults = {
+        "font": "Arial",
+        "fps": 30,
+    }
+    for k, v in defaults.items():
+        if k not in config.keys():
+            config[k] = v
     return config
 
 

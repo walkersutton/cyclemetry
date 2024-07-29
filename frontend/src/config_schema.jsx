@@ -86,8 +86,8 @@ const base = {
 
 const scene = deepCopy(base);
 scene["description"] = "TODO description";
-scene["defaultProperties"] = ["fps", "height", "width", "color", "font"];
-scene["required"] = ["fps", "height", "width", "color"];
+scene["defaultProperties"] = ["height", "width", "color", "font"];
+scene["required"] = ["height", "width", "color"];
 scene["title"] = "Scene";
 
 const sceneExtension = {
