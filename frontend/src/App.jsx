@@ -7,9 +7,10 @@ import FlaskServerStatus from "./FlaskServerStatus";
 import logo from "./logo.webp";
 
 function App() {
-  const [gpxFilename, setGpxFilename] = useState(null);
+  const [gpxFilename, setGpxFilename] = useState(".demo.gpx");
   const [imageFilename, setImageFilename] = useState(null);
   const [editor, setEditor] = useState(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   const handleGpxFilenameStateChange = (state) => {
     setGpxFilename(state);
@@ -20,10 +21,12 @@ function App() {
   const handleEditorStateChange = (state) => {
     setEditor(state);
   };
+  const handleGeneratingImageStateChange = (state) => {
+    setGeneratingImage(state);
+  };
 
   return (
     <>
-      <FlaskServerStatus />
       <main>
         <div className="d-flex flex-column ps-3 pt-3 me-3 mb-3">
           <div className="card bg-light p-3 mb-3">
@@ -36,6 +39,7 @@ function App() {
           <Editor
             gpxFilename={gpxFilename}
             handleEditorStateChange={handleEditorStateChange}
+            handleGeneratingImageStateChange={handleGeneratingImageStateChange}
             handleImageFilenameStateChange={handleImageFilenameStateChange}
           />
           <p className="text-center">
@@ -45,12 +49,12 @@ function App() {
         <div>
           <PreviewPanel
             editor={editor}
+            generatingImage={generatingImage}
             gpxFilename={gpxFilename}
             handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             imageFilename={imageFilename}
           />
         </div>
-        {/* TODO add link to repo */}
       </main>
     </>
   );

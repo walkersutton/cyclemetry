@@ -4,11 +4,31 @@ import { JSONEditor } from "@json-editor/json-editor";
 import generateDemoFrame from "./api/generateDemoFrame.jsx";
 import schema from "./config_schema.jsx";
 
-const initConfig = {
+export const initConfig = {
+  scene: {
+    color: "#ffffff",
+    height: 1080,
+    width: 1920,
+  },
   labels: [
-    { text: "Welcome to the Cyclemetry Template Editor!", font_size: 80, x: 50, y: 40 },
-    { text: "Upload a GPX file to get started", font_size: 50, x: 50, y: 200 },
-    { text: "No GPX file? Get started with the GPX Demo below", font_size: 50, x: 50, y: 270 },
+    {
+      text: "Welcome to the Cyclemetry Template Editor!",
+      font_size: 80,
+      x: 50,
+      y: 40,
+    },
+    {
+      text: "Modify the properties on the left to change the demo overlay image",
+      font_size: 50,
+      x: 50,
+      y: 200,
+    },
+    {
+      text: "Upload a GPX file to change the underlying data",
+      font_size: 50,
+      x: 50,
+      y: 270,
+    },
   ],
 };
 let config = null;
@@ -16,6 +36,7 @@ let config = null;
 function Editor({
   gpxFilename,
   handleEditorStateChange,
+  handleGeneratingImageStateChange,
   handleImageFilenameStateChange,
 }) {
   const editorRef = useRef(null);
@@ -40,7 +61,12 @@ function Editor({
     });
     editor.on("change", function () {
       // TODO - do config validation before calling generate and assigning to current config - probably helper function
-      generateDemoFrame(editor, gpxFilename, handleImageFilenameStateChange);
+      generateDemoFrame(
+        editor,
+        gpxFilename,
+        handleGeneratingImageStateChange,
+        handleImageFilenameStateChange
+      );
       config = editor.getValue();
     });
     return () => {

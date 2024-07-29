@@ -1,8 +1,11 @@
 import axios from "axios";
+import isEqual from "lodash/isEqual";
 
+import { initConfig } from "../Editor";
 async function generateDemoFrame(
   editor,
   gpxFilename,
+  handleGeneratingImageStateChange,
   handleImageFilenameStateChange
 ) {
   if (!gpxFilename) {
@@ -11,6 +14,10 @@ async function generateDemoFrame(
   }
   if (editor) {
     const config = editor.getValue();
+    if (isEqual(config, initConfig) && gpxFilename == ".demo.gpx") {
+      handleImageFilenameStateChange("demo.png");
+      return;
+    }
     // we should validate the config - maybe do this in editor, since it's a tigter jump
     // const errors = editor.validate(); -> not sure if this is sufficient - at minimum, should pass required checks of schema
     const configJson = JSON.stringify(config);
@@ -21,6 +28,7 @@ async function generateDemoFrame(
     });
     const postData = new FormData();
     postData.append("file", configFile);
+    handleGeneratingImageStateChange(true);
     await axios
       .post(process.env.REACT_APP_FLASK_SERVER_URL + "/upload", postData, {
         headers: {
@@ -28,7 +36,6 @@ async function generateDemoFrame(
         },
       })
       .then((response) => {
-        // TODO trigger some status bar indicator
         // console.log(response);
       })
       .catch((error) => {
@@ -46,9 +53,11 @@ async function generateDemoFrame(
     await axios
       .post(process.env.REACT_APP_FLASK_SERVER_URL + "/demo", data)
       .then((response) => {
+        handleGeneratingImageStateChange(false);
         handleImageFilenameStateChange(response.data.data);
       })
       .catch((error) => {
+        handleGeneratingImageStateChange(false);
         console.log("generateDemoFrame /demo error");
         console.log(error);
         alert(error);
