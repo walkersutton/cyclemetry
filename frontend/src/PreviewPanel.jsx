@@ -5,6 +5,7 @@ import DemoPreview from "./components/DemoPreview";
 import DownloadTemplateButton from "./components/buttons/DownloadTemplateButton";
 import UploadGpxButton from "./components/buttons/UploadGpxButton";
 import UploadTemplateButton from "./components/buttons/UploadTemplateButton";
+import SelectCommunityTemplateButton from "./components/buttons/SelectCommunityTemplateButton";
 
 function PreviewPanel({
   editor,
@@ -19,8 +20,6 @@ function PreviewPanel({
         generatingImage={generatingImage}
         imageFilename={imageFilename}
       />
-      {/* use red to indicate user needs to perform some action */}
-      {/* // TODO: improve design - communicate to user that these uploads are required before image can be generated */}
       <Stack
         className={
           imageFilename ? "card bg-light p-3 mt-3" : "card bg-light p-3"
@@ -32,7 +31,6 @@ function PreviewPanel({
           <p>
             <strong>gpxFilename: </strong>
             {gpxFilename ? gpxFilename : "missing gpx activity"}
-            {/* missing GPX activity is a terrible experience. make a dummy gpx on page load and configure as default - can we cache the image asset so we don't rerender every initial page load? */}
           </p>
 
           <UploadGpxButton
@@ -42,7 +40,7 @@ function PreviewPanel({
         <Stack className="card bg-light mx-auto p-3" gap={3}>
           <DownloadTemplateButton editor={editor} />
           <UploadTemplateButton editor={editor} />
-          {/* TODO select random template already configged */}
+          <SelectCommunityTemplateButton editor={editor} />
         </Stack>
       </Stack>
     </div>

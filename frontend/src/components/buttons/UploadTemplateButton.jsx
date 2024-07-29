@@ -19,8 +19,6 @@ function UploadTemplateButton({ editor }) {
         try {
           const jsonContent = JSON.parse(fileContent);
           editor.setValue(jsonContent);
-          // setConfigFile(f);
-          // BIG TODO having an issue where sometimes, before gpx file is set, template editor doesn't update values with uploaded tempalte values
         } catch (error) {
           console.error("Error parsing JSON:", error);
         }
@@ -51,10 +49,7 @@ function UploadTemplateButton({ editor }) {
         }
         placement={"top"}
       >
-        <label
-          htmlFor={templateSchema.inputId}
-          className="btn btn-warning"
-        >
+        <label htmlFor={templateSchema.inputId} className="btn btn-warning">
           Upload Template
         </label>
       </OverlayTrigger>
