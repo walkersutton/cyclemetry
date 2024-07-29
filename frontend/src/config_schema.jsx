@@ -68,7 +68,7 @@ const base = {
       type: "string",
       format: "color",
       description:
-        "font and graph color. can override individual assets with a color object below",
+        "text and plot color. can override individual assets with a color object below",
     },
     font: {
       type: "string",
@@ -85,7 +85,7 @@ const base = {
 };
 
 const scene = deepCopy(base);
-scene["description"] = "TODO description";
+scene["description"] = "Theme and Blueprint configuration";
 scene["defaultProperties"] = ["height", "width", "color", "font"];
 scene["required"] = ["height", "width", "color"];
 scene["title"] = "Scene";
@@ -95,19 +95,19 @@ const sceneExtension = {
     type: "integer",
     default: 30,
     minimum: 1,
-    description: "# of frames / second to render video overlay with",
+    description: "frames per second",
   },
   height: {
     type: "integer",
     default: 1080,
     minimum: 1,
-    description: "height in pixels of rendered video overlay",
+    description: "height in pixels",
   },
   width: {
     type: "integer",
     default: 1920,
     minimum: 1,
-    description: "width in pixels of rendered video overlay",
+    description: "width in pixels",
   },
   start: {
     type: "integer",
@@ -241,8 +241,7 @@ const point = {
     color: {
       type: "string",
       format: "color",
-      description:
-        "font and graph color. can override individual assets with a color object below",
+      description: "plot point color.",
     },
     opacity: { ...opacity },
     label: pointLabel,
