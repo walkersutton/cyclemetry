@@ -27,7 +27,8 @@ function App() {
       <main>
         <div className="d-flex flex-column ps-3 pt-3 me-3 mb-3">
           <div className="card bg-light p-3 mb-3">
-            <a href="/" className="col text-decoration-none text-dark">
+            {/* TODO this link covers lots of empty space on card. fix this */}
+            <a href="/" className="text-decoration-none text-dark">
               <img src={logo} alt="Cyclemetry logo" className="logo" />
               <strong>cyclemetry</strong>
             </a>

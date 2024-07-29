@@ -29,6 +29,7 @@ function PreviewPanel({
           <p>
             <strong>gpxFilename: </strong>
             {gpxFilename ? gpxFilename : "missing gpx activity"}
+            {/* missing GPX activity is a terrible experience. make a dummy gpx on page load and configure as default - can we cache the image asset so we don't rerender every initial page load? */}
           </p>
 
           <UploadGpxButton
