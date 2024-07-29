@@ -87,7 +87,7 @@ const base = {
 };
 
 const scene = deepCopy(base);
-scene["description"] = "Theme and Blueprint configuration";
+scene["description"] = "Theme and blueprint configuration";
 scene["defaultProperties"] = ["height", "width", "color", "font"];
 scene["required"] = ["height", "width", "color"];
 scene["title"] = "Scene";
