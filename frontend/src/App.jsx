@@ -24,8 +24,8 @@ function App() {
   return (
     <>
       <FlaskServerStatus />
-      <main className="p-3">
-        <div className="d-flex flex-column">
+      <main>
+        <div className="d-flex flex-column ps-3 pt-3 me-3 mb-3">
           <div className="card bg-light p-3 mb-3">
             <a href="/" className="col text-decoration-none text-dark">
               <img src={logo} alt="Cyclemetry logo" className="logo" />
@@ -37,8 +37,11 @@ function App() {
             handleEditorStateChange={handleEditorStateChange}
             handleImageFilenameStateChange={handleImageFilenameStateChange}
           />
+          <p className="text-center">
+            <a href="https://github.com/walkersutton/cyclemetry">GitHub</a>
+          </p>
         </div>
-        <div id="todo-fix-styling-currently-need-this-div-for-sticky-top-to-work">
+        <div>
           <PreviewPanel
             editor={editor}
             gpxFilename={gpxFilename}

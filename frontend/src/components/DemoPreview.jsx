@@ -3,9 +3,9 @@ function DemoPreview({ imageFilename }) {
   if (imageFilename) {
     return (
       <img
-        className="img-fluid bg-dark"
+        className="img-fluid bg-dark text-light"
         src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFilename}`}
-        alt="generated overlay"
+        alt="&nbsp;&nbsp;error generating overlay :(&nbsp;&nbsp;"
       />
     );
   } else return null;

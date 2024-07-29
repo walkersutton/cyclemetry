@@ -14,7 +14,7 @@ function PreviewPanel({
   imageFilename,
 }) {
   return (
-    <div className="sticky-top ps-3">
+    <div className="sticky-top pt-3 me-3 mb-3">
       <DemoPreview imageFilename={imageFilename} />
       {/* use red to indicate user needs to perform some action */}
       {/* // TODO: improve design - communicate to user that these uploads are required before image can be generated */}
@@ -41,6 +41,7 @@ function PreviewPanel({
         <Stack className="card bg-light mx-auto p-3" gap={3}>
           <DownloadTemplateButton editor={editor} />
           <UploadTemplateButton editor={editor} />
+          {/* TODO select random template already configged */}
         </Stack>
       </Stack>
     </div>
