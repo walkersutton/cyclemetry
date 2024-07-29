@@ -17,7 +17,7 @@ I'm currently building a web app that will enable you to export video overlays. 
 ## Features
 - Check out the [community templates](https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md) to see what Cyclemetry is capable of
 - Live maps
-- Live elevation profile
+- Live elevation profiles
 - Performance metrics
   - Speed
   - Power
