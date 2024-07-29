@@ -6,31 +6,30 @@
   </p>
 </div>
 
-
 ![The_Tremola_by Safa_Brian](https://github.com/walkersutton/cyclemetry/assets/25811783/71aa4902-dd29-453f-b4a5-a87ddabd2437)
 
-## Features
-
-- Live course tracking
-- Live elevation profile
-- Cadence, elevation, gradient, heartrate, power, speed, etc.
-- Supports imperial and metric units
-- professional templates
-
-## Templates
-
-- Use the [Cyclemetry App](https://walkersutton.com/cyclemetry/) to design your own templates
-- Check out the community [templates](https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md)
-- [Share](https://github.com/walkersutton/cyclemetry/pulls) your templates for others to use
-
-## Demo
-[Cyclemetry Demo](https://walkersutton.com/cyclemetry/)
+## Designing Templates
+Use the [Cyclemetry Template Editor](https://walkersutton.com/cyclemetry/) to design your own templates
 
 ## Generating Video Overlays
-
 I'm currently building a web app that will enable you to export video overlays. Until then, check out the backend [README](https://github.com/walkersutton/cyclemetry/blob/main/backend/README.md) for instructions on using CLI to export video overlays.
 
-## How to design overlay templates
+## Features
+- Check out the [community templates](https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md) to see what Cyclemetry is capable of
+- Live maps
+- Live elevation profile
+- Performance metrics
+  - Speed
+  - Power
+  - Heart rate
+  - Cadence
+  - Elevation
+  - Gradient
+
+## Videos Made With Cyclemetry
+|Seward Park Crit|Stunt Descent|Descent into Rincon|
+| - | - | - |
+|[![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/uXYzUSOr2Zg/0.jpg)](https://www.youtube.com/watch?v=uXYzUSOr2Zg)|[![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc)|[![Descent into Rincon by Walker Sutton](https://img.youtube.com/vi/i2vdPIfIswc/0.jpg)](https://www.youtube.com/watch?v=i2vdPIfIswc)|
 
 ## [Alternative Tools](https://alternativeto.net/software/garmin-virb-edit/)
 
