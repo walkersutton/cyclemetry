@@ -35,11 +35,6 @@ def bad_request(error):
     )
 
 
-@app.route("/healthz")
-def healthz():
-    return "OK", 200
-
-
 @app.route("/upload", methods=["POST"])
 def upload():
     if "file" not in request.files:
