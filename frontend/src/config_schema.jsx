@@ -109,14 +109,6 @@ const sceneExtension = {
     minimum: 1,
     description: "width in pixels of rendered video overlay",
   },
-  quicktimeCompatible: {
-    title: "QuickTime compatible",
-    default: true,
-    type: "string",
-    enum: ["yes", "no"],
-    description:
-      "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
-  },
   start: {
     type: "integer",
     default: 0,
@@ -129,6 +121,14 @@ const sceneExtension = {
     minimum: 0,
     description: "second to end render from (affects plots for demo)",
   },
+  // quicktimeCompatible: {
+  //   title: "QuickTime compatible",
+  //   default: true,
+  //   type: "string",
+  //   enum: ["yes", "no"],
+  //   description:
+  //     "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
+  // },
   // outputFilename: {
   //   title: "Rendered filename",
   //   default: "out.mov",
