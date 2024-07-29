@@ -18,7 +18,7 @@ export const initConfig = {
       y: 40,
     },
     {
-      text: "Modify the template properties to change the overlay image",
+      text: "Modify the template properties to change this image overlay",
       font_size: 50,
       x: 50,
       y: 200,
