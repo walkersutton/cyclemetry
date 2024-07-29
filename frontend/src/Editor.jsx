@@ -1,13 +1,16 @@
 import React, { useEffect, useRef } from "react";
 import { JSONEditor } from "@json-editor/json-editor";
-import generateDemoFrame from "./api/generateDemoFrame.jsx";
 
-// made a hack schema to get UI working - TODO fix how backend config is structured
-// import schema from "./config_schema_hack.jsx";
+import generateDemoFrame from "./api/generateDemoFrame.jsx";
 import schema from "./config_schema.jsx";
 
-// TODO - make this an informative how to screen - multiple labels
-const initConfig = { labels: [{ text: "starting fresh", font_size: 69 }] };
+const initConfig = {
+  labels: [
+    { text: "Welcome to the Cyclemetry Template Editor!", font_size: 80, x: 50, y: 40 },
+    { text: "Upload a GPX file to get started", font_size: 50, x: 50, y: 200 },
+    { text: "No GPX file? Get started with the GPX Demo below", font_size: 50, x: 50, y: 270 },
+  ],
+};
 let config = null;
 
 function Editor({
