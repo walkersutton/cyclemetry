@@ -7,9 +7,12 @@ const gpxSchema = {
   inputId: "file-upload-gpx",
 };
 
-async function handleUpload(gpxFile, handleGpxFileStateChange) {
+async function handleGpxUpload(gpxFile, handleGpxFilenameStateChange) {
   const postData = new FormData();
   postData.append("file", gpxFile);
+  // TODO
+  // handle bad gpx uploads more gracefully - currently have to click through a bunch of browswer alerts to dismiss
+  // also - probably refactor this into a module under /api
   await axios
     .post(process.env.REACT_APP_FLASK_SERVER_URL + "/upload", postData, {
       headers: {
@@ -17,20 +20,20 @@ async function handleUpload(gpxFile, handleGpxFileStateChange) {
       },
     })
     .then((response) => {
-      handleGpxFileStateChange(gpxFile);
+      handleGpxFilenameStateChange(gpxFile["name"]);
     })
     .catch((error) => {
       console.log("UploadGpxButton:handleUpload");
       console.log(error);
-      handleGpxFileStateChange(null);
+      handleGpxFilenameStateChange(null);
     });
 }
 
-function UploadGpxButton({ gpxFile, handleGpxFileStateChange }) {
+function UploadGpxButton({ handleGpxFilenameStateChange }) {
   const handleFileChange = (event) => {
-    const f = event.target.files[0];
-    if (f && f.type === gpxSchema.allowedType) {
-      handleUpload(f, handleGpxFileStateChange);
+    const file = event.target.files[0];
+    if (file && file.type === gpxSchema.allowedType) {
+      handleGpxUpload(file, handleGpxFilenameStateChange);
     } else {
       console.log("Invalid file type. Please select a GPX file.");
     }

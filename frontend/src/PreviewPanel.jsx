@@ -7,12 +7,7 @@ import PlaygroundGpxButton from "./components/buttons/PlaygroundGpxButton";
 import UploadGpxButton from "./components/buttons/UploadGpxButton";
 import UploadTemplateButton from "./components/buttons/UploadTemplateButton";
 
-function PreviewPanel({
-  gpxFile,
-  handleGpxFileStateChange,
-  imageFilename,
-  editor,
-}) {
+function PreviewPanel({ editor, handleGpxFilenameStateChange, imageFilename }) {
   return (
     <div className="sticky-top ps-3">
       <DemoPreview imageFilename={imageFilename} />
@@ -27,12 +22,12 @@ function PreviewPanel({
       >
         <Stack className="card bg-light mx-auto p-3" gap={3}>
           <PlaygroundGpxButton
-            handleGpxFileStateChange={handleGpxFileStateChange}
+            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
           />
           <UploadGpxButton
-            gpxFile={gpxFile}
-            handleGpxFileStateChange={handleGpxFileStateChange}
+            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
           />
+          {/* TODO add a reset config button */}
         </Stack>
         <Stack className="card bg-light mx-auto p-3" gap={3}>
           <DownloadTemplateButton editor={editor} />

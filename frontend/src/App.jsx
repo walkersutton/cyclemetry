@@ -7,14 +7,14 @@ import FlaskServerStatus from "./FlaskServerStatus";
 import logo from "./logo.webp";
 
 function App() {
-  const [gpxFile, setGpxFile] = useState(null);
+  const [gpxFilename, setGpxFilename] = useState(null);
   const [imageFilename, setImageFilename] = useState(null);
   const [editor, setEditor] = useState(null);
 
-  const handleGpxFileStateChange = (state) => {
-    setGpxFile(state);
+  const handleGpxFilenameStateChange = (state) => {
+    setGpxFilename(state);
   };
-  const handleImageFileStateChange = (state) => {
+  const handleImageFilenameStateChange = (state) => {
     setImageFilename(state);
   };
   const handleEditorStateChange = (state) => {
@@ -27,23 +27,31 @@ function App() {
       <main className="p-3">
         <div className="d-flex flex-column">
           <div className="card bg-light p-3 mb-3">
-            <a href="/" className="text-decoration-none text-dark">
-              <img src={logo} alt="Cyclemetry logo" className="logo" />
-              <strong>cyclemetry</strong>
-            </a>
+            <div className="row">
+              {/* TOOD move gpx info to PreviewPanel */}
+              <a href="/" className="col text-decoration-none text-dark">
+                <img src={logo} alt="Cyclemetry logo" className="logo" />
+                <strong>cyclemetry</strong>
+              </a>
+              <div className="col">
+                <p>
+                  <strong>gpxFilename: </strong>
+                  {gpxFilename ? gpxFilename : "missing gpx activity"}
+                </p>
+              </div>
+            </div>
             {/* TODO maybe put gpx filename and template filename as statuses here to show what they're currently modifying */}
           </div>
           <Editor
-            gpxFile={gpxFile}
-            setImageFilename={handleImageFileStateChange}
-            setEditor={handleEditorStateChange}
+            gpxFilename={gpxFilename}
+            handleEditorStateChange={handleEditorStateChange}
+            handleImageFilenameStateChange={handleImageFilenameStateChange}
           />
         </div>
-        <div id="currently-need-this-div-for-sticky-top-to-work">
+        <div id="todo-fix-styling-currently-need-this-div-for-sticky-top-to-work">
           <PreviewPanel
-            gpxFile={gpxFile}
             imageFilename={imageFilename}
-            handleGpxFileStateChange={handleGpxFileStateChange}
+            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             editor={editor}
           />
         </div>

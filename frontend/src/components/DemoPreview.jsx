@@ -1,5 +1,5 @@
 function DemoPreview({ imageFilename }) {
-    // TODO add a loading new image spinner bar thingy
+  // TODO add a loading new image spinner bar thingy
   if (imageFilename) {
     return (
       <img

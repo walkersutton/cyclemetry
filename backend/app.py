@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 
@@ -76,7 +77,13 @@ def demo():
 
         img_filepath = scene.frames[0].full_path()
         obf_filepath = f"./frames/{int(time.time())}.png"
-        os.rename(img_filepath, obf_filepath)
+        try:
+            os.rename(img_filepath, obf_filepath)
+        except Exception as e:
+            logging.error("app.py:demo()")
+            logging.error(e)
+            logging.error(data)
+
         filename = os.path.basename(obf_filepath)
     return jsonify({"data": filename})
 

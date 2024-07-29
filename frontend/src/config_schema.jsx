@@ -118,6 +118,7 @@ const base = {
       description: "number of decimals to round values to",
     },
     color: {
+      default: "#ffffff",
       type: "string",
       format: "color",
       description:
@@ -125,8 +126,7 @@ const base = {
     },
     font: {
       type: "string",
-      enum: ["Arial", "Evogria.otf"],
-      description: "the font type to render this text in",
+      enum: ["Arial", "Evogria.otf", "arial.ttf"],
     },
     font_size: {
       default: 12,
@@ -165,13 +165,12 @@ standardText["properties"] = {
 };
 
 let labelText = deepCopy(standardText);
-labelText["title"] = "Label Text";
+labelText["title"] = "Label";
 labelText["required"].push(...["text"]);
 labelText["defaultProperties"].push(...["text"]);
 const labelTextExtension = {
   text: {
     type: "string",
-    description: "the text content of the label",
   },
 };
 labelText["properties"] = {
@@ -180,7 +179,7 @@ labelText["properties"] = {
 };
 
 let valueText = deepCopy(standardText);
-valueText["title"] = "Value Text";
+valueText["title"] = "Value";
 valueText["required"].push(...["value"]);
 valueText["defaultProperties"].push(...["value"]);
 const valueTextExtension = {
@@ -309,26 +308,28 @@ const graph = {
 };
 
 const values = {
+  description: "Real-time data elements (speed, power, heart rate, etc.)",
   type: "array",
   items: valueText,
   title: "Values",
 };
 
 const labels = {
+  description: "Static text elements",
   type: "array",
   title: "Labels",
   items: labelText,
 };
 
-global = deepCopy(base);
-global["title"] = "Globals";
+const global = deepCopy(base);
+global["title"] = "Global";
 global["required"] = ["color"];
 global["defaultProperties"] = ["color"];
 
 const schema = {
   title: "hidden using css",
   type: "object",
-  required: ["scene"],
+  required: ["scene", "global"], // scene and global are very similar - consider merging
   properties: {
     scene: scene,
     global: global,
