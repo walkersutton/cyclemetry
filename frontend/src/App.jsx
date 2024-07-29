@@ -7,7 +7,7 @@ import logo from "./logo.webp";
 
 function App() {
   const [gpxFilename, setGpxFilename] = useState(".demo.gpx");
-  const [imageFilename, setImageFilename] = useState(null);
+  const [imageFilename, setImageFilename] = useState(".demo.png");
   const [editor, setEditor] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
 

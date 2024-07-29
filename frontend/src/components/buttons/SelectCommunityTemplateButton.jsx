@@ -57,6 +57,7 @@ function SelectCommunityTemplateButton({ editor }) {
           placement={"top"}
           key={templateFilename}
         >
+          {/* seeing a bug when user clicks on template link and clicks back button in browser. payload looks like {'config_filename': './tmp/myconfig.json', 'gpx_filename': './tmp/.demo.gpx'} on server and both files there seem fine. seems like an image is being generated, but it doesn't have anything drawn, so idk what's up. need to investigate */}
           <Dropdown.Item onClick={() => setTemplateFilename(templateFilename)}>
             {templateFilename}
           </Dropdown.Item>

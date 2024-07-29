@@ -1,5 +1,6 @@
 import React from "react";
 import Stack from "react-bootstrap/Stack";
+import Button from "react-bootstrap/Button";
 
 import DemoPreview from "./components/DemoPreview";
 import DownloadTemplateButton from "./components/buttons/DownloadTemplateButton";
@@ -38,9 +39,20 @@ function PreviewPanel({
           />
         </Stack>
         <Stack className="card bg-light mx-auto p-3" gap={3}>
-          <DownloadTemplateButton editor={editor} />
-          <UploadTemplateButton editor={editor} />
-          <SelectCommunityTemplateButton editor={editor} />
+          <h3>Template Area</h3>
+          <Stack direction="horizontal" gap={2}>
+            <Button
+              variant="info"
+              href="https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md"
+            >
+              Template Schema
+            </Button>
+            <DownloadTemplateButton editor={editor} />
+          </Stack>
+          <Stack direction="horizontal" gap={2}>
+            <UploadTemplateButton editor={editor} />
+            <SelectCommunityTemplateButton editor={editor} />
+          </Stack>
         </Stack>
       </Stack>
     </div>

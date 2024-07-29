@@ -15,7 +15,7 @@ async function generateDemoFrame(
   if (editor) {
     const config = editor.getValue();
     if (isEqual(config, initConfig) && gpxFilename == ".demo.gpx") {
-      handleImageFilenameStateChange("demo.png");
+      handleImageFilenameStateChange(".demo.png");
       return;
     }
     // we should validate the config - maybe do this in editor, since it's a tigter jump

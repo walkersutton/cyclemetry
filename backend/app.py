@@ -60,6 +60,8 @@ def demo():
         and data["config_filename"] is not None
         and data["gpx_filename"] is not None
     ):
+        logging.info("app.py:demo() validated request")
+        logging.info(data)
         config_filename = data["config_filename"]
         gpx_filename = data["gpx_filename"]
         # TODO fix this file storage issue w/ frontend demo call
@@ -78,8 +80,10 @@ def demo():
             logging.error("app.py:demo()")
             logging.error(e)
             logging.error(data)
-
         filename = os.path.basename(obf_filepath)
+    else:
+        logging.error("app.py:demo() failed validation")
+        logging.error(data)
     return jsonify({"data": filename})
 
 
