@@ -75,7 +75,7 @@ const base = {
       enum: ["Arial", "Evogria.otf", "arial.ttf"],
     },
     font_size: {
-      default: 12,
+      default: 69,
       title: "font size",
       minimum: 1.0,
       type: "number",
