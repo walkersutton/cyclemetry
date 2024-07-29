@@ -39,7 +39,7 @@ def validate_scene_config(config):
     - fps
     """
     defaults = {
-        "font": "Arial",
+        "font": "Arial.ttf",
         "fps": 30,
     }
     for k, v in defaults.items():

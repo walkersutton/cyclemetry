@@ -19,7 +19,7 @@ class Frame:
         return f"{constant.FRAMES_DIR}{self.filename}"
 
     def draw_value(self, img, value: str, config: dict):
-        def draw_value_helper(text, color, x, y, font_size, font="arial.ttf"):
+        def draw_value_helper(text, color, x, y, font_size, font="Arial.ttf"):
             if not os.path.exists(font):
                 font = constant.FONTS_DIR + font
             font = ImageFont.truetype(font, font_size)

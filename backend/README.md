@@ -26,7 +26,7 @@ $ source venv/bin/activate
 
 I need to make Cyclemetry a bit easier to use. [Here's a video](https://youtu.be/gqn5MfcypH4) where I explain how I use the tool. I'm building a [web app](https://walkersutton.com/cyclemetry/) that'll enable you to use a GUI to generate your video overlays.
 
-# Docker
+# [Docker](https://hub.docker.com/repository/docker/walkersutton/cyclemetry/general)
 
 ```
 #
@@ -34,7 +34,9 @@ docker ps -a
 
 # build image
 docker build . -t walkersutton/cyclemetry:<tag>
-docker build --platform linux/amd64 . -t walkersutton/cyclemetry:<tag> # pattern linuxamd64-suffix
+# i.e. "docker build --platform linux/amd64 . -t walkersutton/cyclemetry:alpha-v2"
+docker build --platform linux/amd64 . -t walkersutton/cyclemetry:<tag> # pattern linuxamd64-prefix
+# i.e. "docker build --platform linux/amd64 . -t walkersutton/cyclemetry:linuxamd64-alpha-v2"
 
 # push image to docker hub
 docker push walkersutton/cyclemetry:<tag>

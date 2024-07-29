@@ -74,7 +74,7 @@ const base = {
     },
     font: {
       type: "string",
-      enum: ["Arial", "Evogria.otf", "arial.ttf"],
+      enum: ["Arial.ttf", "Evogria.otf", "Furore.otf"],
     },
     font_size: {
       default: 69,
