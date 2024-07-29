@@ -1,5 +1,5 @@
 <div align="center" style="text-align: center;">
-  <img src="https://i.imgur.com/O7GvHXd.png"/ style="width: 69px;">
+  <img src="https://imgur.com/ZA8UGY4.png"/ style="width: 69px;">
   <h1>cyclemetry</h1>
   <p>
     <b>cyclemetry is a tool for creating telemetry video overlays.</b>  
