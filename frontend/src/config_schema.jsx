@@ -59,7 +59,7 @@ const base = {
   required: [],
   defaultProperties: [],
   properties: {
-    decimal_rounding: {
+    round: {
       description: "number of decimals to round values to",
       minimum: 0,
       title: "decimal rounding",
