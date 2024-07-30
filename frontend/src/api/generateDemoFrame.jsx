@@ -14,7 +14,7 @@ async function generateDemoFrame(
   }
   if (editor) {
     const config = editor.getValue();
-    if (isEqual(config, initConfig) && gpxFilename == ".demo.gpx") {
+    if (isEqual(config, initConfig) && gpxFilename === ".demo.gpx") {
       handleImageFilenameStateChange(".demo.png");
       return;
     }

@@ -89,6 +89,7 @@ def demo():
 
 @app.route("/images/<filename>")
 def serve_image(filename):
+    # TODO images are never deleted! need to clean eventually . maybe some sort of daily job to keep things TIDY
     return send_from_directory("frames", filename)
 
 
