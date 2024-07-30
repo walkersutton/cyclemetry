@@ -1,22 +1,59 @@
 import React from "react";
-import FileUpload from "./FileUpload";
+import Stack from "react-bootstrap/Stack";
+import Button from "react-bootstrap/Button";
 
-function PreviewPanel({ gpxFile, handleGpxFileStateChange, imageFilename }) {
-  return imageFilename ? (
-    // TODO: this image needs to stay on the screen as user scrolls down to modify other template config. figure that out
-    <img
-      className="img-fluid sticky-top pt-4 bg-dark"
-      src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFilename}`}
-      alt="generated overlay"
-    />
-  ) : (
-    // TODO: improve design - communicate to user that these uploads are required before image can be generated
-    <div>
-      <FileUpload
-        type="gpx"
-        file={gpxFile}
-        setFile={handleGpxFileStateChange}
+import DemoPreview from "./components/DemoPreview";
+import DownloadTemplateButton from "./components/buttons/DownloadTemplateButton";
+import UploadGpxButton from "./components/buttons/UploadGpxButton";
+import UploadTemplateButton from "./components/buttons/UploadTemplateButton";
+import SelectCommunityTemplateButton from "./components/buttons/SelectCommunityTemplateButton";
+
+function PreviewPanel({
+  editor,
+  generatingImage,
+  gpxFilename,
+  handleGpxFilenameStateChange,
+  imageFilename,
+}) {
+  return (
+    <div className="sticky-top pt-3 me-3 mb-3">
+      <DemoPreview
+        generatingImage={generatingImage}
+        imageFilename={imageFilename}
       />
+      <Stack
+        className={
+          imageFilename ? "card bg-light p-3 mt-3" : "card bg-light p-3"
+        }
+        direction="horizontal"
+        gap={3}
+      >
+        <Stack className="card bg-light mx-auto p-3" gap={3}>
+          <p>
+            <strong>gpxFilename: </strong>
+            {gpxFilename ? gpxFilename : "missing gpx activity"}
+          </p>
+
+          <UploadGpxButton
+            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
+          />
+        </Stack>
+        <Stack className="card bg-light mx-auto p-3" gap={3}>
+          <Stack direction="horizontal" gap={2}>
+            <Button
+              variant="info"
+              href="https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md"
+            >
+              Template Schema
+            </Button>
+            <DownloadTemplateButton editor={editor} />
+          </Stack>
+          <Stack direction="horizontal" gap={2}>
+            <UploadTemplateButton editor={editor} />
+            <SelectCommunityTemplateButton editor={editor} />
+          </Stack>
+        </Stack>
+      </Stack>
     </div>
   );
 }

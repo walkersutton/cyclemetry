@@ -43,76 +43,41 @@ function deepCopy(obj) {
 
   return objCopy;
 }
+
+// TODO doesn't seem like this is affecting opacity of text right now. need to investigate
 const opacity = {
+  default: 1.0,
   minimum: 0.0,
   maxiumum: 1.0,
   type: "number",
-  description:
-    "how opaque the text is. 0 is transparent, 1 is not transparent at all",
-};
-const scene = {
-  type: "object",
-  required: [],
-  properties: {
-    fps: {
-      type: "integer",
-      default: 30,
-      minimum: 1,
-      description: "# of frames / second to render video overlay with",
-    },
-    height: {
-      type: "integer",
-      default: 1080,
-      minimum: 1,
-      description: "height in pixels of rendered video overlay",
-    },
-    width: {
-      type: "integer",
-      default: 1920,
-      minimum: 1,
-      description: "width in pixels of rendered video overlay",
-    },
-    quicktimeCompatible: {
-      title: "QuickTime compatible",
-      default: true,
-      type: "string",
-      enum: ["yes", "no"],
-      description:
-        "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
-    },
-    // outputFilename: {
-    //   title: "Rendered filename",
-    //   default: "out.mov",
-    //   type: "string",
-    //   description: "the filename of the rendered video overlay",
-    // },
-  },
+  description: "0.0 (transparent) <= opacity <= 1.0 (opaque)",
 };
 
 const base = {
-  title: "base values",
+  title: "base",
   type: "object",
   required: [],
+  defaultProperties: [],
   properties: {
-    round: {
-      title: "value rounding",
-      type: "integer",
-      minimum: 0,
+    decimal_rounding: {
       description: "number of decimals to round values to",
+      minimum: 0,
+      title: "decimal rounding",
+      type: "integer",
     },
     color: {
-      title: "global color",
+      default: "#ffffff",
       type: "string",
       format: "color",
       description:
-        "font and graph color. can override individual assets with a color object below",
+        "text and plot color. can override individual assets with a color object below",
     },
     font: {
       type: "string",
-      enum: ["Arial"],
-      description: "the font type to render this text in",
+      enum: ["Arial.ttf", "Evogria.otf", "Furore.otf"],
     },
     font_size: {
+      default: 69,
       title: "font size",
       minimum: 1.0,
       type: "number",
@@ -121,10 +86,69 @@ const base = {
   },
 };
 
+const scene = deepCopy(base);
+scene["description"] = "Theme and blueprint configuration";
+scene["defaultProperties"] = ["height", "width", "color", "font"];
+scene["required"] = ["height", "width", "color"];
+scene["title"] = "Scene";
+
+const sceneExtension = {
+  fps: {
+    type: "integer",
+    default: 30,
+    minimum: 1,
+    description: "frames per second",
+  },
+  height: {
+    type: "integer",
+    default: 1080,
+    minimum: 1,
+    description: "height in pixels",
+  },
+  width: {
+    type: "integer",
+    default: 1920,
+    minimum: 1,
+    description: "width in pixels",
+  },
+  start: {
+    type: "integer",
+    default: 0,
+    minimum: 0,
+    description: "second to start render from (affects plots for demo)",
+  },
+  end: {
+    type: "integer",
+    default: 60,
+    minimum: 0,
+    description: "second to end render from (affects plots for demo)",
+  },
+  // quicktimeCompatible: {
+  //   title: "QuickTime compatible",
+  //   default: true,
+  //   type: "string",
+  //   enum: ["yes", "no"],
+  //   description:
+  //     "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
+  // },
+  // outputFilename: {
+  //   title: "Rendered filename",
+  //   default: "out.mov",
+  //   type: "string",
+  //   description: "the filename of the rendered video overlay",
+  // },
+};
+scene["properties"] = {
+  ...scene["properties"],
+  ...sceneExtension,
+};
+
 let standardText = deepCopy(base);
 standardText["title"] = "Standard Text";
-standardText["required"].push(...["x", "y"]);
+standardText["required"].push(...["x", "y", "font_size"]);
+standardText["defaultProperties"].push(...["x", "y", "font_size"]);
 const standardTextExtension = {
+  // probbaly can abstract out x/y to a position object and .. into the dict
   x: {
     type: "integer",
     default: 0,
@@ -146,12 +170,12 @@ standardText["properties"] = {
 };
 
 let labelText = deepCopy(standardText);
-labelText["title"] = "Label Text";
-labelText["required"] = ["text"];
+labelText["title"] = "Label";
+labelText["required"].push(...["text"]);
+labelText["defaultProperties"].push(...["text"]);
 const labelTextExtension = {
   text: {
     type: "string",
-    description: "the text content of the label",
   },
 };
 labelText["properties"] = {
@@ -159,9 +183,34 @@ labelText["properties"] = {
   ...labelTextExtension,
 };
 
+let valueText = deepCopy(standardText);
+valueText["title"] = "Value";
+valueText["required"].push(...["value"]);
+valueText["defaultProperties"].push(...["value"]);
+const valueTextExtension = {
+  value: {
+    type: "string",
+    enum: [
+      "cadence",
+      "elevation",
+      "gradient",
+      "heartrate",
+      "power",
+      "temperature",
+      "time",
+      "speed",
+    ], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
+  },
+};
+valueText["properties"] = {
+  ...valueText["properties"],
+  ...valueTextExtension,
+};
+
 let pointLabel = deepCopy(base);
 pointLabel["title"] = "point label";
 pointLabel["required"].push(...["xOffset", "yOffset"]);
+pointLabel["defaultProperties"].push(...["xOffset", "yOffset"]);
 const pointLabelExtension = {
   xOffset: {
     default: 20,
@@ -184,6 +233,7 @@ pointLabel["properties"] = {
 const point = {
   type: "object",
   required: [],
+  defaultProperties: [],
   properties: {
     weight: {
       minimum: 0,
@@ -193,8 +243,7 @@ const point = {
     color: {
       type: "string",
       format: "color",
-      description:
-        "font and graph color. can override individual assets with a color object below",
+      description: "plot point color.",
     },
     opacity: { ...opacity },
     label: pointLabel,
@@ -208,6 +257,7 @@ const point = {
 const graph = {
   type: "object",
   required: [],
+  defaultProperties: [],
   properties: {
     dpi: {
       default: 300,
@@ -270,17 +320,32 @@ const graph = {
   },
 };
 
+const values = {
+  description: "Real-time data elements (speed, power, heart rate, etc.)",
+  type: "array",
+  items: valueText,
+  title: "Values",
+};
+
+const labels = {
+  description: "Static text elements",
+  type: "array",
+  title: "Labels",
+  items: labelText,
+};
+
 const schema = {
-  title: "root schema",
+  title: "hidden using css",
   type: "object",
-  required: ["scene", "base"],
+  required: ["scene"],
   properties: {
     scene: scene,
-    base: base,
-    standardText: standardText,
-    labelText: labelText,
-    point: point,
-    graph: graph,
+    // standardText: standardText,
+    // labelText: labelText,
+    // point: point,
+    // graph: graph,
+    labels: labels,
+    values: values,
   },
 };
 

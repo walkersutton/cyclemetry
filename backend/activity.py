@@ -152,7 +152,7 @@ class Activity:
                 exit(1)
             if end > len(data) or end < start:
                 print(
-                    f"invalid scene end value in config. Value should be less than {len(data)} and greater than {start}. Current value is {end}"
+                    f"invalid scene end value in config. Value should be at most {len(data)} and greater than {start}. Current value is {end}"
                 )
                 exit(1)
             setattr(self, attribute, data[start:end])

@@ -6,16 +6,19 @@ from activity import Activity
 from scene import Scene
 import argparse
 from designer import demo_frame
+from template import build_configs
 
 
 def render_overlay(gpx_filename, template_filename):
     activity = Activity(gpx_filename)
-    scene = Scene(activity, activity.valid_attributes, template_filename)
-    start, end = scene.template["scene"]["start"], scene.template["scene"]["end"]
+    template = build_configs(template_filename)
+    scene = Scene(activity, template)
+    start, end = template["scene"]["start"], template["scene"]["end"]
     activity.trim(start, end)
     activity.interpolate(scene.fps)
     scene.build_figures()
     scene.render_video(end - start)
+
 
 if __name__ == "__main__":
     # gpx_filename = "vpcrit.gpx"
@@ -33,7 +36,11 @@ if __name__ == "__main__":
     parser_demo.add_argument("-template", required=True, help="template filename")
     parser_demo.add_argument("-gpx", required=True, help="gpx filename")
     parser_demo.add_argument(
-        "-second", required=True, help="second to render demo frame", default=0, type=int
+        "-second",
+        required=True,
+        help="second to render demo frame",
+        default=0,
+        type=int,
     )
 
     # Create a subparser for the 'render' command

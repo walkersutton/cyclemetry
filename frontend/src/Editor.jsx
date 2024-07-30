@@ -1,81 +1,78 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { JSONEditor } from "@json-editor/json-editor";
-import axios from "axios";
 
-// made a hack schema to get UI working - TODO fix how backend config is structured
-import schema from "./config_schema_hack.jsx";
+import generateDemoFrame from "./api/generateDemoFrame.jsx";
+import schema from "./config_schema.jsx";
 
-function Editor({ configFile, gpxFile, setImageFilename }) {
+export const initConfig = {
+  scene: {
+    color: "#ffffff",
+    height: 1080,
+    width: 1920,
+  },
+  labels: [
+    {
+      text: "Welcome to the Cyclemetry Template Editor!",
+      font_size: 80,
+      x: 50,
+      y: 40,
+    },
+    {
+      text: "Modify the template properties to change this image overlay",
+      font_size: 50,
+      x: 50,
+      y: 200,
+    },
+    {
+      text: "Upload a GPX file to change the underlying data",
+      font_size: 50,
+      x: 50,
+      y: 270,
+    },
+  ],
+};
+let config = null;
+
+function Editor({
+  gpxFilename,
+  handleEditorStateChange,
+  handleGeneratingImageStateChange,
+  handleImageFilenameStateChange,
+}) {
   const editorRef = useRef(null);
-  const config = {
+  const editorConfig = {
     use_name_attributes: false,
-    theme: "bootstrap4",
-    disable_edit_json: false,
-    // once json config uploader is working, we can disable editing json directly
-    disable_properties: true,
+    theme: "bootstrap5",
+    disable_edit_json: true,
+    disable_properties: false,
     disable_collapse: false,
     schema: schema,
   };
 
-  const generateDemoFrame = async (config, gpxFile) => {
-    if (config && gpxFile) {
-      const configJson = JSON.stringify(config);
-      // TODO - remove this shitty hack of an upload pattern
-      const configFilename = "myconfig.json";
-      const configFile = new File([configJson], configFilename, {
-        type: "application/json",
-      });
-      const postData = new FormData();
-      postData.append("file", configFile);
-      await axios
-        .post(process.env.REACT_APP_FLASK_SERVER_URL + "/upload", postData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-        .then((response) => {
-          console.log("good config file upload");
-          console.log(response);
-        })
-        .catch((error) => {
-          console.log(
-            "Editor:generateDemoFrame attempting to upload config file"
-          );
-          console.log(error);
-        });
-
-      const data = {
-        config_filename: "./tmp/" + configFile.name,
-        gpx_filename: "./tmp/" + gpxFile.name,
-        // TODO fix this with backend - currently don't want to break docker image
-        // config_filename: configFilename,
-        // gpx_filename: gpxFile.name,
-      };
-      await axios
-        .post(process.env.REACT_APP_FLASK_SERVER_URL + "/demo", data)
-        .then((response) => {
-          setImageFilename(response.data.data);
-        })
-        .catch((error) => {
-          console.log("Editor:generateDemoFrame");
-          console.log(error);
-          alert("invalid config :(");
-        });
-    }
-  };
-
   useEffect(() => {
-    const editor = new JSONEditor(editorRef.current, config);
-    // TODO
-    // add override to upload config from file system
+    const editor = new JSONEditor(editorRef.current, editorConfig);
+    editor.on("ready", function () {
+      handleEditorStateChange(editor);
+      if (config) {
+        editor.setValue(config);
+      } else {
+        editor.setValue(initConfig);
+      }
+    });
     editor.on("change", function () {
-      generateDemoFrame(editor.getValue(), gpxFile);
-      // document.querySelector('#input').value = JSON.stringify(editor.getValue())
+      // TODO - do config validation before calling generate and assigning to current config - probably helper function
+      generateDemoFrame(
+        editor,
+        gpxFilename,
+        handleGeneratingImageStateChange,
+        handleImageFilenameStateChange
+      );
+      config = editor.getValue();
     });
     return () => {
-      editor.destroy(); // Destroy the JSONEditor instance when component unmounts
+      editor.destroy();
     };
-  }, [configFile, gpxFile]); // Empty dependency array to run the effect only once after the initial render
+  }, [gpxFilename]);
 
   return <div ref={editorRef} />;
 }

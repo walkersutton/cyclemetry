@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 
@@ -34,11 +35,6 @@ def bad_request(error):
     )
 
 
-@app.route("/healthz")
-def healthz():
-    return "OK", 200
-
-
 @app.route("/upload", methods=["POST"])
 def upload():
     if "file" not in request.files:
@@ -64,6 +60,8 @@ def demo():
         and data["config_filename"] is not None
         and data["gpx_filename"] is not None
     ):
+        logging.info("app.py:demo() validated request")
+        logging.info(data)
         config_filename = data["config_filename"]
         gpx_filename = data["gpx_filename"]
         # TODO fix this file storage issue w/ frontend demo call
@@ -76,8 +74,16 @@ def demo():
 
         img_filepath = scene.frames[0].full_path()
         obf_filepath = f"./frames/{int(time.time())}.png"
-        os.rename(img_filepath, obf_filepath)
+        try:
+            os.rename(img_filepath, obf_filepath)
+        except Exception as e:
+            logging.error("app.py:demo()")
+            logging.error(e)
+            logging.error(data)
         filename = os.path.basename(obf_filepath)
+    else:
+        logging.error("app.py:demo() failed validation")
+        logging.error(data)
     return jsonify({"data": filename})
 
 

@@ -1,6 +1,4 @@
 templates/
-frames/
-tmp/
 venv/
 jupyter/
 experiments/

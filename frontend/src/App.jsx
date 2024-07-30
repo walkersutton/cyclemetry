@@ -1,47 +1,61 @@
+import "bootstrap/dist/css/bootstrap.min.css";
 import React, { useState } from "react";
 
-import Editor from "./Editor"; // Import the MyJsonEditor component
+import Editor from "./Editor";
 import PreviewPanel from "./PreviewPanel";
-import FlaskServerStatus from "./FlaskServerStatus";
+import logo from "./logo.webp";
 
 function App() {
-  const [configFile, setConfigFile] = useState(null);
-  const [gpxFile, setGpxFile] = useState(null);
-  const [imageFilename, setImageFilename] = useState(null);
+  const [gpxFilename, setGpxFilename] = useState(".demo.gpx");
+  const [imageFilename, setImageFilename] = useState(".demo.png");
+  const [editor, setEditor] = useState(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
-  const handleConfigFileStateChange = (state) => {
-    setConfigFile(state);
+  const handleGpxFilenameStateChange = (state) => {
+    setGpxFilename(state);
   };
-  const handleGpxFileStateChange = (state) => {
-    setGpxFile(state);
-  };
-  const handleImageFileStateChange = (state) => {
+  const handleImageFilenameStateChange = (state) => {
     setImageFilename(state);
+  };
+  const handleEditorStateChange = (state) => {
+    setEditor(state);
+  };
+  const handleGeneratingImageStateChange = (state) => {
+    setGeneratingImage(state);
   };
 
   return (
-    <div>
-      <div className="container">
-        <h1 className="text-center py-4">cyclemetry</h1>
-        <FlaskServerStatus />
-        <div className="row">
-          <div className="col-3">
-            <Editor
-              configFile={configFile}
-              gpxFile={gpxFile}
-              setImageFilename={handleImageFileStateChange}
-            />
+    <>
+      <main>
+        <div className="d-flex flex-column ps-3 pt-3 me-3 mb-3">
+          <div className="card bg-light p-3 mb-3">
+            {/* TODO this link covers lots of empty space on card. fix this */}
+            <a href="/" className="text-decoration-none text-dark">
+              <img src={logo} alt="Cyclemetry logo" className="logo" />
+              <strong>cyclemetry</strong>
+            </a>
           </div>
-          <div className="col-9">
-            <PreviewPanel
-              gpxFile={gpxFile}
-              imageFilename={imageFilename}
-              handleGpxFileStateChange={handleGpxFileStateChange}
-            />
-          </div>
+          <Editor
+            gpxFilename={gpxFilename}
+            handleEditorStateChange={handleEditorStateChange}
+            handleGeneratingImageStateChange={handleGeneratingImageStateChange}
+            handleImageFilenameStateChange={handleImageFilenameStateChange}
+          />
+          <p className="text-center">
+            <a href="https://github.com/walkersutton/cyclemetry">GitHub</a>
+          </p>
         </div>
-      </div>
-    </div>
+        <div>
+          <PreviewPanel
+            editor={editor}
+            generatingImage={generatingImage}
+            gpxFilename={gpxFilename}
+            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
+            imageFilename={imageFilename}
+          />
+        </div>
+      </main>
+    </>
   );
 }
 
