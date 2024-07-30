@@ -59,7 +59,7 @@ const base = {
   required: [],
   defaultProperties: [],
   properties: {
-    round: {
+    round: { // revert to decimal_rounding once alpha-v3 is released
       description: "number of decimals to round values to",
       minimum: 0,
       title: "decimal rounding",
