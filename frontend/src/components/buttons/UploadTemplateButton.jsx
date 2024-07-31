@@ -18,6 +18,7 @@ function UploadTemplateButton({ editor }) {
         const fileContent = e.target.result;
         try {
           const jsonContent = JSON.parse(fileContent);
+          // do i need to setvalue to empty first?
           editor.setValue(jsonContent);
         } catch (error) {
           console.error("Error parsing JSON:", error);
