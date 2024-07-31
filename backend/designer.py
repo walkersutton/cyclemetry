@@ -1,5 +1,9 @@
 import subprocess
 
+from activity import Activity
+from scene import Scene
+from template import build_configs
+
 """
 designer types
 * point_label, cadence, course, elevation, gradient, heartrate, sub_point, imperial, metric, time, temperature, scene -> object
@@ -20,13 +24,6 @@ notes:
 * i know that flask supports forms - i think we should be able to leverage that -
 
 """
-
-import subprocess
-import sys
-
-from activity import Activity
-from scene import Scene
-from template import build_configs
 
 
 def demo_frame(gpx_filename, template_filename, second, headless):

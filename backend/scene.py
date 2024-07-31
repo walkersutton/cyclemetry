@@ -9,7 +9,6 @@ from tqdm import tqdm
 import constant
 from frame import Frame
 from plot import build_figure
-
 from template import build_configs
 
 

@@ -1,18 +1,15 @@
 import io
 from pathlib import Path
 
-import matplotlib.axes as ax
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-
-
-mpl.use("agg")
-
 import numpy as np
 from PIL import Image
 
 from constant import FONTS_DIR
 from utils import printc
+
+mpl.use("agg")
 
 
 def build_figure(config, x, y):

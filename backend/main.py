@@ -1,7 +1,3 @@
-import subprocess
-import sys
-
-import constant
 from activity import Activity
 from scene import Scene
 import argparse
@@ -21,13 +17,6 @@ def render_overlay(gpx_filename, template_filename):
 
 
 if __name__ == "__main__":
-    # gpx_filename = "vpcrit.gpx"
-    # template_filename = "safa_brian_a.json"
-    # template_filename = "safa_brian_a_1280_720.json"
-    # gpx_filename = "pinosaltos.gpx"
-    # template_filename = "safa_brian_a_4k.json"
-    # template_filename = "safa_brian_a_1280_720.json"
-
     parser = argparse.ArgumentParser(description="TODO argparse description.")
     subparsers = parser.add_subparsers(dest="command")
 
