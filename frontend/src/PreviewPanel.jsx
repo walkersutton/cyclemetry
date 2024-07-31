@@ -30,7 +30,7 @@ function PreviewPanel({
       >
         <Stack className="card bg-light mx-auto p-3" gap={3}>
           <p>
-            <strong>gpxFilename: </strong>
+            <strong>GPX Filename: </strong>
             {gpxFilename ? gpxFilename : "missing gpx activity"}
           </p>
 
