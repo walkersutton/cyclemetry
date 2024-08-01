@@ -11,18 +11,53 @@ from utils import printc
 
 mpl.use("agg")
 
+DEFAULT_DPI = 300
+DEFAULT_LINE_WIDTH = 1.75
+DEFAULT_MARGIN = 0.1
+DEFAULT_POINT_WEIGHT = 80
+
+
+def get_dpi(config):
+    return config["dpi"] if "dpi" in config.keys() else DEFAULT_DPI
+
+
+def get_line_width(config):
+    # TODO make sure a value here works
+    return (
+        config["line"]["width"]
+        if ("line" in config.keys() and "width" in config["line"].keys())
+        else DEFAULT_LINE_WIDTH
+    )
+
+
+def get_margin(config):
+    # TODO make sure a value here works
+    return config["margin"] if "margin" in config.keys() else DEFAULT_MARGIN
+
+
+def get_point_weight(config):
+    # TODO make sure a value here works
+    return (
+        config["point_weight"]
+        if "point_weight" in config.keys()
+        else DEFAULT_POINT_WEIGHT
+    )
+
 
 def build_figure(config, x, y):
+    dpi = get_dpi(config)
+    line_width = get_line_width(config)
+
     fig = plt.figure()
     if "width" and "height" in config.keys():
         padding = 200
         fig = plt.figure(
             figsize=(
-                (config["width"] + padding) / config["dpi"],
-                (config["height"] + padding) / config["dpi"],
+                (config["width"] + padding) / dpi,
+                (config["height"] + padding) / dpi,
             )
         )
-    plt.rcParams["lines.linewidth"] = config["line_width"]
+    plt.rcParams["lines.linewidth"] = line_width
     plt.axis("off")
     plt.plot(
         x,
@@ -54,6 +89,7 @@ def build_figure(config, x, y):
 
 
 def build_image(fig, config, x, y, text=""):
+    dpi = get_dpi(config)
     plt.figure(fig.number)
     fig, points = draw_points(fig, config, x, y)
     fig, labels = draw_labels(fig, config, x, y, text)
@@ -64,7 +100,7 @@ def build_image(fig, config, x, y, text=""):
         buffer,
         bbox_inches=config["bbox"] if "bbox" in config.keys() else None,
         transparent=True,
-        dpi=config["dpi"],
+        dpi=dpi,
     )
     img = Image.open(buffer)
 
@@ -81,6 +117,8 @@ def build_image(fig, config, x, y, text=""):
 
 
 def draw_points(fig, config, x, y):
+    point_weight = get_point_weight(config)
+
     plt.figure(fig.number)
     points = []
     points.append(
@@ -88,7 +126,7 @@ def draw_points(fig, config, x, y):
             x=x,
             y=y,
             color=config["color"],
-            s=config["point_weight"],
+            s=point_weight,
             zorder=3,
         )
     )

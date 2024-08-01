@@ -59,7 +59,7 @@ const base = {
   required: [],
   defaultProperties: [],
   properties: {
-    round: { // revert to decimal_rounding once alpha-v3 is released
+    decimal_rounding: {
       description: "number of decimals to round values to",
       minimum: 0,
       title: "decimal rounding",
@@ -254,37 +254,35 @@ const point = {
   },
 };
 
-const graph = {
+const plot = {
+  defaultProperties: ["x", "y", "width", "height", "value"],
+  required: ["x", "y", "width", "height", "value"],
+  title: "Plot",
   type: "object",
-  required: [],
-  defaultProperties: [],
   properties: {
     dpi: {
       default: 300,
-      type: "integer",
       description: "pixel density of generated graphic",
+      minimum: 0,
+      type: "integer",
     },
     x: {
-      //   required: true,
+      default: 0,
+      minimum: 0,
       type: "integer",
-      descripiton: "x coordinate of this graph ((0,0) is top left)",
     },
     y: {
-      //   required: true,
+      default: 0,
+      minimum: 0,
       type: "integer",
-      descripiton: "y coordinate of this graph ((0,0) is top left)",
     },
     width: {
-      //   required: true,
-      type: "integer",
       minimum: 0,
-      description: "width in pixels of graphic",
+      type: "integer",
     },
     height: {
-      //   required: true,
-      type: "integer",
       minimum: 0,
-      description: "height in pixels of graphic",
+      type: "integer",
     },
     color: {
       type: "string",
@@ -314,8 +312,13 @@ const graph = {
     rotation: {
       required: false,
       type: "int",
+      minimum: 0,
       maxiumum: 359,
       description: "numeber of degrees to rotate graphic",
+    },
+    value: {
+      type: "string",
+      enum: ["course", "elevation"], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
     },
   },
 };
@@ -334,18 +337,22 @@ const labels = {
   items: labelText,
 };
 
+const plots = {
+  description: "2d plots",
+  type: "array",
+  title: "Plots",
+  items: plot,
+};
+
 const schema = {
   title: "hidden using css",
   type: "object",
   required: ["scene"],
   properties: {
     scene: scene,
-    // standardText: standardText,
-    // labelText: labelText,
-    // point: point,
-    // graph: graph,
     labels: labels,
     values: values,
+    plots: plots,
   },
 };
 

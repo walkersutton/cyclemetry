@@ -47,17 +47,24 @@ class Scene:
             frame.draw(self.template, self.figs).save(frame.full_path())
 
     def build_figures(self):
-        self.figs = {}
-        self.figs[constant.ATTR_COURSE] = build_figure(
-            self.template[constant.ATTR_COURSE],
-            [ele[1] for ele in self.activity.course],
-            [ele[0] for ele in self.activity.course],
-        )
-        self.figs[constant.ATTR_ELEVATION] = build_figure(
-            self.template[constant.ATTR_ELEVATION]["profile"],
-            [ii for ii in range(len(self.activity.elevation))],
-            self.activity.elevation,
-        )
+        def figure_data(attribute):
+            x, y = None, None
+            match attribute:
+                case constant.ATTR_COURSE:
+                    x = [ele[1] for ele in self.activity.course]
+                    y = [ele[0] for ele in self.activity.course]
+                case constant.ATTR_ELEVATION:
+                    x = [ii for ii in range(len(self.activity.elevation))]
+                    y = self.activity.elevation
+                case _:
+                    print("you fucked up")
+            return x, y
+
+        if "plots" in self.template.keys():
+            self.figs = {}
+            for config in self.template["plots"]:
+                x, y = figure_data(config["value"])
+                self.figs[config["value"]] = build_figure(config, x, y)
 
     # warning: quicktime_compatible codec produces nearly x5 larger file
     def export_video(self):

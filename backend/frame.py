@@ -28,12 +28,12 @@ class Frame:
             )
 
         if type(value) in (int, float):
-            if "round" in config.keys():
-                if config["round"] == 0:
+            if "decimal_rounding" in config.keys():
+                if config["decimal_rounding"] == 0:
                     value = int(value)
                 else:
                     value = round(
-                        float(value), config["round"]
+                        float(value), config["decimal_rounding"]
                     )  # TODO - should pad right side with 0s so less jumpy suffix
         value = str(value)
         if "suffix" in config.keys():
@@ -58,14 +58,19 @@ class Frame:
         elif attribute == constant.ATTR_ELEVATION:
             x = self.second * fps + self.frame_number
             y = self.elevation
-            text = self.profile_label_text(config["point_label"])
+            text = (
+                self.profile_label_text(config["point_label"])
+                if "point_label" in config
+                else ""
+            )
         plot_img, buffer = build_image(figure, config, x, y, text)
 
-        angle = config["rotation"]
-        if angle != 0:
-            plot_img = plot_img.rotate(
-                angle, resample=Image.Resampling.BICUBIC, expand=True
-            )
+        if "rotation" in config.keys():
+            angle = config["rotation"]
+            if angle != 0:
+                plot_img = plot_img.rotate(
+                    angle, resample=Image.Resampling.BICUBIC, expand=True
+                )
         img.paste(plot_img, (config["x"], config["y"]), plot_img)
         buffer.close()  # faster to not close the buffer? maybe just small sample size - seems like better practice to close though, so let's for now
         return img
@@ -117,30 +122,24 @@ class Frame:
         if "plots" in configs.keys():
             for config in configs["plots"]:
                 attribute = config["value"]
-                if attribute in self.valid_attributes:
-                    if attribute == constant.ATTR_COURSE:
-                        img = self.draw_figure(
-                            img, config, attribute, figures[attribute]
-                        )
-                    elif attribute == constant.ATTR_ELEVATION:
-                        img = self.draw_figure(
-                            img,
-                            config["profile"],
-                            attribute,
-                            figures[attribute],
-                            fps=configs["scene"]["fps"],
-                        )
+                img = self.draw_figure(
+                    img,
+                    config,
+                    attribute,
+                    figures[attribute],
+                    fps=configs["scene"]["fps"],
+                )
         return img
 
     def profile_label_text(self, config):
         text = ""
         for unit in config["units"]:
             value = self.elevation * constant.ELEVATION_CONVERSION_MAP[unit]
-            if "round" in config.keys():
-                if config["round"] == 0:
+            if "decimal_rounding" in config.keys():
+                if config["decimal_rounding"] == 0:
                     value = int(value)
                 else:
-                    value = round(float(value), config["round"])
+                    value = round(float(value), config["decimal_rounding"])
             text += (
                 f"{value}{constant.DEFAULT_SUFFIX_MAP[constant.ATTR_ELEVATION][unit]}\n"
             )

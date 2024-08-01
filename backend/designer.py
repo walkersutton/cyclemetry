@@ -55,9 +55,7 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     activity.interpolate(configs["scene"]["fps"])
     scene = Scene(activity, configs)
 
-    if "plots" in configs.keys():
-        # TODO maybe a for plot in plots
-        scene.build_figures()
+    scene.build_figures()
     scene.render_demo(end - start, second)
     if not headless:
         subprocess.call(["open", scene.frames[0].full_path()])
