@@ -19,7 +19,10 @@ ALLOWED_EXTENSIONS = {"json", "gpx"}
 UPLOAD_FOLDER = "./tmp"
 
 app = Flask(__name__)
-CORS(app)
+CORS(
+    app,
+    origins=[f"http://localhost:3000", "https://walkersutton.com"],
+)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -87,7 +90,7 @@ def demo():
     return jsonify({"data": filename})
 
 
-@app.route("/images/<filename>")
+@app.route("/images/<filename>", methods=["GET"])
 def serve_image(filename):
     # TODO images are never deleted! need to clean eventually . maybe some sort of daily job to keep things TIDY
     return send_from_directory("frames", filename)
