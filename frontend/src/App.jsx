@@ -3,7 +3,6 @@ import React, { useState } from "react";
 
 import Editor from "./Editor";
 import PreviewPanel from "./PreviewPanel";
-import logo from "./logo.webp";
 
 function App() {
   const [gpxFilename, setGpxFilename] = useState(".demo.gpx");
@@ -31,7 +30,11 @@ function App() {
           <div className="card bg-light p-3 mb-3">
             {/* TODO this link covers lots of empty space on card. fix this */}
             <a href="/" className="text-decoration-none text-dark">
-              <img src={logo} alt="Cyclemetry logo" className="logo" />
+              <img
+                src="/cyclemetry/logo192.png"
+                alt="Cyclemetry logo"
+                className="logo"
+              />
               <strong>cyclemetry</strong>
             </a>
           </div>
