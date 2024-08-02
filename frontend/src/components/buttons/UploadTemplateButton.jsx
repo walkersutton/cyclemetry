@@ -22,6 +22,7 @@ function UploadTemplateButton({ editor }) {
           editor.setValue(jsonContent);
         } catch (error) {
           console.error("Error parsing JSON:", error);
+          alert(error);
         }
       };
       reader.onerror = function (e) {
@@ -29,6 +30,7 @@ function UploadTemplateButton({ editor }) {
       };
       reader.readAsText(f);
     } else {
+      console.log(f);
       console.log("oh shit.");
     }
   };
