@@ -311,10 +311,10 @@ const plot = {
     },
     rotation: {
       required: false,
-      type: "int",
+      type: "integer",
       minimum: 0,
       maxiumum: 359,
-      description: "numeber of degrees to rotate graphic",
+      description: "numbeer of degrees to rotate plot",
     },
     value: {
       type: "string",
