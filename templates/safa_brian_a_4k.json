@@ -105,8 +105,7 @@
     "start": 1,
     "end": 520,
     "height": 2160,
-    "width": 3840,
-    "output_filename": "out.mov"
+    "width": 3840
   },
   "labels": [
     {
@@ -123,7 +122,7 @@
       "x": 100,
       "y": 830,
       "hide": false,
-      "font_size":70
+      "font_size": 70
     },
     {
       "color": "#ffffff96",

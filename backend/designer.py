@@ -13,7 +13,7 @@ designer types
 * dpi, x, y, width, height, rotation, x_offset, y_offset, round, fps -> int
 * line_width, point_weight, margin, opacity, fill_opacity, font_size -> float
 * color -> string(hex or ______)
-* suffix, output_filename, text -> str
+* suffix, overlay_filename, text -> str
 
 notes:
 * i think speed should be a list of dict (simlar to labels) rather than including hide and opacity at top level

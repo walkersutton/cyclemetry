@@ -67,7 +67,7 @@ class Scene:
                 self.figs[config["value"]] = build_figure(config, x, y)
 
     def export_video(self):
-        output_filename = self.template["scene"]["output_filename"]
+        overlay_filename = self.template['scene']['overlay_filename'] if ]"overlay_filename" in self.template['scene'].keys() else constant.DEFAULT_OVERLAY_FILENAME
         width, height = (
             self.template["scene"]["width"],
             self.template["scene"]["height"],
@@ -79,7 +79,7 @@ class Scene:
         codec = ["-c:v", "prores_ks"]  # helps with transparency
         pixel_format = ["-pix_fmt", "rgba"]
         size = ["-s", f"{width}x{height}"]
-        output = ["-y", output_filename]
+        output = ["-y", overlay_filename]
         p = Popen(
             ["ffmpeg"]
             + less_verbose

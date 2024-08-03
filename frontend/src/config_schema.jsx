@@ -8,7 +8,7 @@
 // * dpi, x, y, width, height, rotation, x_offset, y_offset, round, fps -> int
 // * line_width, point_weight, margin, opacity, fill_opacity, font_size -> number
 // * color -> string(hex or ______)
-// * suffix, output_filename, text -> str
+// * suffix, overlay_filename, text -> str
 // ": ""}
 
 //     "unit_text": { // speed, temperature - should this be list of objects or key value pair? - i don't think matters too much? -  for some reason, i thought list earlier
@@ -122,9 +122,8 @@ const sceneExtension = {
     minimum: 0,
     description: "second to end render from (affects plots for demo)",
   },
-  outputFilename: {
+  overlay_fileanme: {
     title: "overlay filename",
-    default: "overlay.mov",
     type: "string",
   },
 };

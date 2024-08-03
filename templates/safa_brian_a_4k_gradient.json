@@ -98,11 +98,10 @@
   },
   "scene": {
     "fps": 30,
-	"start": 5082,
-	"end": 5673,
+    "start": 5082,
+    "end": 5673,
     "height": 2160,
-    "width": 3840,
-    "output_filename": "out.mov"
+    "width": 3840
   },
   "labels": [
     {
@@ -119,7 +118,7 @@
       "x": 100,
       "y": 1000,
       "hide": false,
-      "font_size":70
+      "font_size": 70
     },
     {
       "color": "#ffffff96",
