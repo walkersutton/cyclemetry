@@ -246,7 +246,7 @@ const point = {
     },
     remove_edge_color: {
       descripiton: "whether or not to draw an edge around this point",
-      title: "Remove Edge Color",
+      title: "remove edge color",
       type: "boolean",
     },
     opacity: { ...opacity },

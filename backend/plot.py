@@ -61,6 +61,14 @@ def get_point_edge_color(point_config):
     )
 
 
+def get_point_color(point_config):
+    return (
+        point_config["color"]
+        if "color" in point_config.keys()
+        else constant.DEFAULT_COLOR
+    )
+
+
 def get_opacity(config):
     # TODO i think we don't need this if the merge configs is recursive, but pretty sure it's only top level
     return config["opacity"] if "opacity" in config else constant.DEFAULT_OPACITY
@@ -147,14 +155,15 @@ def draw_points(fig, config, x, y):
         )  # i'm not really sure what this does - TODO can we remove this?
         zorder = len(config["points"]) + 1
         for point_config in config["points"]:
+            color = get_point_color(point_config)
             edge_color = get_point_edge_color(point_config)
-            point_weight = get_point_weight(point_config)
+            weight = get_point_weight(point_config)
             points.append(
                 plt.scatter(
                     x=x,
                     y=y,
-                    color=config["color"],
-                    s=point_weight,
+                    color=color,
+                    s=weight,
                     zorder=zorder,
                     alpha=point_config["opacity"],
                     edgecolor=edge_color,
