@@ -33,6 +33,7 @@ function UploadTemplateButton({ editor }) {
       console.log(f);
       console.log("oh shit.");
     }
+    event.target.value = null;
   };
   return (
     <>
