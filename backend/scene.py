@@ -66,10 +66,8 @@ class Scene:
                 x, y = figure_data(config["value"])
                 self.figs[config["value"]] = build_figure(config, x, y)
 
-    # warning: quicktime_compatible codec produces nearly x5 larger file
     def export_video(self):
         output_filename = self.template["scene"]["output_filename"]
-        quicktime_compatible = self.template["scene"]["quicktime_compatible"]
         width, height = (
             self.template["scene"]["width"],
             self.template["scene"]["height"],
@@ -101,9 +99,6 @@ class Scene:
 
         p.stdin.close()
         p.wait()
-
-        if quicktime_compatible:
-            subprocess.call(["open", output_filename])
 
         # TODO - try to not depend on ffmpeg subprocess call please
         # clips = [

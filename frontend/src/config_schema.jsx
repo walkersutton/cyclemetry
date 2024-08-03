@@ -9,7 +9,6 @@
 // * line_width, point_weight, margin, opacity, fill_opacity, font_size -> number
 // * color -> string(hex or ______)
 // * suffix, output_filename, text -> str
-// * quicktime_compatible -> true
 // ": ""}
 
 //     "unit_text": { // speed, temperature - should this be list of objects or key value pair? - i don't think matters too much? -  for some reason, i thought list earlier
@@ -123,20 +122,11 @@ const sceneExtension = {
     minimum: 0,
     description: "second to end render from (affects plots for demo)",
   },
-  // quicktimeCompatible: {
-  //   title: "QuickTime compatible",
-  //   default: true,
-  //   type: "string",
-  //   enum: ["yes", "no"],
-  //   description:
-  //     "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
-  // },
-  // outputFilename: {
-  //   title: "Rendered filename",
-  //   default: "out.mov",
-  //   type: "string",
-  //   description: "the filename of the rendered video overlay",
-  // },
+  outputFilename: {
+    title: "overlay filename",
+    default: "overlay.mov",
+    type: "string",
+  },
 };
 scene["properties"] = {
   ...scene["properties"],

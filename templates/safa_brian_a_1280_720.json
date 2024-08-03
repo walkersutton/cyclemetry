@@ -102,7 +102,6 @@
       "fps": 1,
       "height": 720,
       "width": 1280,
-      "quicktime_compatible": true,
       "output_filename": "out.mov"
     },
     "labels": [
