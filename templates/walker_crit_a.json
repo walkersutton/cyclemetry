@@ -73,11 +73,15 @@
       "value": "course",
       "margin": 0.1,
       "color": "#f4f4f4",
-      "line_width": 1.75,
-      "point_weight": 150,
+      "line": {
+        "width": 1.75
+      },
       "rotation": 0,
+      "point": {
+        "weight": 150
+      },
       "sub_point": {
-        "point_weight": 415,
+        "weight": 415,
         "opacity": 0.52,
         "color": "#f4f4f4"
       }
@@ -91,8 +95,10 @@
       "opacity": 0.65,
       "margin": 0.1,
       "color": "#f4f4f4",
-      "line_width": 2,
-      "point_weight": 50,
+      "line": {
+        "width": 2
+      },
+      "point": { "weight": 50 },
       "rotation": 0,
       "fill": {}
     }

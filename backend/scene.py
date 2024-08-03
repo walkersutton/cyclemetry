@@ -67,7 +67,11 @@ class Scene:
                 self.figs[config["value"]] = build_figure(config, x, y)
 
     def export_video(self):
-        overlay_filename = self.template['scene']['overlay_filename'] if ]"overlay_filename" in self.template['scene'].keys() else constant.DEFAULT_OVERLAY_FILENAME
+        overlay_filename = (
+            self.template["scene"]["overlay_filename"]
+            if "overlay_filename" in self.template["scene"].keys()
+            else constant.DEFAULT_OVERLAY_FILENAME
+        )
         width, height = (
             self.template["scene"]["width"],
             self.template["scene"]["height"],
