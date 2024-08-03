@@ -74,7 +74,7 @@ def build_figure(config, x, y):
             plt.axis(config["axis"])
         except ValueError as e:
             printc(f"Invalid axis value: {e}", "red")
-    if "fill_opacity" in config.keys():
+    if "fill" in config.keys():
         min_threshold = min(y) * 0.99
         y = np.array(y)
         plt.fill_between(
@@ -83,7 +83,7 @@ def build_figure(config, x, y):
             min_threshold,
             where=(y > min_threshold),
             facecolor=config["color"],
-            alpha=config["fill_opacity"],
+            alpha=config["opacity"],
         )
     return fig
 

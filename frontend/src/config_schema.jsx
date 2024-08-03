@@ -306,7 +306,14 @@ const plot = {
         opacity: { ...opacity },
       },
     },
-    underFillOpacity: { ...opacity },
+    fill: {
+      color: {
+        type: "string",
+        format: "color",
+        description: "plot point color.",
+      },
+      ...opacity,
+    },
     primaryPoint: deepCopy(point),
     subPoint: deepCopy(point),
     margin: {
