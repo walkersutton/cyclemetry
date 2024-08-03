@@ -201,6 +201,11 @@ const valueTextExtension = {
       "speed",
     ], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
   },
+  unit: {
+    type: "string",
+    default: "imperial",
+    enum: ["imperial", "metric"],
+  },
 };
 valueText["properties"] = {
   ...valueText["properties"],

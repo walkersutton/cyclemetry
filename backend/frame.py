@@ -27,6 +27,13 @@ class Frame:
                 (x, y), text, font=font, fill=ImageColor.getcolor(color, "RGBA")
             )
 
+        def hex_color_with_alpha(color, opacity):
+            if opacity is None:
+                return color
+            int_value = round(opacity * 255)
+            hex_string = f"{int_value:02x}"
+            return color + hex_string
+
         if type(value) in (int, float):
             if "decimal_rounding" in config.keys():
                 if config["decimal_rounding"] == 0:
@@ -40,7 +47,10 @@ class Frame:
             value += config["suffix"]
         draw_value_helper(
             value,
-            config["color"],
+            hex_color_with_alpha(
+                config["color"],
+                config["opacity"] if "opacity" in config.keys() else None,
+            ),
             config["x"],
             config["y"],
             config["font_size"],
@@ -80,9 +90,9 @@ class Frame:
             unit = config["unit"]
             match attribute:
                 case constant.ATTR_SPEED:
-                    if unit == "imperial":
+                    if unit == constant.UNIT_IMPERIAL:
                         value *= constant.MPH_CONVERSION
-                    elif unit == "metric":
+                    elif unit == constant.UNIT_METRIC:
                         value *= constant.KMH_CONVERSION
                     else:
                         print("wtf is that unit")
