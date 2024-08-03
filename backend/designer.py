@@ -14,7 +14,6 @@ designer types
 * line_width, point_weight, margin, opacity, fill_opacity, font_size -> float
 * color -> string(hex or ______)
 * suffix, output_filename, text -> str
-* quicktime_compatible -> true
 
 notes:
 * i think speed should be a list of dict (simlar to labels) rather than including hide and opacity at top level
