@@ -273,12 +273,10 @@ const plot = {
     },
     x: {
       default: 0,
-      minimum: 0,
       type: "integer",
     },
     y: {
       default: 0,
-      minimum: 0,
       type: "integer",
     },
     width: {
@@ -307,12 +305,16 @@ const plot = {
       },
     },
     fill: {
-      color: {
-        type: "string",
-        format: "color",
-        description: "plot point color.",
+      type: "object",
+      required: [],
+      properties: {
+        color: {
+          type: "string",
+          format: "color",
+          description: "plot point color.",
+        },
+        ...opacity,
       },
-      ...opacity,
     },
     primaryPoint: deepCopy(point),
     subPoint: deepCopy(point),
