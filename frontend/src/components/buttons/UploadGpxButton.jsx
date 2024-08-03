@@ -27,7 +27,7 @@ function UploadGpxButton({ handleGpxFilenameStateChange }) {
         className="file-input"
         onChange={handleFileChange}
       />
-      <label htmlFor={gpxSchema.inputId} className="btn btn-primary">
+      <label htmlFor={gpxSchema.inputId} className="btn btn-danger m-1">
         Upload GPX
       </label>
     </>

@@ -8,8 +8,7 @@
 // * dpi, x, y, width, height, rotation, x_offset, y_offset, round, fps -> int
 // * line_width, point_weight, margin, opacity, fill_opacity, font_size -> number
 // * color -> string(hex or ______)
-// * suffix, output_filename, text -> str
-// * quicktime_compatible -> true
+// * suffix, overlay_filename, text -> str
 // ": ""}
 
 //     "unit_text": { // speed, temperature - should this be list of objects or key value pair? - i don't think matters too much? -  for some reason, i thought list earlier
@@ -59,7 +58,7 @@ const base = {
   required: [],
   defaultProperties: [],
   properties: {
-    round: { // revert to decimal_rounding once alpha-v3 is released
+    decimal_rounding: {
       description: "number of decimals to round values to",
       minimum: 0,
       title: "decimal rounding",
@@ -123,20 +122,10 @@ const sceneExtension = {
     minimum: 0,
     description: "second to end render from (affects plots for demo)",
   },
-  // quicktimeCompatible: {
-  //   title: "QuickTime compatible",
-  //   default: true,
-  //   type: "string",
-  //   enum: ["yes", "no"],
-  //   description:
-  //     "whether or not ffmpeg should render a video using a codec** that is compatible with quicktime player on mac",
-  // },
-  // outputFilename: {
-  //   title: "Rendered filename",
-  //   default: "out.mov",
-  //   type: "string",
-  //   description: "the filename of the rendered video overlay",
-  // },
+  overlay_fileanme: {
+    title: "overlay filename",
+    type: "string",
+  },
 };
 scene["properties"] = {
   ...scene["properties"],
@@ -158,10 +147,6 @@ const standardTextExtension = {
     type: "integer",
     default: 0,
     descripiton: "y coordinate of this value ((0,0) is top left)",
-  },
-  suffix: {
-    type: "string",
-    description: "text appended to the string value",
   },
 };
 standardText["properties"] = {
@@ -201,6 +186,15 @@ const valueTextExtension = {
       "speed",
     ], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
   },
+  unit: {
+    type: "string",
+    default: "imperial",
+    enum: ["imperial", "metric"],
+  },
+  suffix: {
+    type: "string",
+    description: "text appended to the value",
+  },
 };
 valueText["properties"] = {
   ...valueText["properties"],
@@ -231,19 +225,29 @@ pointLabel["properties"] = {
 };
 
 const point = {
-  type: "object",
-  required: [],
   defaultProperties: [],
+  required: [],
+  title: "Point",
+  type: "object",
   properties: {
     weight: {
+      description: "the diameter of points drawn on the graph",
       minimum: 0,
       type: "integer",
-      description: "the diameter of points drawn on the graph",
     },
     color: {
-      type: "string",
       format: "color",
-      description: "plot point color.",
+      type: "string",
+    },
+    edge_color: {
+      description: "point's edge color",
+      format: "color",
+      type: "string",
+    },
+    remove_edge_color: {
+      descripiton: "whether or not to draw an edge around this point",
+      title: "remove edge color",
+      type: "boolean",
     },
     opacity: { ...opacity },
     label: pointLabel,
@@ -254,37 +258,40 @@ const point = {
   },
 };
 
-const graph = {
+const points = {
+  type: "array",
+  title: "Points",
+  items: point,
+};
+
+const plot = {
+  defaultProperties: ["x", "y", "width", "height", "value"],
+  required: ["x", "y", "width", "height", "value"],
+  title: "Plot",
   type: "object",
-  required: [],
-  defaultProperties: [],
   properties: {
     dpi: {
       default: 300,
-      type: "integer",
       description: "pixel density of generated graphic",
-    },
-    x: {
-      //   required: true,
+      minimum: 0,
       type: "integer",
-      descripiton: "x coordinate of this graph ((0,0) is top left)",
+    },
+    opacity: { ...opacity },
+    x: {
+      default: 0,
+      type: "integer",
     },
     y: {
-      //   required: true,
+      default: 0,
       type: "integer",
-      descripiton: "y coordinate of this graph ((0,0) is top left)",
     },
     width: {
-      //   required: true,
-      type: "integer",
       minimum: 0,
-      description: "width in pixels of graphic",
+      type: "integer",
     },
     height: {
-      //   required: true,
-      type: "integer",
       minimum: 0,
-      description: "height in pixels of graphic",
+      type: "integer",
     },
     color: {
       type: "string",
@@ -292,9 +299,15 @@ const graph = {
       description: "graph color",
     },
     line: {
-      type: "object",
       required: [],
+      title: "Line",
+      type: "object",
       properties: {
+        color: {
+          default: "#ffffff",
+          format: "color",
+          type: "string",
+        },
         width: {
           default: 1.75,
           type: "number",
@@ -303,9 +316,18 @@ const graph = {
         opacity: { ...opacity },
       },
     },
-    underFillOpacity: { ...opacity },
-    primaryPoint: deepCopy(point),
-    subPoint: deepCopy(point),
+    fill: {
+      required: [],
+      title: "Fill",
+      type: "object",
+      properties: {
+        color: {
+          type: "string",
+          format: "color",
+        },
+        opacity: { ...opacity },
+      },
+    },
     margin: {
       required: false,
       type: "number",
@@ -313,10 +335,16 @@ const graph = {
     },
     rotation: {
       required: false,
-      type: "int",
+      type: "integer",
+      minimum: 0,
       maxiumum: 359,
-      description: "numeber of degrees to rotate graphic",
+      description: "numbeer of degrees to rotate plot",
     },
+    value: {
+      type: "string",
+      enum: ["course", "elevation"], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
+    },
+    points: points,
   },
 };
 
@@ -334,18 +362,22 @@ const labels = {
   items: labelText,
 };
 
+const plots = {
+  description: "2d plots",
+  type: "array",
+  title: "Plots",
+  items: plot,
+};
+
 const schema = {
   title: "hidden using css",
   type: "object",
   required: ["scene"],
   properties: {
     scene: scene,
-    // standardText: standardText,
-    // labelText: labelText,
-    // point: point,
-    // graph: graph,
     labels: labels,
     values: values,
+    plots: plots,
   },
 };
 

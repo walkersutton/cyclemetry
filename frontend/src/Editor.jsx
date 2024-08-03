@@ -7,27 +7,27 @@ import schema from "./config_schema.jsx";
 export const initConfig = {
   scene: {
     color: "#ffffff",
-    height: 1080,
-    width: 1920,
+    height: 230,
+    width: 900,
   },
   labels: [
     {
       text: "Welcome to the Cyclemetry Template Editor!",
-      font_size: 80,
+      font_size: 40,
       x: 50,
       y: 40,
     },
     {
       text: "Modify the template properties to change this image overlay",
-      font_size: 50,
+      font_size: 30,
       x: 50,
-      y: 200,
+      y: 110,
     },
     {
       text: "Upload a GPX file to change the underlying data",
-      font_size: 50,
+      font_size: 30,
       x: 50,
-      y: 270,
+      y: 150,
     },
   ],
 };

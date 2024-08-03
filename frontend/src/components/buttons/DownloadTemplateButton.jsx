@@ -13,7 +13,7 @@ function DownloadTemplateButton({ editor }) {
   };
 
   return (
-    <Button variant="primary" onClick={downloadTemplate}>
+    <Button variant="secondary" onClick={downloadTemplate} className="m-1">
       Download Template
     </Button>
   );

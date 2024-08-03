@@ -4,20 +4,20 @@
   },
   "course": {
     "dpi": 300,
-    "x": -35,
-    "y": -174,
+    "x": -120,
+    "y": -160,
     "hide": false,
     "line_width": 1.75,
     "point_weight": 80,
-    "width": 270,
-    "height": 630,
+    "width": 1100,
+    "height": 900,
     "color": "#f4f4f4",
     "margin": 0.1,
     "sub_point": {
       "point_weight": 345,
       "opacity": 0.52
     },
-    "rotation": 150
+    "rotation": 95
   },
   "elevation": {
     "dpi": 300,
@@ -29,10 +29,10 @@
       "dpi": 300,
       "line_width": 2,
       "hide": false,
-      "x": -193,
-      "y": 1500,
-      "width": 1200,
-      "height": 600,
+      "x": -209,
+      "y": 1435,
+      "width": 1300,
+      "height": 650,
       "fill_opacity": 0.65,
       "rotation": 0,
       "point_weight": 14,
@@ -60,11 +60,7 @@
   },
   "power": {
     "color": "#ffffff96",
-    "x": 80,
-    "y": 1164,
-    "font_size": 255,
-    "hide": false,
-    "suffix": ""
+    "hide": true
   },
   "speed": {
     "hide": false,
@@ -73,7 +69,7 @@
       "color": "#ffffff96",
       "opacity": 0.3,
       "x": 80,
-      "y": 554,
+      "y": 724,
       "font_size": 255,
       "hide": false,
       "suffix": ""
@@ -81,7 +77,7 @@
     "metric": {
       "color": "#ffffff96",
       "x": 80,
-      "y": 859,
+      "y": 1029,
       "font_size": 255,
       "hide": false,
       "suffix": ""
@@ -102,19 +98,17 @@
   },
   "scene": {
     "fps": 30,
-    "start": 1,
-    "end": 520,
+    "start": 5082,
+    "end": 5673,
     "height": 2160,
-    "width": 3840,
-    "quicktime_compatible": true,
-    "output_filename": "out.mov"
+    "width": 3840
   },
   "labels": [
     {
       "color": "#ffffff96",
       "text": "MPH",
       "x": 100,
-      "y": 525,
+      "y": 695,
       "hide": false,
       "font_size": 70
     },
@@ -122,18 +116,9 @@
       "color": "#ffffff96",
       "text": "KMH",
       "x": 100,
-      "y": 830,
+      "y": 1000,
       "hide": false,
-      "font_size":70
-    },
-    {
-      "color": "#ffffff96",
-      "text": "PWR",
-      "x": 100,
-      "y": 1135,
-      "hide": false,
-      "font_size": 70,
-      "opacity": 0.5
+      "font_size": 70
     },
     {
       "color": "#ffffff96",

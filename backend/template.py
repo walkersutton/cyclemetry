@@ -1,27 +1,5 @@
 import json
 import os
-import copy
-
-
-""""
-components are tangible visual elements
-"""
-
-
-def components(template):
-    components = {
-        "plots": [],
-        "labels": [],
-        "values": [],
-    }
-    keys = template.keys()
-    if "values" in keys:
-        for obj in template["values"]:
-            components["values"].append(obj["value"])
-    if "labels" in keys:
-        for obj in template["labels"]:
-            components["labels"].append(obj["label"])
-    return components
 
 
 def merge_configs(parent_config, child_config):

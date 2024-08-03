@@ -13,8 +13,7 @@ designer types
 * dpi, x, y, width, height, rotation, x_offset, y_offset, round, fps -> int
 * line_width, point_weight, margin, opacity, fill_opacity, font_size -> float
 * color -> string(hex or ______)
-* suffix, output_filename, text -> str
-* quicktime_compatible -> true
+* suffix, overlay_filename, text -> str
 
 notes:
 * i think speed should be a list of dict (simlar to labels) rather than including hide and opacity at top level
@@ -55,9 +54,7 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     activity.interpolate(configs["scene"]["fps"])
     scene = Scene(activity, configs)
 
-    if "plots" in configs.keys():
-        # TODO maybe a for plot in plots
-        scene.build_figures()
+    scene.build_figures()
     scene.render_demo(end - start, second)
     if not headless:
         subprocess.call(["open", scene.frames[0].full_path()])

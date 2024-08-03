@@ -22,6 +22,7 @@ function UploadTemplateButton({ editor }) {
           editor.setValue(jsonContent);
         } catch (error) {
           console.error("Error parsing JSON:", error);
+          alert(error);
         }
       };
       reader.onerror = function (e) {
@@ -29,8 +30,10 @@ function UploadTemplateButton({ editor }) {
       };
       reader.readAsText(f);
     } else {
+      console.log(f);
       console.log("oh shit.");
     }
+    event.target.value = null;
   };
   return (
     <>
@@ -50,7 +53,7 @@ function UploadTemplateButton({ editor }) {
         }
         placement={"top"}
       >
-        <label htmlFor={templateSchema.inputId} className="btn btn-warning">
+        <label htmlFor={templateSchema.inputId} className="btn btn-warning m-1">
           Upload Template
         </label>
       </OverlayTrigger>

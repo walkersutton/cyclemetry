@@ -47,22 +47,31 @@ class Scene:
             frame.draw(self.template, self.figs).save(frame.full_path())
 
     def build_figures(self):
-        self.figs = {}
-        self.figs[constant.ATTR_COURSE] = build_figure(
-            self.template[constant.ATTR_COURSE],
-            [ele[1] for ele in self.activity.course],
-            [ele[0] for ele in self.activity.course],
-        )
-        self.figs[constant.ATTR_ELEVATION] = build_figure(
-            self.template[constant.ATTR_ELEVATION]["profile"],
-            [ii for ii in range(len(self.activity.elevation))],
-            self.activity.elevation,
-        )
+        def figure_data(attribute):
+            x, y = None, None
+            match attribute:
+                case constant.ATTR_COURSE:
+                    x = [ele[1] for ele in self.activity.course]
+                    y = [ele[0] for ele in self.activity.course]
+                case constant.ATTR_ELEVATION:
+                    x = [ii for ii in range(len(self.activity.elevation))]
+                    y = self.activity.elevation
+                case _:
+                    print("you fucked up")
+            return x, y
 
-    # warning: quicktime_compatible codec produces nearly x5 larger file
+        if "plots" in self.template.keys():
+            self.figs = {}
+            for config in self.template["plots"]:
+                x, y = figure_data(config["value"])
+                self.figs[config["value"]] = build_figure(config, x, y)
+
     def export_video(self):
-        output_filename = self.template["scene"]["output_filename"]
-        quicktime_compatible = self.template["scene"]["quicktime_compatible"]
+        overlay_filename = (
+            self.template["scene"]["overlay_filename"]
+            if "overlay_filename" in self.template["scene"].keys()
+            else constant.DEFAULT_OVERLAY_FILENAME
+        )
         width, height = (
             self.template["scene"]["width"],
             self.template["scene"]["height"],
@@ -74,7 +83,7 @@ class Scene:
         codec = ["-c:v", "prores_ks"]  # helps with transparency
         pixel_format = ["-pix_fmt", "rgba"]
         size = ["-s", f"{width}x{height}"]
-        output = ["-y", output_filename]
+        output = ["-y", overlay_filename]
         p = Popen(
             ["ffmpeg"]
             + less_verbose
@@ -94,9 +103,6 @@ class Scene:
 
         p.stdin.close()
         p.wait()
-
-        if quicktime_compatible:
-            subprocess.call(["open", output_filename])
 
         # TODO - try to not depend on ffmpeg subprocess call please
         # clips = [

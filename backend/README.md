@@ -34,7 +34,7 @@ docker ps -a
 
 # build image
 docker build . -t walkersutton/cyclemetry:<tag>
-# i.e. "docker build --platform linux/amd64 . -t walkersutton/cyclemetry:alpha-v2"
+# i.e. "docker build . -t walkersutton/cyclemetry:alpha-v2"
 docker build --platform linux/amd64 . -t walkersutton/cyclemetry:<tag> # pattern linuxamd64-prefix
 # i.e. "docker build --platform linux/amd64 . -t walkersutton/cyclemetry:linuxamd64-alpha-v2"
 
