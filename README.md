@@ -29,7 +29,7 @@ I'm currently building a web app that will enable you to export video overlays. 
 ## Videos Made With Cyclemetry
 |Seward Park Crit|Stunt Descent|Descent into Rincon|
 | - | - | - |
-|[![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/uXYzUSOr2Zg/0.jpg)](https://www.youtube.com/watch?v=uXYzUSOr2Zg)|[![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc)|[![Descent into Rincon by Walker Sutton](https://img.youtube.com/vi/i2vdPIfIswc/0.jpg)](https://www.youtube.com/watch?v=i2vdPIfIswc)|
+|[![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/gKugPA0xGhw/0.jpg)](https://www.youtube.com/watch?v=gKugPA0xGhw)|[![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc)|[![Descent into Rincon by Walker Sutton](https://img.youtube.com/vi/i2vdPIfIswc/0.jpg)](https://www.youtube.com/watch?v=i2vdPIfIswc)|
 
 ## [Alternative Tools](https://alternativeto.net/software/garmin-virb-edit/)
 
