@@ -1,6 +1,4 @@
 import React from "react";
-import Stack from "react-bootstrap/Stack";
-import Button from "react-bootstrap/Button";
 
 import DemoPreview from "./components/DemoPreview";
 import DownloadTemplateButton from "./components/buttons/DownloadTemplateButton";
@@ -11,49 +9,36 @@ import SelectCommunityTemplateButton from "./components/buttons/SelectCommunityT
 function PreviewPanel({
   editor,
   generatingImage,
-  gpxFilename,
   handleGpxFilenameStateChange,
   imageFilename,
 }) {
   return (
-    <div className="sticky-top pt-3 me-3 mb-3">
+    <div className="stuckk pe-2">
       <DemoPreview
         generatingImage={generatingImage}
         imageFilename={imageFilename}
       />
-      <Stack
-        className={
-          imageFilename ? "card bg-light p-3 mt-3" : "card bg-light p-3"
-        }
-        direction="horizontal"
-        gap={3}
-      >
-        <Stack className="card bg-light mx-auto p-3" gap={3}>
-          <p>
-            <strong>GPX Filename: </strong>
-            {gpxFilename ? gpxFilename : "missing gpx activity"}
-          </p>
-
-          <UploadGpxButton
-            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
-          />
-        </Stack>
-        <Stack className="card bg-light mx-auto p-3" gap={3}>
-          <Stack direction="horizontal" gap={2}>
-            <Button
-              variant="info"
-              href="https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md"
-            >
-              Template Schema
-            </Button>
-            <DownloadTemplateButton editor={editor} />
-          </Stack>
-          <Stack direction="horizontal" gap={2}>
+      <div className="card bg-light mt-2 p-2">
+        <div className="row">
+          <div className="d-flex flex-wrap">
+            <UploadGpxButton
+              handleGpxFilenameStateChange={handleGpxFilenameStateChange}
+            />
             <UploadTemplateButton editor={editor} />
             <SelectCommunityTemplateButton editor={editor} />
-          </Stack>
-        </Stack>
-      </Stack>
+            <DownloadTemplateButton editor={editor} />
+          </div>
+        </div>
+      </div>
+      <div className="p-2">
+        <p>
+          <a href="https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md">
+            Template Schema
+          </a>
+          <br />
+          <a href="https://github.com/walkersutton/cyclemetry">GitHub repo</a>
+        </p>
+      </div>
     </div>
   );
 }

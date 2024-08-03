@@ -1,5 +1,6 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import React, { useState } from "react";
+import { Panel, PanelResizeHandle, PanelGroup } from "react-resizable-panels";
 
 import Editor from "./Editor";
 import PreviewPanel from "./PreviewPanel";
@@ -25,10 +26,13 @@ function App() {
 
   return (
     <>
-      <main>
-        <div className="d-flex flex-column ps-3 pt-3 me-3 mb-3">
-          <div className="card bg-light p-3 mb-3">
-            {/* TODO this link covers lots of empty space on card. fix this */}
+      <PanelGroup
+        autoSaveId="persistence"
+        direction="horizontal"
+        className="p-2"
+      >
+        <Panel className="pe-1" minSize={15} defaultSize={25}>
+          <div className="p-2 mb-2" style={{ overflow: "auto" }}>
             <a href="/" className="text-decoration-none text-dark">
               <img
                 src="/cyclemetry/logo192.png"
@@ -44,20 +48,17 @@ function App() {
             handleGeneratingImageStateChange={handleGeneratingImageStateChange}
             handleImageFilenameStateChange={handleImageFilenameStateChange}
           />
-          <p className="text-center">
-            <a href="https://github.com/walkersutton/cyclemetry">GitHub</a>
-          </p>
-        </div>
-        <div>
+        </Panel>
+        <PanelResizeHandle />
+        <Panel className="ps-1" minSize={30}>
           <PreviewPanel
             editor={editor}
             generatingImage={generatingImage}
-            gpxFilename={gpxFilename}
             handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             imageFilename={imageFilename}
           />
-        </div>
-      </main>
+        </Panel>
+      </PanelGroup>
     </>
   );
 }

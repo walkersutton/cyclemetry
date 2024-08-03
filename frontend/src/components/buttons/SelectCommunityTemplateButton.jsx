@@ -54,7 +54,7 @@ function SelectCommunityTemplateButton({ editor }) {
       <DropdownButton
         title="Community Templates"
         variant="warning"
-        className="text-center"
+        className="text-center m-1"
       >
         {/* also happens when user clicks back button from github link on bottom of editor */}
         {/* seeing a bug when user clicks on template link and clicks back button in browser. payload looks like {'config_filename': './tmp/myconfig.json', 'gpx_filename': './tmp/.demo.gpx'} on server and both files there seem fine. seems like an image is being generated, but it doesn't have anything drawn, so idk what's up. need to investigate */}

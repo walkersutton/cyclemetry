@@ -53,7 +53,7 @@ function UploadTemplateButton({ editor }) {
         }
         placement={"top"}
       >
-        <label htmlFor={templateSchema.inputId} className="btn btn-warning">
+        <label htmlFor={templateSchema.inputId} className="btn btn-warning m-1">
           Upload Template
         </label>
       </OverlayTrigger>

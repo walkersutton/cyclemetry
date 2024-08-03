@@ -8,10 +8,13 @@ const gpxSchema = {
   inputId: "file-upload-gpx",
 };
 
+let isCustomGpxFileSet = false;
+
 function UploadGpxButton({ handleGpxFilenameStateChange }) {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file && file.type === gpxSchema.allowedType) {
+      isCustomGpxFileSet = true;
       uploadGpxFile(file, handleGpxFilenameStateChange);
     } else {
       console.log("Invalid file type. Please select a GPX file.");
@@ -27,7 +30,12 @@ function UploadGpxButton({ handleGpxFilenameStateChange }) {
         className="file-input"
         onChange={handleFileChange}
       />
-      <label htmlFor={gpxSchema.inputId} className="btn btn-primary">
+      <label
+        htmlFor={gpxSchema.inputId}
+        className={
+          isCustomGpxFileSet ? "btn btn-success m-1" : "btn btn-danger m-1"
+        }
+      >
         Upload GPX
       </label>
     </>
