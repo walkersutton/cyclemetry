@@ -9,9 +9,7 @@
     "fps": 30,
     "opacity": 0.5,
     "start": 1626,
-    "end": 3104,
-    "quicktime_compatible": true,
-    "output_filename": "out.mov"
+    "end": 3104
   },
   "labels": [
     {
