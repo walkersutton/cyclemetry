@@ -1,0 +1,102 @@
+{
+  "scene": {
+    "height": 2160,
+    "width": 3840,
+    "color": "#ffffff",
+    "font": "Evogria.otf",
+    "font_size": 30,
+    "decimal_rounding": 0,
+    "fps": 30,
+    "opacity": 0.5,
+    "start": 1626,
+    "end": 3104,
+    "quicktime_compatible": true,
+    "output_filename": "out.mov"
+  },
+  "labels": [
+    {
+      "x": 100,
+      "y": 700,
+      "font_size": 60,
+      "text": "MPH"
+    },
+    {
+      "x": 100,
+      "y": 990,
+      "font_size": 60,
+      "text": "PWR"
+    },
+    {
+      "x": 100,
+      "y": 1280,
+      "font_size": 60,
+      "text": "RPM"
+    },
+    {
+      "x": 100,
+      "y": 1570,
+      "font_size": 60,
+      "text": "BPM"
+    }
+  ],
+  "values": [
+    {
+      "x": 80,
+      "y": 730,
+      "font_size": 220,
+      "value": "speed",
+      "unit": "imperial"
+    },
+    {
+      "x": 80,
+      "y": 1020,
+      "font_size": 220,
+      "value": "power"
+    },
+    {
+      "x": 80,
+      "y": 1310,
+      "font_size": 220,
+      "value": "cadence"
+    },
+    {
+      "x": 80,
+      "y": 1600,
+      "font_size": 220,
+      "value": "heartrate"
+    }
+  ],
+  "plots": [
+    {
+      "x": -64,
+      "y": -87,
+      "width": 700,
+      "height": 600,
+      "value": "course",
+      "margin": 0.1,
+      "color": "#f4f4f4",
+      "line_width": 1.75,
+      "point_weight": 150,
+      "rotation": 0,
+      "sub_point": {
+        "point_weight": 415,
+        "opacity": 0.52,
+        "color": "#f4f4f4"
+      }
+    },
+    {
+      "x": -1127,
+      "y": 1912,
+      "width": 5745,
+      "height": 100,
+      "value": "elevation",
+      "opacity": 0.65,
+      "margin": 0.1,
+      "color": "#f4f4f4",
+      "line_width": 2,
+      "point_weight": 50,
+      "rotation": 0,
+      "fill": {}
+    }
+  ]
+}
