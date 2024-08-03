@@ -317,14 +317,15 @@ const plot = {
       },
     },
     fill: {
-      type: "object",
       required: [],
+      title: "Fill",
+      type: "object",
       properties: {
         color: {
           type: "string",
           format: "color",
         },
-        ...opacity,
+        opacity: { ...opacity },
       },
     },
     margin: {
