@@ -25,23 +25,39 @@ def get_line_width(config):
     )
 
 
+def get_line_color(config):
+    # TODO make sure a value here works
+    return (
+        config["line"]["color"]
+        if ("line" in config.keys() and "color" in config["line"].keys())
+        else (config["color"] if "color" in config.keys() else constant.DEFAULT_COLOR)
+    )
+
+
 def get_margin(config):
     # TODO make sure a value here works
     return config["margin"] if "margin" in config.keys() else constant.DEFAULT_MARGIN
 
 
-def get_point_weight(config):
+def get_point_weight(point_config):
     # TODO make sure a value here works
     return (
-        config["weight"] if "weight" in config.keys() else constant.DEFAULT_POINT_WEIGHT
+        point_config["weight"]
+        if "weight" in point_config.keys()
+        else constant.DEFAULT_POINT_WEIGHT
     )
 
 
-def get_edge_color(config):
+def get_point_edge_color(point_config):
     return (
         "none"
-        if ("remove_edge_color" in config.keys() and config["remove_edge_color"])
-        else (config["edge_color"] if "edge_color" in config.keys() else None)
+        if (
+            "remove_edge_color" in point_config.keys()
+            and point_config["remove_edge_color"]
+        )
+        else (
+            point_config["edge_color"] if "edge_color" in point_config.keys() else None
+        )
     )
 
 
@@ -68,7 +84,7 @@ def build_figure(config, x, y):
     plt.plot(
         x,
         y,
-        color=config["color"],
+        color=get_line_color(config),
     )
 
     if "margin" in config.keys():
@@ -131,7 +147,7 @@ def draw_points(fig, config, x, y):
         )  # i'm not really sure what this does - TODO can we remove this?
         zorder = len(config["points"]) + 1
         for point_config in config["points"]:
-            edge_color = get_edge_color(point_config)
+            edge_color = get_point_edge_color(point_config)
             point_weight = get_point_weight(point_config)
             points.append(
                 plt.scatter(

@@ -246,6 +246,7 @@ const point = {
     },
     remove_edge_color: {
       descripiton: "whether or not to draw an edge around this point",
+      title: "Remove Edge Color",
       type: "boolean",
     },
     opacity: { ...opacity },
@@ -298,10 +299,15 @@ const plot = {
       description: "graph color",
     },
     line: {
-      // todo add support for color config
-      type: "object",
       required: [],
+      title: "Line",
+      type: "object",
       properties: {
+        color: {
+          default: "#ffffff",
+          format: "color",
+          type: "string",
+        },
         width: {
           default: 1.75,
           type: "number",
