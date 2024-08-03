@@ -13,7 +13,7 @@ const templateUrl = (fileName) => {
   );
 };
 
-const communityTemplateFilenames = [];
+const communityTemplateFilenames = ["walker_crit_a"];
 
 function SelectCommunityTemplateButton({ editor }) {
   const [templateFilename, setTemplateFilename] = useState(null);
@@ -41,30 +41,30 @@ function SelectCommunityTemplateButton({ editor }) {
   }, [templateFilename]);
 
   return (
-    <DropdownButton
-      title="Community Templates"
-      variant="warning"
-      className="text-center"
+    <OverlayTrigger
+      overlay={
+        <Tooltip id="tooltip-top">
+          WARNING: Selecting a community template will overwrite your existing
+          configuration
+        </Tooltip>
+      }
+      placement={"top"}
+      key={templateFilename}
     >
-      {communityTemplateFilenames.map((templateFilename) => (
-        <OverlayTrigger
-          overlay={
-            <Tooltip id="tooltip-top">
-              WARNING: Selecting a community template will overwrite your
-              existing configuration
-            </Tooltip>
-          }
-          placement={"top"}
-          key={templateFilename}
-        >
-          {/* also happens when user clicks back button from github link on bottom of editor */}
-          {/* seeing a bug when user clicks on template link and clicks back button in browser. payload looks like {'config_filename': './tmp/myconfig.json', 'gpx_filename': './tmp/.demo.gpx'} on server and both files there seem fine. seems like an image is being generated, but it doesn't have anything drawn, so idk what's up. need to investigate */}
+      <DropdownButton
+        title="Community Templates"
+        variant="warning"
+        className="text-center"
+      >
+        {/* also happens when user clicks back button from github link on bottom of editor */}
+        {/* seeing a bug when user clicks on template link and clicks back button in browser. payload looks like {'config_filename': './tmp/myconfig.json', 'gpx_filename': './tmp/.demo.gpx'} on server and both files there seem fine. seems like an image is being generated, but it doesn't have anything drawn, so idk what's up. need to investigate */}
+        {communityTemplateFilenames.map((templateFilename) => (
           <Dropdown.Item onClick={() => setTemplateFilename(templateFilename)}>
             {templateFilename}
           </Dropdown.Item>
-        </OverlayTrigger>
-      ))}
-    </DropdownButton>
+        ))}
+      </DropdownButton>
+    </OverlayTrigger>
   );
 }
 
