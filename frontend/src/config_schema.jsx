@@ -148,10 +148,6 @@ const standardTextExtension = {
     default: 0,
     descripiton: "y coordinate of this value ((0,0) is top left)",
   },
-  suffix: {
-    type: "string",
-    description: "text appended to the string value",
-  },
 };
 standardText["properties"] = {
   ...standardText["properties"],
@@ -194,6 +190,10 @@ const valueTextExtension = {
     type: "string",
     default: "imperial",
     enum: ["imperial", "metric"],
+  },
+  suffix: {
+    type: "string",
+    description: "text appended to the value",
   },
 };
 valueText["properties"] = {
