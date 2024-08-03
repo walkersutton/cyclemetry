@@ -66,41 +66,46 @@
   ],
   "plots": [
     {
+      "value": "course",
       "x": -64,
       "y": -87,
       "width": 700,
       "height": 600,
-      "value": "course",
       "margin": 0.1,
       "color": "#f4f4f4",
       "line": {
         "width": 1.75
       },
       "rotation": 0,
-      "point": {
-        "weight": 150
-      },
-      "sub_point": {
-        "weight": 415,
-        "opacity": 0.52,
-        "color": "#f4f4f4"
-      }
+      "points": [
+        {
+          "weight": 150,
+          "opacity": 1
+        },
+        {
+          "weight": 415,
+          "opacity": 0.52,
+          "color": "#f4f4f4",
+          "remove_edge_color": true
+        }
+      ]
     },
     {
+      "value": "elevation",
       "x": -1127,
       "y": 1912,
       "width": 5745,
       "height": 100,
-      "value": "elevation",
-      "opacity": 0.65,
       "margin": 0.1,
       "color": "#f4f4f4",
       "line": {
         "width": 2
       },
-      "point": { "weight": 50 },
+      "points": [{ "weight": 50, "opacity": 1 }],
       "rotation": 0,
-      "fill": {}
+      "fill": {
+        "opacity": 0.65
+      }
     }
   ]
 }

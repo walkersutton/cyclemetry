@@ -6,19 +6,14 @@ import matplotlib as mpl
 import numpy as np
 from PIL import Image
 
-from constant import FONTS_DIR
+import constant
 from utils import printc
 
 mpl.use("agg")
 
-DEFAULT_DPI = 300
-DEFAULT_LINE_WIDTH = 1.75
-DEFAULT_MARGIN = 0.1
-DEFAULT_POINT_WEIGHT = 80
-
 
 def get_dpi(config):
-    return config["dpi"] if "dpi" in config.keys() else DEFAULT_DPI
+    return config["dpi"] if "dpi" in config.keys() else constant.DEFAULT_DPI
 
 
 def get_line_width(config):
@@ -26,22 +21,33 @@ def get_line_width(config):
     return (
         config["line"]["width"]
         if ("line" in config.keys() and "width" in config["line"].keys())
-        else DEFAULT_LINE_WIDTH
+        else constant.DEFAULT_LINE_WIDTH
     )
 
 
 def get_margin(config):
     # TODO make sure a value here works
-    return config["margin"] if "margin" in config.keys() else DEFAULT_MARGIN
+    return config["margin"] if "margin" in config.keys() else constant.DEFAULT_MARGIN
 
 
 def get_point_weight(config):
     # TODO make sure a value here works
     return (
-        config["point_weight"]
-        if "point_weight" in config.keys()
-        else DEFAULT_POINT_WEIGHT
+        config["weight"] if "weight" in config.keys() else constant.DEFAULT_POINT_WEIGHT
     )
+
+
+def get_edge_color(config):
+    return (
+        "none"
+        if ("remove_edge_color" in config.keys() and config["remove_edge_color"])
+        else (config["edge_color"] if "edge_color" in config.keys() else None)
+    )
+
+
+def get_opacity(config):
+    # TODO i think we don't need this if the merge configs is recursive, but pretty sure it's only top level
+    return config["opacity"] if "opacity" in config else constant.DEFAULT_OPACITY
 
 
 def build_figure(config, x, y):
@@ -75,6 +81,7 @@ def build_figure(config, x, y):
         except ValueError as e:
             printc(f"Invalid axis value: {e}", "red")
     if "fill" in config.keys():
+        opacity = get_opacity(config["fill"])
         min_threshold = min(y) * 0.99
         y = np.array(y)
         plt.fill_between(
@@ -83,7 +90,7 @@ def build_figure(config, x, y):
             min_threshold,
             where=(y > min_threshold),
             facecolor=config["color"],
-            alpha=config["opacity"],
+            alpha=opacity,
         )
     return fig
 
@@ -117,31 +124,27 @@ def build_image(fig, config, x, y, text=""):
 
 
 def draw_points(fig, config, x, y):
-    point_weight = get_point_weight(config)
-
-    plt.figure(fig.number)
     points = []
-    points.append(
-        plt.scatter(  # assuming every profile and course includes point_weight - might want to make this a child property
-            x=x,
-            y=y,
-            color=config["color"],
-            s=point_weight,
-            zorder=3,
-        )
-    )
-    if "sub_point" in config.keys():
-        points.append(
-            plt.scatter(
-                x=x,
-                y=y,
-                color=config["sub_point"]["color"],
-                s=config["sub_point"]["point_weight"],
-                zorder=2,
-                alpha=config["sub_point"]["opacity"],
-                edgecolor="none",
+    if "points" in config.keys():
+        plt.figure(
+            fig.number
+        )  # i'm not really sure what this does - TODO can we remove this?
+        zorder = len(config["points"]) + 1
+        for point_config in config["points"]:
+            edge_color = get_edge_color(point_config)
+            point_weight = get_point_weight(point_config)
+            points.append(
+                plt.scatter(
+                    x=x,
+                    y=y,
+                    color=config["color"],
+                    s=point_weight,
+                    zorder=zorder,
+                    alpha=point_config["opacity"],
+                    edgecolor=edge_color,
+                )
             )
-        )
+            zorder -= 1
     return fig, points
 
 
@@ -159,7 +162,7 @@ def draw_labels(
                 fontsize=config["point_label"]["font_size"],
                 color=config["point_label"]["color"],
                 font=Path(
-                    f'{FONTS_DIR}{config["point_label"]["font"]}'
+                    f'{constant.FONTS_DIR}{config["point_label"]["font"]}'
                 ),  # TODO - support system fonts? not sure how pyplot deals with this
             )
         )

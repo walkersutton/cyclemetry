@@ -225,19 +225,28 @@ pointLabel["properties"] = {
 };
 
 const point = {
-  type: "object",
-  required: [],
   defaultProperties: [],
+  required: [],
+  title: "Point",
+  type: "object",
   properties: {
     weight: {
+      description: "the diameter of points drawn on the graph",
       minimum: 0,
       type: "integer",
-      description: "the diameter of points drawn on the graph",
     },
     color: {
-      type: "string",
       format: "color",
-      description: "plot point color.",
+      type: "string",
+    },
+    edge_color: {
+      description: "point's edge color",
+      format: "color",
+      type: "string",
+    },
+    remove_edge_color: {
+      descripiton: "whether or not to draw an edge around this point",
+      type: "boolean",
     },
     opacity: { ...opacity },
     label: pointLabel,
@@ -246,6 +255,12 @@ const point = {
     //     "imperial",
     //   ],
   },
+};
+
+const points = {
+  type: "array",
+  title: "Points",
+  items: point,
 };
 
 const plot = {
@@ -260,6 +275,7 @@ const plot = {
       minimum: 0,
       type: "integer",
     },
+    opacity: { ...opacity },
     x: {
       default: 0,
       type: "integer",
@@ -282,6 +298,7 @@ const plot = {
       description: "graph color",
     },
     line: {
+      // todo add support for color config
       type: "object",
       required: [],
       properties: {
@@ -300,13 +317,10 @@ const plot = {
         color: {
           type: "string",
           format: "color",
-          description: "plot point color.",
         },
         ...opacity,
       },
     },
-    primaryPoint: deepCopy(point),
-    subPoint: deepCopy(point),
     margin: {
       required: false,
       type: "number",
@@ -323,6 +337,7 @@ const plot = {
       type: "string",
       enum: ["course", "elevation"], // NICEITY- inspect gpx to define this enum so that only valid enums are able to be selected
     },
+    points: points,
   },
 };
 
