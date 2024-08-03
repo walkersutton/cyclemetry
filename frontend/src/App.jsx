@@ -31,7 +31,7 @@ function App() {
         direction="horizontal"
         className="p-2"
       >
-        <Panel className="pe-1" minSize={15} defaultSize={25}>
+        <Panel className="pe-1" minSize={15} defaultSize={30}>
           <div className="p-2 mb-2" style={{ overflow: "auto" }}>
             <a href="/" className="text-decoration-none text-dark">
               <img
