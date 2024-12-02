@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from activity import Activity
@@ -57,5 +58,8 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     scene.build_figures()
     scene.render_demo(end - start, second)
     if not headless:
-        subprocess.call(["open", scene.frames[0].full_path()])
+        if os.name == 'nt':
+            subprocess.call(["start", scene.frames[0].full_path()], shell=True)
+        else:
+            subprocess.call(["open", scene.frames[0].full_path()])
     return scene
