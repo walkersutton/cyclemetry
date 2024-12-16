@@ -18,4 +18,5 @@ jupyter/
 *.swp
 frames/
 dist/
+build/
 node_modules/

@@ -1,3 +1,0 @@
-([('react-eel-app',
-   '/Users/walker/github.com/cyclemetry/eel/dist/react-eel-app',
-   'EXECUTABLE')],)
