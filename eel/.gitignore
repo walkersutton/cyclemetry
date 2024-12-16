@@ -1,0 +1,21 @@
+.DS_Store
+__pycache__/
+.tool-versions
+
+# generated files
+*.mp4
+*.webp
+*.mov
+*.png
+tmp/
+
+# environments
+venv/
+jupyter/
+
+# dev
+*.gpx
+*.swp
+frames/
+dist/
+node_modules/

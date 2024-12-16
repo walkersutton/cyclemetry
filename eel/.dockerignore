@@ -1,0 +1,12 @@
+templates/
+venv/
+jupyter/
+experiments/
+__pycache__/
+
+.DS_Store
+.tool-versions
+*.swp
+*.mov
+
+requirements_jupyter.txt
