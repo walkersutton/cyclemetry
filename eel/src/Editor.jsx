@@ -59,9 +59,9 @@ function Editor({
         editor.setValue(initConfig);
       }
     });
-    editor.on("change", function () {
+    editor.on("change", async function () {
       // TODO - do config validation before calling generate and assigning to current config - probably helper function
-      generateDemoFrame(
+      await generateDemoFrame(
         editor,
         gpxFilename,
         handleGeneratingImageStateChange,

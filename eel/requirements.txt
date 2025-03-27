@@ -9,6 +9,7 @@ cycler==0.11.0
 Eel==0.18.1
 Flask==3.0.3
 Flask-Cors==4.0.0
+flaskwebgui==1.1.6
 fonttools==4.42.0
 future==1.0.0
 gevent==24.11.1
@@ -28,6 +29,7 @@ packaging==23.1
 Pillow==10.0.0
 pyinstaller==6.11.1
 pyinstaller-hooks-contrib==2024.10
+psutil==6.1.1
 pyparsing==3.0.9
 python-dateutil==2.8.2
 python-editor==1.0.4

@@ -4,6 +4,8 @@ import gpxpy
 import numpy as np
 from scipy.interpolate import interp1d
 
+import os
+
 import constant
 from gradient import gradient, smooth_gradients
 
@@ -22,6 +24,13 @@ PARENT_TAGS = {
 
 class Activity:
     def __init__(self, filename):
+        print('ooking for file name here')
+        print(filename)
+        print("Current working directory:", os.getcwd())
+        filename = './public/' + filename
+        print("new filename")
+        print(filename)
+
         self.gpx = gpxpy.parse(open(filename, "r"))
         self.set_valid_attributes()
         self.parse_data()

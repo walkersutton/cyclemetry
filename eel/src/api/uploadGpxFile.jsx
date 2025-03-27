@@ -5,8 +5,10 @@ async function uploadGpxFile(gpxFile, handleGpxFilenameStateChange) {
   postData.append("file", gpxFile);
   // TODO
   // handle bad gpx uploads more gracefully - currently have to click through a bunch of browswer alerts to dismiss
+  console.log("in uploadgpxaxios call");
+  // alert("hitting function call)")
   await axios
-    .post(process.env.REACT_APP_FLASK_SERVER_URL + "/upload", postData, {
+    .post("/upload", postData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

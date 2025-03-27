@@ -2,7 +2,7 @@ import subprocess
 
 from activity import Activity
 from scene import Scene
-from template import build_configs
+from template import build_configs, build_configs_v2
 
 """
 designer types
@@ -36,6 +36,32 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     # should be accessed simply using ./demo or a similary simple command
 
     configs = build_configs(template_filename)
+    activity = Activity(gpx_filename)
+
+    start = configs["scene"]["start"] if "start" in configs["scene"] else 0
+
+    if "end" in configs["scene"]:
+        end = configs["scene"]["end"]
+    else:
+        attributes = activity.valid_attributes
+        if attributes:
+            end = len(getattr(activity, attributes[0]))
+        else:
+            print("wtf")
+            end = 69
+
+    activity.trim(start, end)
+    activity.interpolate(configs["scene"]["fps"])
+    scene = Scene(activity, configs)
+
+    scene.build_figures()
+    scene.render_demo(end - start, second)
+    if not headless:
+        subprocess.call(["open", scene.frames[0].full_path()])
+    return scene
+
+def demo_frame_v2(gpx_filename, config, second, headless):
+    configs = build_configs_v2(config)
     activity = Activity(gpx_filename)
 
     start = configs["scene"]["start"] if "start" in configs["scene"] else 0

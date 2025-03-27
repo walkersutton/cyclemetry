@@ -5,7 +5,7 @@ function DemoPreview({ generatingImage, imageFilename }) {
     <>
       <img
         className="img-fluid bg-dark text-light"
-        src={`${process.env.REACT_APP_FLASK_SERVER_URL}/images/${imageFilename}`}
+        src={`${imageFilename}`}
         alt="&nbsp;&nbsp;error generating overlay :(&nbsp;&nbsp;"
       />
       {generatingImage ? (

@@ -1,22 +1,10 @@
 import logging
 import os
 import time
+import eel
+import shutil
 
-from flask import (
-    Flask,
-    request,
-    jsonify,
-    make_response,
-    send_from_directory,
-)
-from flask_cors import CORS
-from werkzeug.utils import secure_filename
-
-from designer import demo_frame
-
-
-ALLOWED_EXTENSIONS = {"json", "gpx"}
-UPLOAD_FOLDER = "./tmp"
+from designer import demo_frame_v2
 
 # app = Flask(__name__)
 # CORS(
@@ -25,6 +13,7 @@ UPLOAD_FOLDER = "./tmp"
 # )
 
 # app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
 
 
 def allowed_file(filename):
@@ -97,20 +86,47 @@ def serve_image(filename):
 
 
 def bootboot():
-    dir = "tmp"
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    tmp = "tmp"
+    if not os.path.exists(tmp):
+        os.makedirs(tmp)
 
 
 # with app.app_context():
 #     bootboot()
 
-import eel
-import sys
+    tmp = "tmp"
+    if not os.path.exists(tmp):
+        os.makedirs(tmp)
 
 @eel.expose
 def hello():
-    print('hello')
+    print('hello - python function')
+
+@eel.expose
+def demoonlyconfigarg(config):
+    import time
+
+    new_filename = f'{int(time.time())}.png'
+    # TODO REPLACE WITH UPLOADED GPX FILE PATH OR SOMET SHIT
+    gpx_filename = 'demo.gpx'
+
+    scene = demo_frame_v2(
+        gpx_filename, config, 20, True
+    )  # TODO replace with param for third value
+
+    img_filepath = scene.frames[0].full_path()
+    # obf_filepath = f"./frames/{int(time.time())}.png"
+    try:
+        shutil.move(img_filepath, f'./public/{new_filename}')
+        # os.rename(img_filepath, obf_filepath)
+    except Exception as e:
+        logging.error("app.py:demo()")
+        logging.error(e)
+    # filename = os.path.basename(obf_filepath)
+
+    return new_filename
+
+    # return jsonify({"data": filename})
 
 
 if __name__ == '__main__':
@@ -120,5 +136,18 @@ if __name__ == '__main__':
     #     # eel.init('public')
     #     # eel.start('index.html')
     # else:
-        eel.init('build')
-        eel.start('index.html')
+
+    # eel.init('client')
+    # eel.start({"port": 3000}, host="localhost", port=8080)
+    # eel.init('build')
+    # eel.start('index.html')
+
+
+
+    # eel.init('client')
+    # eel.start({"port": 3000}, host="localhost", port=8080)
+    eel.init('build')
+    eel.start()
+    # eel.start('index.html')
+    # # eel.start({"port": 3000})
+    # eel.start('index.html')

@@ -3,7 +3,7 @@ import React from "react";
 import uploadGpxFile from "../../api/uploadGpxFile";
 
 const gpxSchema = {
-  allowedType: "",
+  allowedType: "application/gpx+xml",
   extension: ".gpx",
   inputId: "file-upload-gpx",
 };
