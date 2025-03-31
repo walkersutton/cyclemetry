@@ -9,6 +9,7 @@ import SelectCommunityTemplateButton from "./components/buttons/SelectCommunityT
 function PreviewPanel({
   editor,
   generatingImage,
+  gpxFilename,
   handleGpxFilenameStateChange,
   imageFilename,
 }) {
@@ -22,6 +23,7 @@ function PreviewPanel({
         <div className="row">
           <div className="d-flex flex-wrap">
             <UploadGpxButton
+              gpxFilename={gpxFilename}
               handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             />
             <UploadTemplateButton editor={editor} />

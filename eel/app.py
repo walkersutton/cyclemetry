@@ -3,8 +3,12 @@ import os
 import time
 import eel
 import shutil
+import base64
+import tempfile
 
 from designer import demo_frame_v2
+
+logging.basicConfig(level=logging.INFO)
 
 # app = Flask(__name__)
 # CORS(
@@ -103,26 +107,28 @@ def hello():
     print('hello - python function')
 
 @eel.expose
-def demoonlyconfigarg(config):
-    import time
-
-    new_filename = f'{int(time.time())}.png'
-    # TODO REPLACE WITH UPLOADED GPX FILE PATH OR SOMET SHIT
-    gpx_filename = 'demo.gpx'
-
-    scene = demo_frame_v2(
-        gpx_filename, config, 20, True
-    )  # TODO replace with param for third value
-
-    img_filepath = scene.frames[0].full_path()
-    # obf_filepath = f"./frames/{int(time.time())}.png"
+def demoonlyconfigarg(config, gpx_data):
     try:
-        shutil.move(img_filepath, f'./public/{new_filename}')
-        # os.rename(img_filepath, obf_filepath)
+        new_filename = f'{int(time.time())}.png'
+        byte_data = base64.b64decode(gpx_data)
+        scene = None
+        with tempfile.NamedTemporaryFile(mode="wb") as temp_file:
+            temp_file.write(byte_data)
+            temp_file.flush()
+
+            scene = demo_frame_v2(
+                temp_file.name, config, 20, True
+            )  # TODO replace with param for third value
+
+            img_filepath = scene.frames[0].full_path()
+            # obf_filepath = f"./frames/{int(time.time())}.png"
+            shutil.move(img_filepath, f'./public/{new_filename}')
+            # os.rename(img_filepath, obf_filepath)
     except Exception as e:
-        logging.error("app.py:demo()")
+        logging.error("app.py:demoonlyconfigarg()")
+        logging.error("fucking error")
         logging.error(e)
-    # filename = os.path.basename(obf_filepath)
+        # filename = os.path.basename(obf_filepath)
 
     return new_filename
 

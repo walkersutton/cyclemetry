@@ -35,6 +35,7 @@ let config = null;
 
 function Editor({
   gpxFilename,
+  gpxFilestring,
   handleEditorStateChange,
   handleGeneratingImageStateChange,
   handleImageFilenameStateChange,
@@ -63,7 +64,7 @@ function Editor({
       // TODO - do config validation before calling generate and assigning to current config - probably helper function
       await generateDemoFrame(
         editor,
-        gpxFilename,
+        gpxFilestring,
         handleGeneratingImageStateChange,
         handleImageFilenameStateChange
       );
@@ -72,7 +73,7 @@ function Editor({
     return () => {
       editor.destroy();
     };
-  }, [gpxFilename]);
+  }, [gpxFilename, gpxFilestring]);
 
   return <div ref={editorRef} />;
 }

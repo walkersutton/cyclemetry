@@ -8,7 +8,7 @@ const gpxSchema = {
   inputId: "file-upload-gpx",
 };
 
-function UploadGpxButton({ handleGpxFilenameStateChange }) {
+function UploadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file && file.type === gpxSchema.allowedType) {
@@ -28,7 +28,7 @@ function UploadGpxButton({ handleGpxFilenameStateChange }) {
         onChange={handleFileChange}
       />
       <label htmlFor={gpxSchema.inputId} className="btn btn-danger m-1">
-        Upload GPX
+        {gpxFilename ?? "Upload GPX"}
       </label>
     </>
   );

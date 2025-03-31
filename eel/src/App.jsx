@@ -1,5 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Panel, PanelResizeHandle, PanelGroup } from "react-resizable-panels";
 
 import Editor from "./Editor";
@@ -20,12 +20,41 @@ eel.set_host("http://localhost:8000");
 
 function App() {
   const [gpxFilename, setGpxFilename] = useState("demo.gpx");
+  const [gpxFilestring, setgpxFilestring] = useState(null);
   const [imageFilename, setImageFilename] = useState("demo.png");
   const [editor, setEditor] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
+  
+  useEffect(() => {
+    const fetchFile = async () => {
+      try {
+        console.log("fetchFile called");
+        const response = await fetch(gpxFilename);  // Path to your file in the public folder
+        const fileBlob = await response.blob(); // Convert the response to a Blob
 
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // Assign the base64 string to the state variable
+          const vall =  reader.result.split(",")[1];  // Remove the data URL prefix
+          // setgpxFilestring(vall);
+          handlegpxFilestringStateChange(vall);
+          // handlegpxFilestringStateChange(vall);
+          // setGpxFilename("heyyyyyy.gpx");
+        };
+  
+        reader.readAsDataURL(fileBlob);  // Convert the Blob to Base64 string
+      } catch (error) {
+        console.error("Error fetching file:", error);
+      }
+    };
+    fetchFile();
+  }, [gpxFilename]);
+  
   const handleGpxFilenameStateChange = (state) => {
     setGpxFilename(state);
+  };
+  const handlegpxFilestringStateChange = (state) => {
+    setgpxFilestring(state);
   };
   const handleImageFilenameStateChange = (state) => {
     setImageFilename(state);
@@ -61,6 +90,7 @@ function App() {
           </div>
           <Editor
             gpxFilename={gpxFilename}
+            gpxFilestring={gpxFilestring}
             handleEditorStateChange={handleEditorStateChange}
             handleGeneratingImageStateChange={handleGeneratingImageStateChange}
             handleImageFilenameStateChange={handleImageFilenameStateChange}
@@ -71,6 +101,7 @@ function App() {
           <PreviewPanel
             editor={editor}
             generatingImage={generatingImage}
+            gpxFilename={gpxFilename}
             handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             imageFilename={imageFilename}
           />

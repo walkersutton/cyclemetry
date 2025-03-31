@@ -6,20 +6,20 @@ import { initConfig } from "../Editor";
 
 export default async function generateDemoFrame(
   editor,
-  gpxFilename,
+  gpxFilestring,
   handleGeneratingImageStateChange,
   handleImageFilenameStateChange
 ) {
-  if (!gpxFilename) {
-    console.log("missing gpx file");
+  if (!gpxFilestring) {
+    console.log("missing gpx file string");
     return;
   }
   if (editor) {
     const config = editor.getValue();
-    if (isEqual(config, initConfig) && gpxFilename === "demo.gpx") {
-      handleImageFilenameStateChange("demo.png");
-      return;
-    }
+    // if (isEqual(config, initConfig) && gpxFilename === "demo.gpx") {
+    //   handleImageFilenameStateChange("demo.png");
+    //   return;
+    // }
     // we should validate the config - maybe do this in editor, since it's a tigter jump
     // const errors = editor.validate(); -> not sure if this is sufficient - at minimum, should pass required checks of schema
     // const configJson = JSON.stringify(config);
@@ -49,9 +49,8 @@ export default async function generateDemoFrame(
 
   handleGeneratingImageStateChange(true);
 
-
-  let newFilename = await eel.demoonlyconfigarg(config)();
-  handleImageFilenameStateChange(newFilename);
+  let demoImageFilename = await eel.demoonlyconfigarg(config, gpxFilestring)();
+  handleImageFilenameStateChange(demoImageFilename);
   handleGeneratingImageStateChange(false);
 
 

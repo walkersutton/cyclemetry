@@ -4,11 +4,16 @@
 
 ### start python app
 `npm run start:eel`
-you can verify this is working by making a GET request to localhost:8000/eel.js. i.e. `curl localhost:8000/eel.js`
+* you can verify this is working by making a GET request to localhost:8000/eel.js. i.e. `curl localhost:8000/eel.js`
+* doesn't seem like it's necessary to do any virtual environment setup??
 
 ### start react app
 `npm run start:js`
 your browser should open to http://localhost:3000/. Check dev tools network tab to make sure the request for `eel.js` has a good response code
+
+## How to build app
+
+TOODO
 
 
 ```

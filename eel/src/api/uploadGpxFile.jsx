@@ -1,26 +1,23 @@
 import axios from "axios";
 
+function fileToString(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+}
+
+// TODO change ot LOAD instead of UPLOAD
 async function uploadGpxFile(gpxFile, handleGpxFilenameStateChange) {
-  const postData = new FormData();
-  postData.append("file", gpxFile);
-  // TODO
-  // handle bad gpx uploads more gracefully - currently have to click through a bunch of browswer alerts to dismiss
-  console.log("in uploadgpxaxios call");
-  // alert("hitting function call)")
-  await axios
-    .post("/upload", postData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    })
-    .then((response) => {
-      handleGpxFilenameStateChange(gpxFile["name"]);
-    })
-    .catch((error) => {
-      console.log("UploadGpxButton:handleUpload");
-      console.log(error);
-      handleGpxFilenameStateChange(null);
-    });
+  if (gpxFile) {
+    const fileString = await fileToString(gpxFile);
+    let fileName = gpxFile["name"]
+    handleGpxFilenameStateChange(fileName);
+  } else {
+    handleGpxFilenameStateChange(null);
+  }
 }
 
 export default uploadGpxFile;
