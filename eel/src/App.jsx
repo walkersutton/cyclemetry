@@ -18,10 +18,12 @@ eel.set_host("http://localhost:8000");
 // eel.set_host( 'ws://localhost:8000' )
 // eel.hello();
 
+export const initGpxFilename = 'demo.gpxinit';
+
 function App() {
-  const [gpxFilename, setGpxFilename] = useState("demo.gpx");
-  const [gpxFilestring, setgpxFilestring] = useState(null);
-  const [imageFilename, setImageFilename] = useState("demo.png");
+  const [gpxFilename, setGpxFilename] = useState(initGpxFilename);
+  const [gpxFilestring, setGpxFilestring] = useState(null);
+  const [imageFilename, setImageFilename] = useState(null);
   const [editor, setEditor] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
   
@@ -37,8 +39,8 @@ function App() {
           // Assign the base64 string to the state variable
           const vall =  reader.result.split(",")[1];  // Remove the data URL prefix
           // setgpxFilestring(vall);
-          handlegpxFilestringStateChange(vall);
-          // handlegpxFilestringStateChange(vall);
+          handleGpxFilestringStateChange(vall);
+          // handleGpxFilestringStateChange(vall);
           // setGpxFilename("heyyyyyy.gpx");
         };
   
@@ -53,8 +55,8 @@ function App() {
   const handleGpxFilenameStateChange = (state) => {
     setGpxFilename(state);
   };
-  const handlegpxFilestringStateChange = (state) => {
-    setgpxFilestring(state);
+  const handleGpxFilestringStateChange = (state) => {
+    setGpxFilestring(state);
   };
   const handleImageFilenameStateChange = (state) => {
     setImageFilename(state);

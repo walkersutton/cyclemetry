@@ -2,6 +2,8 @@ import React from "react";
 
 import uploadGpxFile from "../../api/uploadGpxFile";
 
+import {initGpxFilename} from "./../../App";
+
 const gpxSchema = {
   allowedType: "application/gpx+xml",
   extension: ".gpx",
@@ -28,7 +30,7 @@ function UploadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
         onChange={handleFileChange}
       />
       <label htmlFor={gpxSchema.inputId} className="btn btn-danger m-1">
-        {gpxFilename ?? "Upload GPX"}
+        {gpxFilename ==  initGpxFilename ? "Upload GPX" : gpxFilename}
       </label>
     </>
   );
