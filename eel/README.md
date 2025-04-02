@@ -13,21 +13,28 @@
 
 ## How to run dev environment
 
-### start python app
+
+### one command
+`npm run start`
+
+you'll have to wait a few seconds for eel server to start
+
+### two commands
+
+#### start python app
 
 `npm run start:eel`
 
 - you can verify this is working by making a GET request to localhost:8000/eel.js. i.e. `curl localhost:8000/eel.js`
 - doesn't seem like it's necessary to do any virtual environment setup??
 
-### start react app
+#### start react app
 
 `npm run start:js`
 your browser should open to http://localhost:3000/. Check dev tools network tab to make sure the request for `eel.js` has a good response code
 
 ## How to build app
-
-TOODO
+* TODO - clean up requirements.txt once build is working
 
 ```
 npm run build

@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 import shutil
+import sys
 import tempfile
 import time
 
@@ -149,12 +150,21 @@ def demoonlyconfigarg(config, gpx_data):
 
 
 if __name__ == "__main__":
-    # if sys.argv[1] == '--develop':
-    #     eel.init('client')
-    #     eel.start({"port": 3000})
-    #     # eel.init('public')
-    #     # eel.start('index.html')
-    # else:
+    if sys.argv[1] == "--develop":
+        logging.info("develop flag seen")
+        # eel.init('client')
+        # eel.start()
+        # eel.start('index.html')
+        # eel.start({"port": 3000})
+        # eel.init('public')
+        # eel.start('index.html')
+        eel.init("build")
+        eel.start()
+    else:
+        eel.init("build")
+        eel.start("index.html")
+
+    #
 
     # eel.init('client')
     # eel.start({"port": 3000}, host="localhost", port=8080)
@@ -163,8 +173,6 @@ if __name__ == "__main__":
 
     # eel.init('client')
     # eel.start({"port": 3000}, host="localhost", port=8080)
-    eel.init("build")
-    eel.start()
     # eel.start('index.html')
     # # eel.start({"port": 3000})
     # eel.start('index.html')

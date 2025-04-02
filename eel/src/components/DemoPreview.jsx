@@ -9,6 +9,7 @@ function DemoPreview({ generatingImage, imageFilename }) {
         src={`${imageFilename}`}
         alt="&nbsp;&nbsp;error generating overlay :(&nbsp;&nbsp;"
       />}
+      {/* TODO generatingImage value sometimes flips to false before image is shown. why?*/}
     {generatingImage ? (
       <ProgressBar
         striped
