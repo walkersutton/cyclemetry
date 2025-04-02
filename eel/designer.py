@@ -62,37 +62,51 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     return scene
 
 
-def demo_frame_v2(gpx_filename, config, second, headless):
+def demo_frame_v2(gpx_filename, config, second):
     try:
         configs = build_configs_v2(config)
         activity = Activity(gpx_filename)
-        logging.info("wlaker act")
-        logging.info(activity)
-
-        if activity == None:
-            start = configs["scene"]["start"] if "start" in configs["scene"] else 0
-
-            if "end" in configs["scene"]:
-                end = configs["scene"]["end"]
-            else:
-                attributes = activity.valid_attributes
-                if attributes:
-                    end = len(getattr(activity, attributes[0]))
-                else:
-                    print("wtf")
-                    end = 69
-
-            activity.trim(start, end)
-            activity.interpolate(configs["scene"]["fps"])
-            scene = Scene(activity, configs)
-
-            scene.build_figures()
-            scene.render_demo(end - start, second)
-            if not headless:
-                subprocess.call(["open", scene.frames[0].full_path()])
-            return scene
-        else:
-            logging.error("demo_frame_v2 : activitty is fucked")
     except Exception as e:
         logging.error("demo_frame_v2")
+        logging.error("fucked in setup")
         logging.error(e)
+
+    if activity == None:
+        logging.error("demo_frame_v2 : activitty is fucked")
+        return
+
+    try:
+        start = configs["scene"]["start"] if "start" in configs["scene"] else 0
+
+        if "end" in configs["scene"]:
+            end = configs["scene"]["end"]
+        else:
+            attributes = activity.valid_attributes
+            if attributes:
+                end = len(getattr(activity, attributes[0]))
+            else:
+                print("wtf")
+                end = 69
+    except Exception as e:
+        logging.error("demo_frame_v2")
+        logging.error("fucked setting start and end")
+        logging.error(e)
+
+    scene = None
+    try:
+        activity.trim(start, end)
+        activity.interpolate(configs["scene"]["fps"])
+        scene = Scene(activity, configs)
+    except Exception as e:
+        logging.error("demo_frame_v2")
+        logging.error("fucked building scene")
+        logging.error(e)
+    try:
+        scene.build_figures()
+        scene.render_demo(end - start, second)
+    except Exception as e:
+        logging.error("demo_frame_v2")
+        logging.error("fuckd building and rendering")
+        logging.error(e)
+
+    return scene

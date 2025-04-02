@@ -109,29 +109,41 @@ def hello():
 
 @eel.expose
 def demoonlyconfigarg(config, gpx_data):
+    new_filename = f"{int(time.time())}.png"
     try:
-        new_filename = f"{int(time.time())}.png"
         byte_data = base64.b64decode(gpx_data)
         scene = None
-        with tempfile.NamedTemporaryFile(mode="wb") as temp_file:
+    except Exception as e:
+        logging.error("app.py:demoonlyconfigarg()")
+        logging.error("issue decoding byte data")
+        logging.error(e)
+    with tempfile.NamedTemporaryFile(mode="wb") as temp_file:
+        try:
             temp_file.write(byte_data)
             temp_file.flush()
+        except Exception as e:
+            logging.error("app.py:demoonlyconfigarg()")
+            logging.error("issue writing temp file")
+            logging.error(e)
 
-            scene = demo_frame_v2(
-                temp_file.name, config, 20, True
-            )  # TODO replace with param for third value
-
+        scene = demo_frame_v2(
+            temp_file.name, config, 20
+        )  # TODO replace with param for third value - time/second to grab frame
+        if scene == None:
+            logging.error("scene is none, scene is fucked")
+            return
+        try:
             img_filepath = scene.frames[0].full_path()
             # obf_filepath = f"./frames/{int(time.time())}.png"
             shutil.move(img_filepath, f"./public/{new_filename}")
-            # os.rename(img_filepath, obf_filepath)
-    except Exception as e:
-        logging.error("app.py:demoonlyconfigarg()")
-        logging.error("fucking error")
-        logging.error(e)
-        # filename = os.path.basename(obf_filepath)
+        except Exception as e:
+            logging.error("app.py:demoonlyconfigarg()")
+            logging.error("issue grabbing filename for demo image")
+            logging.error(e)
 
+        # os.rename(img_filepath, obf_filepath)
     return new_filename
+    # filename = os.path.basename(obf_filepath)
 
     # return jsonify({"data": filename})
 
