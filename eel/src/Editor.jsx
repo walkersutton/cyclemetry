@@ -50,6 +50,7 @@ function Editor({
     schema: schema,
   };
 
+  // TODO fix editor loading errors seen in browser
   useEffect(() => {
     const editor = new JSONEditor(editorRef.current, editorConfig);
     editor.on("ready", function () {

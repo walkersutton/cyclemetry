@@ -1,4 +1,4 @@
-import {eel} from './../App';
+import { eel } from "./../App";
 
 export default async function generateDemoFrame(
   editor,
@@ -22,7 +22,7 @@ export default async function generateDemoFrame(
     // TODO - remove this shitty hack of an upload pattern
     // const configFilename = "myconfig.json";
     // const configFile = new File([configJson], configFilename, {
-      // type: "application/json",
+    // type: "application/json",
     // });
     // const postData = new FormData();
     // postData.append("file", configFile);
@@ -41,34 +41,35 @@ export default async function generateDemoFrame(
     //     console.log(error);
     //   });
 
+    handleGeneratingImageStateChange(true);
 
+    let demoImageFilename = await eel.demoonlyconfigarg(
+      config,
+      gpxFilestring
+    )();
+    handleGeneratingImageStateChange(false);
+    if (demoImageFilename !== null) {
+      handleImageFilenameStateChange(demoImageFilename);
+    }
 
-  handleGeneratingImageStateChange(true);
+    // console.log("new filename is");
+    // console.log(newFilename);
 
-  let demoImageFilename = await eel.demoonlyconfigarg(config, gpxFilestring)();
-  handleImageFilenameStateChange(demoImageFilename);
-  handleGeneratingImageStateChange(false);
-
-
-
-  // console.log("new filename is");
-  // console.log(newFilename);
-
-// todo replace demo call must
-  //   await axios
-  //     .post("/demo", data)
-  //     .then((response) => {
-  //       handleGeneratingImageStateChange(false);
-  //       handleImageFilenameStateChange(response.data.data);
-  //     })
-  //     .catch((error) => {
-  //       handleGeneratingImageStateChange(false);
-  //       console.log("generateDemoFrame /demo error");
-  //       console.log(error);
-  //       alert(error);
-  //     });
-  // } else {
-  //   console.log("BAD BAD BAD generateDemoFrame");
-  // }
-}
+    // todo replace demo call must
+    //   await axios
+    //     .post("/demo", data)
+    //     .then((response) => {
+    //       handleGeneratingImageStateChange(false);
+    //       handleImageFilenameStateChange(response.data.data);
+    //     })
+    //     .catch((error) => {
+    //       handleGeneratingImageStateChange(false);
+    //       console.log("generateDemoFrame /demo error");
+    //       console.log(error);
+    //       alert(error);
+    //     });
+    // } else {
+    //   console.log("BAD BAD BAD generateDemoFrame");
+    // }
+  }
 }

@@ -1,20 +1,33 @@
 ## Dependencies
 
+- python
+
+## running pre-commit hooks
+
+```
+(venv) $ pre-commit run --all-files
+```
+
+- Make sure pre-commit is installed using pip and/or your activated your virtual environment
+- If there were issues on the first call, run command again to see if issues were self-resolved
+
 ## How to run dev environment
 
 ### start python app
+
 `npm run start:eel`
-* you can verify this is working by making a GET request to localhost:8000/eel.js. i.e. `curl localhost:8000/eel.js`
-* doesn't seem like it's necessary to do any virtual environment setup??
+
+- you can verify this is working by making a GET request to localhost:8000/eel.js. i.e. `curl localhost:8000/eel.js`
+- doesn't seem like it's necessary to do any virtual environment setup??
 
 ### start react app
+
 `npm run start:js`
 your browser should open to http://localhost:3000/. Check dev tools network tab to make sure the request for `eel.js` has a good response code
 
 ## How to build app
 
 TOODO
-
 
 ```
 npm run build
