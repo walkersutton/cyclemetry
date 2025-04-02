@@ -3,6 +3,7 @@ import subprocess
 from activity import Activity
 from scene import Scene
 from template import build_configs, build_configs_v2
+import logging
 
 """
 designer types
@@ -61,27 +62,37 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     return scene
 
 def demo_frame_v2(gpx_filename, config, second, headless):
-    configs = build_configs_v2(config)
-    activity = Activity(gpx_filename)
+    try:
+        configs = build_configs_v2(config)
+        activity = Activity(gpx_filename)
+        logging.info("wlaker act")
+        logging.info(activity)
 
-    start = configs["scene"]["start"] if "start" in configs["scene"] else 0
+        if activity == None:
 
-    if "end" in configs["scene"]:
-        end = configs["scene"]["end"]
-    else:
-        attributes = activity.valid_attributes
-        if attributes:
-            end = len(getattr(activity, attributes[0]))
+            start = configs["scene"]["start"] if "start" in configs["scene"] else 0
+
+            if "end" in configs["scene"]:
+                end = configs["scene"]["end"]
+            else:
+                attributes = activity.valid_attributes
+                if attributes:
+                    end = len(getattr(activity, attributes[0]))
+                else:
+                    print("wtf")
+                    end = 69
+
+            activity.trim(start, end)
+            activity.interpolate(configs["scene"]["fps"])
+            scene = Scene(activity, configs)
+
+            scene.build_figures()
+            scene.render_demo(end - start, second)
+            if not headless:
+                subprocess.call(["open", scene.frames[0].full_path()])
+            return scene
         else:
-            print("wtf")
-            end = 69
-
-    activity.trim(start, end)
-    activity.interpolate(configs["scene"]["fps"])
-    scene = Scene(activity, configs)
-
-    scene.build_figures()
-    scene.render_demo(end - start, second)
-    if not headless:
-        subprocess.call(["open", scene.frames[0].full_path()])
-    return scene
+            logging.error("demo_frame_v2 : activitty is fucked")
+    except Exception as e:
+        logging.error('demo_frame_v2')
+        logging.error(e)
