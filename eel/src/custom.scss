@@ -35,33 +35,6 @@
 // //   "danger": pink,
 // // );
 
-/* FlaskServerStatus */
-.status-bar {
-  width: 100%;
-  height: 30px;
-  text-align: center;
-  line-height: 30px;
-  color: white;
-  font-weight: bold;
-  position: relative;
-  overflow: hidden;
-}
-
-.status-bar.orange {
-  background-color: orange;
-}
-
-.status-bar.orange::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.3);
-  animation: loading 2s infinite;
-}
-
 @keyframes loading {
   0% {
     left: -100%;
@@ -100,4 +73,8 @@ html {
 
 .stuckk {
   position: fixed;
+}
+
+.progress-bar {
+  color: black !important;
 }
