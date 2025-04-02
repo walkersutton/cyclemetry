@@ -1,13 +1,12 @@
+import logging
+import os
 from collections import defaultdict
 
+import constant
 import gpxpy
 import numpy as np
-from scipy.interpolate import interp1d
-import os
-import logging
-
-import constant
 from gradient import gradient, smooth_gradients
+from scipy.interpolate import interp1d
 
 ATTRIBUTE_MAP = {
     "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}atemp": "temperature",
@@ -29,7 +28,7 @@ class Activity:
             self.set_valid_attributes()
             self.parse_data()
         except Exception as e:
-            logging.error('Activity __init__ error:')
+            logging.error("Activity __init__ error:")
             logging.error(e)
 
     def set_valid_attributes(self):

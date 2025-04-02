@@ -53,10 +53,10 @@ function LoadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTempla
           </Tooltip>
         }
         placement={"top"}
-      >{loadedTemplateFilename ? 
+      >{loadedTemplateFilename ?
         <label htmlFor={templateSchema.inputId} className="btn btn-success m-1">
           {loadedTemplateFilename}
-        </label> : 
+        </label> :
         <label htmlFor={templateSchema.inputId} className="btn btn-warning m-1">
           Load Template
         </label>

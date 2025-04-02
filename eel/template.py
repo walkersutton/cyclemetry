@@ -49,6 +49,7 @@ def build_configs(filename):
                     configs[clas].append(merge_configs(scene_config, sub_config))
     return configs
 
+
 def build_configs_v2(template):
     configs = {}
     scene_config = template["scene"]

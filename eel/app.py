@@ -1,12 +1,13 @@
+import base64
 import logging
 import os
-import time
-import eel
 import shutil
-import base64
 import tempfile
+import time
 
 from designer import demo_frame_v2
+
+import eel
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +18,6 @@ logging.basicConfig(level=logging.INFO)
 # )
 
 # app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
 
 
 def allowed_file(filename):
@@ -94,22 +94,23 @@ def bootboot():
     if not os.path.exists(tmp):
         os.makedirs(tmp)
 
-
-# with app.app_context():
-#     bootboot()
+    # with app.app_context():
+    #     bootboot()
 
     tmp = "tmp"
     if not os.path.exists(tmp):
         os.makedirs(tmp)
 
+
 @eel.expose
 def hello():
-    print('hello - python function')
+    print("hello - python function")
+
 
 @eel.expose
 def demoonlyconfigarg(config, gpx_data):
     try:
-        new_filename = f'{int(time.time())}.png'
+        new_filename = f"{int(time.time())}.png"
         byte_data = base64.b64decode(gpx_data)
         scene = None
         with tempfile.NamedTemporaryFile(mode="wb") as temp_file:
@@ -122,7 +123,7 @@ def demoonlyconfigarg(config, gpx_data):
 
             img_filepath = scene.frames[0].full_path()
             # obf_filepath = f"./frames/{int(time.time())}.png"
-            shutil.move(img_filepath, f'./public/{new_filename}')
+            shutil.move(img_filepath, f"./public/{new_filename}")
             # os.rename(img_filepath, obf_filepath)
     except Exception as e:
         logging.error("app.py:demoonlyconfigarg()")
@@ -135,7 +136,7 @@ def demoonlyconfigarg(config, gpx_data):
     # return jsonify({"data": filename})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # if sys.argv[1] == '--develop':
     #     eel.init('client')
     #     eel.start({"port": 3000})
@@ -148,11 +149,9 @@ if __name__ == '__main__':
     # eel.init('build')
     # eel.start('index.html')
 
-
-
     # eel.init('client')
     # eel.start({"port": 3000}, host="localhost", port=8080)
-    eel.init('build')
+    eel.init("build")
     eel.start()
     # eel.start('index.html')
     # # eel.start({"port": 3000})

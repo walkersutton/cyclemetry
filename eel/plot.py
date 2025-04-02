@@ -1,12 +1,11 @@
 import io
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+import constant
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-
-import constant
 from utils import printc
 
 mpl.use("agg")

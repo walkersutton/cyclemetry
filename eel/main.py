@@ -1,7 +1,8 @@
-from activity import Activity
-from scene import Scene
 import argparse
+
+from activity import Activity
 from designer import demo_frame
+from scene import Scene
 from template import build_configs
 
 

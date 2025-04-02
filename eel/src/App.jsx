@@ -12,7 +12,7 @@ export const eel = window.eel
 // eel.set_host( 'ws://localhost:8080' )
 // import { eel } from "../public/eel.js";
 // import { eel } from "./eel.js";
-    
+
 // export const eel = window.eel
 eel.set_host("http://localhost:8000");
 // eel.set_host( 'ws://localhost:8000' )
@@ -26,7 +26,7 @@ function App() {
   const [imageFilename, setImageFilename] = useState(null);
   const [editor, setEditor] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
-  
+
   useEffect(() => {
     const fetchFile = async () => {
       try {
@@ -43,7 +43,7 @@ function App() {
           // handleGpxFilestringStateChange(vall);
           // setGpxFilename("heyyyyyy.gpx");
         };
-  
+
         reader.readAsDataURL(fileBlob);  // Convert the Blob to Base64 string
       } catch (error) {
         console.error("Error fetching file:", error);
@@ -51,7 +51,7 @@ function App() {
     };
     fetchFile();
   }, [gpxFilename]);
-  
+
   const handleGpxFilenameStateChange = (state) => {
     setGpxFilename(state);
   };

@@ -1,9 +1,8 @@
 import os
 from datetime import timedelta
 
-from PIL import Image, ImageColor, ImageDraw, ImageFont
-
 import constant
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 from plot import build_image
 
 

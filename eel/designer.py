@@ -1,9 +1,9 @@
+import logging
 import subprocess
 
 from activity import Activity
 from scene import Scene
 from template import build_configs, build_configs_v2
-import logging
 
 """
 designer types
@@ -61,6 +61,7 @@ def demo_frame(gpx_filename, template_filename, second, headless):
         subprocess.call(["open", scene.frames[0].full_path()])
     return scene
 
+
 def demo_frame_v2(gpx_filename, config, second, headless):
     try:
         configs = build_configs_v2(config)
@@ -69,7 +70,6 @@ def demo_frame_v2(gpx_filename, config, second, headless):
         logging.info(activity)
 
         if activity == None:
-
             start = configs["scene"]["start"] if "start" in configs["scene"] else 0
 
             if "end" in configs["scene"]:
@@ -94,5 +94,5 @@ def demo_frame_v2(gpx_filename, config, second, headless):
         else:
             logging.error("demo_frame_v2 : activitty is fucked")
     except Exception as e:
-        logging.error('demo_frame_v2')
+        logging.error("demo_frame_v2")
         logging.error(e)
