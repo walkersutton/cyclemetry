@@ -9,10 +9,11 @@ const templateSchema = {
   inputId: "file-upload-template",
 };
 
-function UploadTemplateButton({ editor }) {
+function UploadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTemplateFilenameStateChange }) {
   const handleFileChange = (event) => {
     const f = event.target.files[0];
     if (f && f.type === templateSchema.allowedType) {
+      handleLoadedTemplateFilenameStateChange(f.name);
       const reader = new FileReader();
       reader.onload = function (e) {
         const fileContent = e.target.result;
@@ -52,10 +53,14 @@ function UploadTemplateButton({ editor }) {
           </Tooltip>
         }
         placement={"top"}
-      >
+      >{loadedTemplateFilename ? 
+        <label htmlFor={templateSchema.inputId} className="btn btn-success m-1">
+          {loadedTemplateFilename}
+        </label> : 
         <label htmlFor={templateSchema.inputId} className="btn btn-warning m-1">
-          Upload Template
+          Load Template
         </label>
+      }
       </OverlayTrigger>
     </>
   );

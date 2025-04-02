@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import DemoPreview from "./components/DemoPreview";
 import DownloadTemplateButton from "./components/buttons/DownloadTemplateButton";
@@ -13,6 +13,40 @@ function PreviewPanel({
   handleGpxFilenameStateChange,
   imageFilename,
 }) {
+
+  const [communityTemplateFilename, setCommunityTemplateFilename] = useState(null);
+  const [loadedTemplateFilename, setLoadedTemplateFilename] = useState(null);
+
+  const handleCommunityTemplateFilenameStateChange = (state) => {
+    setLoadedTemplateFilename(null);
+    setCommunityTemplateFilename(state);
+    if (state) {
+      const url = 'templates/' + state
+      fetch(url)
+        .then((response) => {
+          if (!response.ok) {
+            console.log(
+              "SelectCommunityTemplateButton:useEffect(): network response was badddd"
+            );
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          editor.setValue(data);
+        })
+        .catch((error) => {
+          console.log("error with community templates");
+          console.log("error")
+        });
+    }
+  };
+
+  const handleLoadedTemplateFilenameStateChange = (state) => {
+    setCommunityTemplateFilename(null);
+    setLoadedTemplateFilename(state);
+  }
+
   return (
     <div className="stuckk pe-2">
       <DemoPreview
@@ -26,8 +60,8 @@ function PreviewPanel({
               gpxFilename={gpxFilename}
               handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             />
-            <UploadTemplateButton editor={editor} />
-            <SelectCommunityTemplateButton editor={editor} />
+            <UploadTemplateButton editor={editor} loadedTemplateFilename={loadedTemplateFilename} handleLoadedTemplateFilenameStateChange={handleLoadedTemplateFilenameStateChange}/>
+            <SelectCommunityTemplateButton communityTemplateFilename={communityTemplateFilename} handleCommunityTemplateFilenameStateChange={handleCommunityTemplateFilenameStateChange}/>
             <DownloadTemplateButton editor={editor} />
           </div>
         </div>

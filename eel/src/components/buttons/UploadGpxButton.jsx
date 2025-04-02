@@ -1,5 +1,8 @@
 import React from "react";
 
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
+
 import uploadGpxFile from "../../api/uploadGpxFile";
 
 import {initGpxFilename} from "./../../App";
@@ -20,6 +23,8 @@ function UploadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
     }
   };
 
+  const usingStockGpxFile = gpxFilename == initGpxFilename;
+
   return (
     <>
       <input
@@ -29,9 +34,37 @@ function UploadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
         className="file-input"
         onChange={handleFileChange}
       />
-      <label htmlFor={gpxSchema.inputId} className="btn btn-danger m-1">
-        {gpxFilename ==  initGpxFilename ? "Upload GPX" : gpxFilename}
+      {usingStockGpxFile ? 
+      
+            <OverlayTrigger
+        overlay={
+          <Tooltip id="tooltip-top">
+            The image above is currently being rendered using a demo activity
+          </Tooltip>
+        }
+        placement={"top"}
+      >
+
+      <label htmlFor={gpxSchema.inputId} className="btn btn-warning m-1">
+         Load Activity
       </label>
+      </OverlayTrigger>
+    : 
+
+            <OverlayTrigger
+        overlay={
+          <Tooltip id="tooltip-top">
+            Replace existing activity
+          </Tooltip>
+        }
+        placement={"top"}
+      >
+      <label htmlFor={gpxSchema.inputId} className="btn btn-success m-1">
+        {gpxFilename}
+      </label>
+      </OverlayTrigger>
+}
+
     </>
   );
 }

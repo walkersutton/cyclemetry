@@ -1,44 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
-const templateUrl = (fileName) => {
-  return (
-    "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/" +
-    fileName +
-    ".json"
-  );
-};
+/// todo maybe can replace this with parsing public/tempaltes folder for json files???
+const communityTemplateFilenames = ["walker_crit_a.json", "safa_brian_a_4k_gradient.json"];
 
-const communityTemplateFilenames = ["walker_crit_a"];
-
-function SelectCommunityTemplateButton({ editor }) {
-  const [templateFilename, setTemplateFilename] = useState(null);
-
-  useEffect(() => {
-    if (templateFilename) {
-      const url = templateUrl(templateFilename);
-      fetch(url)
-        .then((response) => {
-          if (!response.ok) {
-            console.log(
-              "SelectCommunityTemplateButton:useEffect(): network response was badddd"
-            );
-            throw new Error("Network response was not ok");
-          }
-          return response.json();
-        })
-        .then((data) => {
-          editor.setValue(data);
-        })
-        .catch((error) => {
-          console.log("error with community templates");
-        });
-    }
-  }, [templateFilename]);
+function SelectCommunityTemplateButton({ communityTemplateFilename, handleCommunityTemplateFilenameStateChange }) {
 
   return (
     <OverlayTrigger
@@ -49,11 +19,11 @@ function SelectCommunityTemplateButton({ editor }) {
         </Tooltip>
       }
       placement={"top"}
-      key={templateFilename}
+      key={communityTemplateFilename}
     >
       <DropdownButton
-        title="Community Templates"
-        variant="warning"
+        title={communityTemplateFilename ?? "Community Templates"}
+        variant={communityTemplateFilename ? "success" : "warning"}
         className="text-center m-1"
       >
         {/* also happens when user clicks back button from github link on bottom of editor */}
@@ -61,7 +31,7 @@ function SelectCommunityTemplateButton({ editor }) {
         {/* todo don't pull these from github.com */}
         {communityTemplateFilenames.map((templateFilename, index) => (
           <Dropdown.Item
-            onClick={() => setTemplateFilename(templateFilename)}
+            onClick={() => handleCommunityTemplateFilenameStateChange(templateFilename)}
             key={index}
           >
             {templateFilename}
