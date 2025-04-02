@@ -6,10 +6,10 @@ import Tooltip from "react-bootstrap/Tooltip";
 const templateSchema = {
   allowedType: "application/json",
   extension: ".json",
-  inputId: "file-upload-template",
+  inputId: "file-load-template",
 };
 
-function UploadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTemplateFilenameStateChange }) {
+function LoadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTemplateFilenameStateChange }) {
   const handleFileChange = (event) => {
     const f = event.target.files[0];
     if (f && f.type === templateSchema.allowedType) {
@@ -48,7 +48,7 @@ function UploadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTemp
       <OverlayTrigger
         overlay={
           <Tooltip id="tooltip-top">
-            WARNING: Uploading a template will overwrite your existing
+            WARNING: Loading a template will overwrite your existing
             configuration
           </Tooltip>
         }
@@ -66,4 +66,4 @@ function UploadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTemp
   );
 }
 
-export default UploadTemplateButton;
+export default LoadTemplateButton;

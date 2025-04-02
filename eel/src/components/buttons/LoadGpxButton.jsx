@@ -3,27 +3,27 @@ import React from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
-import uploadGpxFile from "../../api/uploadGpxFile";
+import loadGpxFile from "../../api/loadGpxFile";
 
-import {initGpxFilename} from "./../../App";
+import {initGpxFilename} from "../../App";
 
 const gpxSchema = {
   allowedType: "application/gpx+xml",
   extension: ".gpx",
-  inputId: "file-upload-gpx",
+  inputId: "file-load-gpx",
 };
 
-function UploadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
+function LoadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file && file.type === gpxSchema.allowedType) {
-      uploadGpxFile(file, handleGpxFilenameStateChange);
+      loadGpxFile(file, handleGpxFilenameStateChange);
     } else {
       console.log("Invalid file type. Please select a GPX file.");
     }
   };
 
-  const usingStockGpxFile = gpxFilename == initGpxFilename;
+  const usingStockGpxFile = gpxFilename === initGpxFilename;
 
   return (
     <>
@@ -69,4 +69,4 @@ function UploadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
   );
 }
 
-export default UploadGpxButton;
+export default LoadGpxButton;

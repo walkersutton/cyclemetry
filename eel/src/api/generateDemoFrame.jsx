@@ -1,8 +1,4 @@
-import axios from "axios";
-import isEqual from "lodash/isEqual";
 import {eel} from './../App';
-import { initConfig } from "../Editor";
-
 
 export default async function generateDemoFrame(
   editor,

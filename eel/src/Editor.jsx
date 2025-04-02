@@ -24,7 +24,7 @@ export const initConfig = {
       y: 110,
     },
     {
-      text: "Upload a GPX file to change the underlying data",
+      text: "Load a GPX file to change the underlying data",
       font_size: 30,
       x: 50,
       y: 150,

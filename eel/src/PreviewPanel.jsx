@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 
 import DemoPreview from "./components/DemoPreview";
-import DownloadTemplateButton from "./components/buttons/DownloadTemplateButton";
-import UploadGpxButton from "./components/buttons/UploadGpxButton";
-import UploadTemplateButton from "./components/buttons/UploadTemplateButton";
+import SaveTemplateButton from "./components/buttons/SaveTemplateButton";
+import LoadGpxButton from "./components/buttons/LoadGpxButton";
+import LoadTemplateButton from "./components/buttons/LoadTemplateButton";
 import SelectCommunityTemplateButton from "./components/buttons/SelectCommunityTemplateButton";
 
 function PreviewPanel({
@@ -56,13 +56,13 @@ function PreviewPanel({
       <div className="card bg-light mt-2 p-2">
         <div className="row">
           <div className="d-flex flex-wrap">
-            <UploadGpxButton
+            <LoadGpxButton
               gpxFilename={gpxFilename}
               handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             />
-            <UploadTemplateButton editor={editor} loadedTemplateFilename={loadedTemplateFilename} handleLoadedTemplateFilenameStateChange={handleLoadedTemplateFilenameStateChange}/>
+            <LoadTemplateButton editor={editor} loadedTemplateFilename={loadedTemplateFilename} handleLoadedTemplateFilenameStateChange={handleLoadedTemplateFilenameStateChange}/>
             <SelectCommunityTemplateButton communityTemplateFilename={communityTemplateFilename} handleCommunityTemplateFilenameStateChange={handleCommunityTemplateFilenameStateChange}/>
-            <DownloadTemplateButton editor={editor} />
+            <SaveTemplateButton editor={editor} />
           </div>
         </div>
       </div>
