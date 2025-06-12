@@ -1,4 +1,4 @@
-import { eel } from "./../App";
+import { eel } from "../App";
 
 export default async function generateDemoFrame(
   editor,

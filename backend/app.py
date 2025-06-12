@@ -6,9 +6,8 @@ import sys
 import tempfile
 import time
 
-from designer import demo_frame_v2
-
 import eel
+from designer import demo_frame_v2
 
 logging.basicConfig(level=logging.INFO)
 
@@ -136,7 +135,7 @@ def demoonlyconfigarg(config, gpx_data):
         try:
             img_filepath = scene.frames[0].full_path()
             # obf_filepath = f"./frames/{int(time.time())}.png"
-            shutil.move(img_filepath, f"./public/{new_filename}")
+            shutil.move(img_filepath, f"public/{new_filename}")
         except Exception as e:
             logging.error("app.py:demoonlyconfigarg()")
             logging.error("issue grabbing filename for demo image")
@@ -144,13 +143,22 @@ def demoonlyconfigarg(config, gpx_data):
 
         # os.rename(img_filepath, obf_filepath)
     return new_filename
-    # filename = os.path.basename(obf_filepath)
+    # return full_path
 
     # return jsonify({"data": filename})
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "--develop":
+    # Get the path to the Documents directory in the user's home
+    # documents_path = os.path.join(os.path.expanduser("~"), "Documents")
+    # cyclemetry_path = os.path.join(documents_path, "cyclemetry")
+
+    # # Create the directory if it doesn't exist
+    # os.makedirs(cyclemetry_path, exist_ok=True)
+
+    # static_path = os.path.expanduser("~/Documents/cyclemetry")
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--develop":
         logging.info("develop flag seen")
         # eel.init('client')
         # eel.start()
@@ -158,12 +166,14 @@ if __name__ == "__main__":
         # eel.start({"port": 3000})
         # eel.init('public')
         # eel.start('index.html')
-        eel.init("build")
+        eel.init("public")
         eel.start()
     else:
-        eel.init("build")
-        eel.start("index.html")
+        eel.init("public")
+        eel.start()
+        # eel.start("index.html", block=False, allowed_extensions=[".js", ".html", ".jpg", ".png"])
 
+    # eel._static_files["/static_cyclemetry"] = static_path
     #
 
     # eel.init('client')

@@ -35,6 +35,8 @@ your browser should open to http://localhost:3000/. Check dev tools network tab 
 
 ## How to build app
 * TODO - clean up requirements.txt once build is working
+* I think the issue might be related to file paths with public folder. might want to use a folder in Documents on user's computer??????? idk. Maybe a dot folder under home? ~/.cyclemetry/
+* maybe try just commenting nearly everything out and slowly bringing back functionality until build breaks
 
 ```
 npm run build
