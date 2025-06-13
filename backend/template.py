@@ -39,14 +39,14 @@ def build_configs(filename):
     configs = {}
     scene_config = template["scene"]
     scene_config = validate_scene_config(scene_config)
-    for clas, config in template.items():
-        if clas == "scene":
-            configs[clas] = config
-        elif clas in ("values", "labels", "plots"):
+    for class_a, config in template.items():
+        if class_a == "scene":
+            configs[class_a] = config
+        elif class_a in ("values", "labels", "plots"):
             if len(config) > 0:
-                configs[clas] = []
+                configs[class_a] = []
                 for sub_config in config:
-                    configs[clas].append(merge_configs(scene_config, sub_config))
+                    configs[class_a].append(merge_configs(scene_config, sub_config))
     return configs
 
 
@@ -54,62 +54,62 @@ def build_configs_v2(template):
     configs = {}
     scene_config = template["scene"]
     scene_config = validate_scene_config(scene_config)
-    for clas, config in template.items():
-        if clas == "scene":
-            configs[clas] = config
-        elif clas in ("values", "labels", "plots"):
+    for class_a, config in template.items():
+        if class_a == "scene":
+            configs[class_a] = config
+        elif class_a in ("values", "labels", "plots"):
             if len(config) > 0:
-                configs[clas] = []
+                configs[class_a] = []
                 for sub_config in config:
-                    configs[clas].append(merge_configs(scene_config, sub_config))
+                    configs[class_a].append(merge_configs(scene_config, sub_config))
     return configs
 
     configs["scene"] = template["scene"]
     # configs['plots'] = []
     # configs['templates'] = []
 
-    global_config = template["global"]
+    # global_config = template["global"]
 
-    desired_components = components(template)
-    print(desired_components)
+    # desired_components = components(template)
+    # print(desired_components)
     exit()
 
-    if len(desired_components["values"] > 0):
-        configs["values"] = []
-        for value_component in desired_components["values"]:
-            configs["values"].append(
-                merge_configs(global_config, template["values"][""])
-            )
+    # if len(desired_components["values"] > 0):
+    #     configs["values"] = []
+    #     for value_component in desired_components["values"]:
+    #         configs["values"].append(
+    #             merge_configs(global_config, template["values"][""])
+    #         )
 
-    return configs
+    # return configs
 
-    global_config = configs["global"]
-    for attribute in configs.keys():
-        if type(configs[attribute]) == dict:
-            for key, value in global_config.items():
-                if key not in configs[attribute].keys():
-                    configs[attribute][key] = value
-            if any(
-                elem in configs[attribute].keys()
-                for elem in {"sub_point", "imperial", "metric"}
-            ):
-                if "imperial" in configs[attribute].keys():
-                    for key, value in global_config.items():
-                        if key not in configs[attribute]["imperial"].keys():
-                            configs[attribute]["imperial"][key] = value
-                if "metric" in configs[attribute].keys():
-                    for key, value in global_config.items():
-                        if key not in configs[attribute]["metric"].keys():
-                            configs[attribute]["metric"][key] = value
-                if "sub_point" in configs[attribute].keys():
-                    for key, value in global_config.items():
-                        if key not in configs[attribute]["sub_point"].keys():
-                            configs[attribute]["sub_point"][key] = value
-        elif type(configs[attribute]) == list:
-            for element in configs[attribute]:
-                for key, value in global_config.items():
-                    if key not in element.keys():
-                        element[key] = value
-        else:
-            raise Exception("config attribute must be dict or list, depending on type")
-    return configs
+    # global_config = configs["global"]
+    # for attribute in configs.keys():
+    #     if configs[attribute] is dict:
+    #         for key, value in global_config.items():
+    #             if key not in configs[attribute].keys():
+    #                 configs[attribute][key] = value
+    #         if any(
+    #             elem in configs[attribute].keys()
+    #             for elem in {"sub_point", "imperial", "metric"}
+    #         ):
+    #             if "imperial" in configs[attribute].keys():
+    #                 for key, value in global_config.items():
+    #                     if key not in configs[attribute]["imperial"].keys():
+    #                         configs[attribute]["imperial"][key] = value
+    #             if "metric" in configs[attribute].keys():
+    #                 for key, value in global_config.items():
+    #                     if key not in configs[attribute]["metric"].keys():
+    #                         configs[attribute]["metric"][key] = value
+    #             if "sub_point" in configs[attribute].keys():
+    #                 for key, value in global_config.items():
+    #                     if key not in configs[attribute]["sub_point"].keys():
+    #                         configs[attribute]["sub_point"][key] = value
+    #     elif configs[attribute] is list:
+    #         for element in configs[attribute]:
+    #             for key, value in global_config.items():
+    #                 if key not in element.keys():
+    #                     element[key] = value
+    #     else:
+    #         raise Exception("config attribute must be dict or list, depending on type")
+    # return configs

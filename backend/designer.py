@@ -17,9 +17,9 @@ designer types
 * suffix, overlay_filename, text -> str
 
 notes:
-* i think speed should be a list of dict (simlar to labels) rather than including hide and opacity at top level
+* i think speed should be a list of dict (similar to labels) rather than including hide and opacity at top level
 * use the above types to write some sort of template validator -> similar to validating form inputs on payment web views
-  * and use the types and validator to design template form behaviro -> encourage users to populate fields where required
+  * and use the types and validator to design template form behavior -> encourage users to populate fields where required
     but also give option to extend template for additinoal customizability
 * i know that flask supports forms - i think we should be able to leverage that -
 
@@ -34,7 +34,7 @@ def demo_frame(gpx_filename, template_filename, second, headless):
     # present form that allows user to edit template in real time using a form on left side of screen
     # listeners on inputs to re-render frame as template is updated
     # right side of browser shows updated frame
-    # should be accessed simply using ./demo or a similary simple command
+    # should be accessed simply using ./demo or a similarly simple command
 
     configs = build_configs(template_filename)
     activity = Activity(gpx_filename)
@@ -71,7 +71,7 @@ def demo_frame_v2(gpx_filename, config, second):
         logging.error("fucked in setup")
         logging.error(e)
 
-    if activity == None:
+    if activity is None:
         logging.error("demo_frame_v2 : activitty is fucked")
         return
 

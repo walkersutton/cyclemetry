@@ -1,11 +1,9 @@
 import os
 import sys
+from activity import Activity
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, parent_dir)
-
-from activity import Activity
-from constant import NO_INTERPOLATE_ATTRIBUTES
 
 
 class TestActivity:

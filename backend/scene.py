@@ -1,10 +1,8 @@
 import math
 import os
-import subprocess
 from subprocess import PIPE, Popen
 
 import constant
-import numpy as np
 from frame import Frame
 from plot import build_figure
 from template import build_configs

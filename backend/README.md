@@ -2,6 +2,24 @@
 
 - python
 
+
+
+## new notes
+```python
+* uv run ruff check
+
+```
+
+
+
+
+
+
+
+
+
+
+
 ## running pre-commit hooks
 
 ```
@@ -83,6 +101,6 @@ docker build --platform linux/amd64 . -t walkersutton/cyclemetry:<tag> # pattern
 # push image to docker hub
 docker push walkersutton/cyclemetry:<tag>
 
-# run conatiner
+# run container
 docker run -p <host_port>:6969 -td walkersutton/cyclemetry:<tag>
 ``` -->

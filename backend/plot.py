@@ -186,7 +186,7 @@ def draw_labels(
                 fontsize=config["point_label"]["font_size"],
                 color=config["point_label"]["color"],
                 font=Path(
-                    f'{constant.FONTS_DIR}{config["point_label"]["font"]}'
+                    f"{constant.FONTS_DIR}{config['point_label']['font']}"
                 ),  # TODO - support system fonts? not sure how pyplot deals with this
             )
         )

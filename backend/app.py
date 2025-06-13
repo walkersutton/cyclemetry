@@ -5,17 +5,24 @@ import shutil
 import sys
 import tempfile
 import time
+import jsonify
+from flask import request, make_response, Flask
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
+
 
 import eel
-from designer import demo_frame_v2
+from designer import demo_frame, demo_frame_v2
+
+ALLOWED_EXTENSIONS = [".js", ".html", ".jpg", ".png"]
 
 logging.basicConfig(level=logging.INFO)
 
-# app = Flask(__name__)
-# CORS(
-#     app,
-#     origins=[f"http://localhost:3000", "https://walkersutton.com"],
-# )
+app = Flask(__name__)
+CORS(
+    app,
+    origins=["http://localhost:3000", "https://walkersutton.com"],
+)
 
 # app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -46,7 +53,7 @@ def upload():
     return make_response(jsonify({"error": "very bad"}), 400)
 
 
-# @app.route("/demo", methods=["POST"])
+@app.route("/demo", methods=["POST"])
 def demo():
     data = request.json
     if (
@@ -86,7 +93,9 @@ def demo():
 # @app.route("/images/<filename>", methods=["GET"])
 def serve_image(filename):
     # TODO images are never deleted! need to clean eventually . maybe some sort of daily job to keep things TIDY
-    return send_from_directory("frames", filename)
+    # TODO satisfy ruffff
+    return filename
+    # return send_from_directory("frames", filename)
 
 
 def bootboot():
@@ -129,7 +138,7 @@ def demoonlyconfigarg(config, gpx_data):
         scene = demo_frame_v2(
             temp_file.name, config, 20
         )  # TODO replace with param for third value - time/second to grab frame
-        if scene == None:
+        if scene is None:
             logging.error("scene is none, scene is fucked")
             return
         try:
