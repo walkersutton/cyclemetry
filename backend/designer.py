@@ -71,9 +71,12 @@ def demo_frame_v2(gpx_filename, config, second):
         logging.error("fucked in setup")
         logging.error(e)
 
-    if activity is None:
+    if not hasattr(activity, "gpx"):
         logging.error("demo_frame_v2 : activitty is fucked")
         return
+    else:
+        logging.info("ACTIVITY IS NOT NONE")
+        logging.info(activity)
 
     try:
         start = configs["scene"]["start"] if "start" in configs["scene"] else 0

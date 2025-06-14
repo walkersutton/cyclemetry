@@ -5,13 +5,12 @@ import shutil
 import sys
 import tempfile
 import time
-import jsonify
-from flask import request, make_response, Flask
+
+# import jsonify
+from flask import request, make_response, Flask, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-
-import eel
 from designer import demo_frame, demo_frame_v2
 
 ALLOWED_EXTENSIONS = [".js", ".html", ".jpg", ".png"]
@@ -19,6 +18,7 @@ ALLOWED_EXTENSIONS = [".js", ".html", ".jpg", ".png"]
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
+
 CORS(
     app,
     origins=["http://localhost:3000", "https://walkersutton.com"],
@@ -31,14 +31,14 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# @app.errorhandler(406)
+@app.errorhandler(406)
 def bad_request(error):
     return make_response(
         jsonify({"error": "Bad Request sowwy - " + error.description}), 406
     )
 
 
-# @app.route("/upload", methods=["POST"])
+@app.route("/upload", methods=["POST"])
 def upload():
     if "file" not in request.files:
         return make_response(jsonify({"error": "invalid request"}), 400)
@@ -90,7 +90,7 @@ def demo():
     return jsonify({"data": filename})
 
 
-# @app.route("/images/<filename>", methods=["GET"])
+@app.route("/images/<filename>", methods=["GET"])
 def serve_image(filename):
     # TODO images are never deleted! need to clean eventually . maybe some sort of daily job to keep things TIDY
     # TODO satisfy ruffff
@@ -111,13 +111,17 @@ def bootboot():
         os.makedirs(tmp)
 
 
-@eel.expose
-def hello():
-    print("hello - python function")
+@app.route("/api/demo-light", methods=["POST"])
+def demo_light():
+    data = request.get_json()
 
+    config = data.get("config")
+    gpx_data = data.get("gpx")
 
-@eel.expose
-def demoonlyconfigarg(config, gpx_data):
+    print("flask demo light")
+    print(config)
+    print(gpx_data)
+
     new_filename = f"{int(time.time())}.png"
     try:
         byte_data = base64.b64decode(gpx_data)
@@ -140,7 +144,8 @@ def demoonlyconfigarg(config, gpx_data):
         )  # TODO replace with param for third value - time/second to grab frame
         if scene is None:
             logging.error("scene is none, scene is fucked")
-            return
+            # or is it a bad template? to investigate. need to do better error handling
+            return jsonify({"error": "likely poorly formatted gpx file"}), 400
         try:
             img_filepath = scene.frames[0].full_path()
             # obf_filepath = f"./frames/{int(time.time())}.png"
@@ -169,29 +174,5 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1 and sys.argv[1] == "--develop":
         logging.info("develop flag seen")
-        # eel.init('client')
-        # eel.start()
-        # eel.start('index.html')
-        # eel.start({"port": 3000})
-        # eel.init('public')
-        # eel.start('index.html')
-        eel.init("public")
-        eel.start()
     else:
-        eel.init("public")
-        eel.start()
-        # eel.start("index.html", block=False, allowed_extensions=[".js", ".html", ".jpg", ".png"])
-
-    # eel._static_files["/static_cyclemetry"] = static_path
-    #
-
-    # eel.init('client')
-    # eel.start({"port": 3000}, host="localhost", port=8080)
-    # eel.init('build')
-    # eel.start('index.html')
-
-    # eel.init('client')
-    # eel.start({"port": 3000}, host="localhost", port=8080)
-    # eel.start('index.html')
-    # # eel.start({"port": 3000})
-    # eel.start('index.html')
+        pass

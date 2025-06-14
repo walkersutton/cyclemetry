@@ -1,5 +1,3 @@
-import { eel } from "../App";
-
 export default async function generateDemoFrame(
   editor,
   gpxFilestring,
@@ -26,7 +24,7 @@ export default async function generateDemoFrame(
     // });
     // const postData = new FormData();
     // postData.append("file", configFile);
-    // todo replace upload calll if need?
+    // todo replace upload call if need?
     // await axios
     //   .post("/upload", postData, {
     //     headers: {
@@ -43,10 +41,28 @@ export default async function generateDemoFrame(
 
     handleGeneratingImageStateChange(true);
 
-    let demoImageFilename = await eel.demoonlyconfigarg(
-      config,
-      gpxFilestring
-    )();
+    // let demoImageFilename = await demoonlyconfigarg(config, gpxFilestring)();
+
+    fetch("http://localhost:3001/api/demo-light", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        config: config,
+        gpx: gpxFilestring,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Server responded with:", data);
+      })
+      .catch((error) => {
+        console.error("Fetch error:", error);
+      });
+
+    let demoImageFilename = "kimg.yo";
+
     handleGeneratingImageStateChange(false);
     if (demoImageFilename !== null) {
       handleImageFilenameStateChange(demoImageFilename);

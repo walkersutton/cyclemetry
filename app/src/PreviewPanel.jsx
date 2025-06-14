@@ -13,15 +13,15 @@ function PreviewPanel({
   handleGpxFilenameStateChange,
   imageFilename,
 }) {
-
-  const [communityTemplateFilename, setCommunityTemplateFilename] = useState(null);
+  const [communityTemplateFilename, setCommunityTemplateFilename] =
+    useState(null);
   const [loadedTemplateFilename, setLoadedTemplateFilename] = useState(null);
 
   const handleCommunityTemplateFilenameStateChange = (state) => {
     setLoadedTemplateFilename(null);
     setCommunityTemplateFilename(state);
     if (state) {
-      const url = 'templates/' + state
+      const url = "templates/" + state;
       fetch(url)
         .then((response) => {
           if (!response.ok) {
@@ -37,7 +37,7 @@ function PreviewPanel({
         })
         .catch((error) => {
           console.log("error with community templates");
-          console.log("error")
+          console.log("error");
         });
     }
   };
@@ -45,7 +45,7 @@ function PreviewPanel({
   const handleLoadedTemplateFilenameStateChange = (state) => {
     setCommunityTemplateFilename(null);
     setLoadedTemplateFilename(state);
-  }
+  };
 
   return (
     <div className="stuckk pe-2">
@@ -60,8 +60,19 @@ function PreviewPanel({
               gpxFilename={gpxFilename}
               handleGpxFilenameStateChange={handleGpxFilenameStateChange}
             />
-            <LoadTemplateButton editor={editor} loadedTemplateFilename={loadedTemplateFilename} handleLoadedTemplateFilenameStateChange={handleLoadedTemplateFilenameStateChange}/>
-            <SelectCommunityTemplateButton communityTemplateFilename={communityTemplateFilename} handleCommunityTemplateFilenameStateChange={handleCommunityTemplateFilenameStateChange}/>
+            <LoadTemplateButton
+              editor={editor}
+              loadedTemplateFilename={loadedTemplateFilename}
+              handleLoadedTemplateFilenameStateChange={
+                handleLoadedTemplateFilenameStateChange
+              }
+            />
+            <SelectCommunityTemplateButton
+              communityTemplateFilename={communityTemplateFilename}
+              handleCommunityTemplateFilenameStateChange={
+                handleCommunityTemplateFilenameStateChange
+              }
+            />
             <SaveTemplateButton editor={editor} />
           </div>
         </div>

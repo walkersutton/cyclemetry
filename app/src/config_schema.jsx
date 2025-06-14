@@ -47,7 +47,7 @@ function deepCopy(obj) {
 const opacity = {
   default: 1.0,
   minimum: 0.0,
-  maxiumum: 1.0,
+  maximum: 1.0,
   type: "number",
   description: "0.0 (transparent) <= opacity <= 1.0 (opaque)",
 };
@@ -137,16 +137,16 @@ standardText["title"] = "Standard Text";
 standardText["required"].push(...["x", "y", "font_size"]);
 standardText["defaultProperties"].push(...["x", "y", "font_size"]);
 const standardTextExtension = {
-  // probbaly can abstract out x/y to a position object and .. into the dict
+  // probably can abstract out x/y to a position object and .. into the dict
   x: {
     type: "integer",
     default: 0,
-    descripiton: "x coordinate of this value ((0,0) is top left)",
+    descriptions: "x coordinate of this value ((0,0) is top left)",
   },
   y: {
     type: "integer",
     default: 0,
-    descripiton: "y coordinate of this value ((0,0) is top left)",
+    descriptions: "y coordinate of this value ((0,0) is top left)",
   },
 };
 standardText["properties"] = {
@@ -245,7 +245,7 @@ const point = {
       type: "string",
     },
     remove_edge_color: {
-      descripiton: "whether or not to draw an edge around this point",
+      descriptions: "whether or not to draw an edge around this point",
       title: "remove edge color",
       type: "boolean",
     },
@@ -337,7 +337,7 @@ const plot = {
       required: false,
       type: "integer",
       minimum: 0,
-      maxiumum: 359,
+      maximum: 359,
       description: "numbeer of degrees to rotate plot",
     },
     value: {

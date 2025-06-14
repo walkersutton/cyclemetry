@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { JSONEditor } from "@json-editor/json-editor";
 
 import generateDemoFrame from "./api/generateDemoFrame.jsx";
-import schema from "./src/config_schema.jsx";
+import schema from "./config_schema.jsx";
 
 export const initConfig = {
   scene: {

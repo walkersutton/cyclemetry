@@ -2,23 +2,15 @@
 
 - python
 
-
-
 ## new notes
+
 ```python
+
 * uv run ruff check
 
+# run flask server
+uv run -- flask run -p 3000
 ```
-
-
-
-
-
-
-
-
-
-
 
 ## running pre-commit hooks
 
@@ -31,8 +23,8 @@
 
 ## How to run dev environment
 
-
 ### one command
+
 `npm run start`
 
 you'll have to wait a few seconds for eel server to start
@@ -52,9 +44,10 @@ you'll have to wait a few seconds for eel server to start
 your browser should open to http://localhost:3000/. Check dev tools network tab to make sure the request for `eel.js` has a good response code
 
 ## How to build app
-* TODO - clean up requirements.txt once build is working
-* I think the issue might be related to file paths with public folder. might want to use a folder in Documents on user's computer??????? idk. Maybe a dot folder under home? ~/.cyclemetry/
-* maybe try just commenting nearly everything out and slowly bringing back functionality until build breaks
+
+- TODO - clean up requirements.txt once build is working
+- I think the issue might be related to file paths with public folder. might want to use a folder in Documents on user's computer??????? idk. Maybe a dot folder under home? ~/.cyclemetry/
+- maybe try just commenting nearly everything out and slowly bringing back functionality until build breaks
 
 ```
 npm run build
