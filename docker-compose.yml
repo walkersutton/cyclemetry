@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cyclemetry-backend
+    ports:
+      - "3001:3001"
+    volumes:
+      # Mount volumes for persistent storage
+      - ./backend/tmp:/app/tmp
+      - ./backend/uploads:/app/uploads
+      - ./backend/templates:/app/templates
+      # Mount demo GPX file
+      - ./backend/demo.gpxinit:/app/demo.gpxinit:ro
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:3001/api/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - cyclemetry-network
+
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: cyclemetry-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cyclemetry-network
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+
+networks:
+  cyclemetry-network:
+    driver: bridge
+
+volumes:
+  backend-tmp:
+  backend-uploads:

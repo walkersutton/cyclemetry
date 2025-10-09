@@ -6,9 +6,16 @@ import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
 /// todo maybe can replace this with parsing public/tempaltes folder for json files???
-const communityTemplateFilenames = ["walker_crit_a.json", "safa_brian_a_4k_gradient.json"];
+const communityTemplateFilenames = [
+  "walker_crit_a.json",
+  "safa_brian_a_4k_gradient.json",
+];
 
-function SelectCommunityTemplateButton({ communityTemplateFilename, handleCommunityTemplateFilenameStateChange }) {
+import useStore from "../../store/useStore";
+
+function SelectCommunityTemplateButton() {
+  const { communityTemplateFilename, SelectCommunityTemplateFilename } =
+    useStore();
 
   return (
     <OverlayTrigger
@@ -22,8 +29,8 @@ function SelectCommunityTemplateButton({ communityTemplateFilename, handleCommun
       key={communityTemplateFilename}
     >
       <DropdownButton
-        title={communityTemplateFilename ?? "Community Templates"}
-        variant={communityTemplateFilename ? "success" : "warning"}
+        title={communityTemplateFilename ?? "Select Template"}
+        variant={communityTemplateFilename ? "outline-success" : "primary"}
         className="text-center m-1"
       >
         {/* also happens when user clicks back button from github link on bottom of editor */}
@@ -31,7 +38,7 @@ function SelectCommunityTemplateButton({ communityTemplateFilename, handleCommun
         {/* todo don't pull these from github.com */}
         {communityTemplateFilenames.map((templateFilename, index) => (
           <Dropdown.Item
-            onClick={() => handleCommunityTemplateFilenameStateChange(templateFilename)}
+            onClick={() => SelectCommunityTemplateFilename(templateFilename)}
             key={index}
           >
             {templateFilename}

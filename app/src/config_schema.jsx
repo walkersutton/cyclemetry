@@ -92,35 +92,52 @@ scene["required"] = ["height", "width", "color"];
 scene["title"] = "Scene";
 
 const sceneExtension = {
+  // fps, width, height, start, and end are now managed in the UI
+  // They're still part of the config but hidden from the JSON editor
   fps: {
     type: "integer",
     default: 30,
     minimum: 1,
     description: "frames per second",
+    options: {
+      hidden: true
+    }
   },
   height: {
     type: "integer",
     default: 1080,
     minimum: 1,
     description: "height in pixels",
+    options: {
+      hidden: true
+    }
   },
   width: {
     type: "integer",
     default: 1920,
     minimum: 1,
     description: "width in pixels",
+    options: {
+      hidden: true
+    }
   },
   start: {
     type: "integer",
     default: 0,
     minimum: 0,
     description: "second to start render from (affects plots for demo)",
+    options: {
+      hidden: true
+    }
   },
   end: {
     type: "integer",
     default: 60,
     minimum: 0,
     description: "second to end render from (affects plots for demo)",
+    options: {
+      hidden: true
+    }
   },
   overlay_fileanme: {
     title: "overlay filename",

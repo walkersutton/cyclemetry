@@ -47,13 +47,13 @@ class Frame:
         draw_value_helper(
             value,
             hex_color_with_alpha(
-                config["color"],
+                config.get("color", constant.DEFAULT_COLOR),
                 config["opacity"] if "opacity" in config.keys() else None,
             ),
             config["x"],
             config["y"],
             config["font_size"],
-            config["font"],
+            config.get("font", "Arial.ttf"),
         )
         return img
 

@@ -15,6 +15,8 @@ def validate_scene_config(config):
     scene keys with backend defaults:
     - font
     - fps
+    - start
+    - end
     """
     defaults = {
         "font": "Arial.ttf",
@@ -23,6 +25,37 @@ def validate_scene_config(config):
     for k, v in defaults.items():
         if k not in config.keys():
             config[k] = v
+
+    # Ensure numeric values are actually numeric
+    if "fps" in config:
+        try:
+            config["fps"] = int(config["fps"])
+        except (ValueError, TypeError):
+            print(f"Warning: Invalid fps value '{config['fps']}', using default 30")
+            config["fps"] = 30
+
+    if "start" in config:
+        try:
+            config["start"] = int(config["start"])
+        except (ValueError, TypeError):
+            print(f"Warning: Invalid start value '{config['start']}', using default 0")
+            config["start"] = 0
+
+    if "end" in config:
+        try:
+            config["end"] = int(config["end"])
+        except (ValueError, TypeError):
+            print(f"Warning: Invalid end value '{config['end']}', removing it")
+            del config["end"]
+
+    # Validate start < end
+    if "start" in config and "end" in config:
+        if config["start"] >= config["end"]:
+            print(
+                f"Warning: start ({config['start']}) >= end ({config['end']}), resetting start to 0"
+            )
+            config["start"] = 0
+
     return config
 
 

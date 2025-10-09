@@ -1,6 +1,9 @@
 import Button from "react-bootstrap/Button";
 
-function SaveTemplateButton({ editor }) {
+import useStore from "../../store/useStore";
+
+function SaveTemplateButton() {
+  const { editor } = useStore();
   const saveTemplate = () => {
     const jsonString = JSON.stringify(editor.getValue(), null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });

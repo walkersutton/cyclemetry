@@ -1,7 +1,7 @@
 [project]
-name = "backend"
+name = "cyclemetry_backend"
 version = "0.1.0"
-description = "walker TOdo"
+description = "TODO"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -117,3 +117,8 @@ docstring-code-format = false
 # This only has an effect when the `docstring-code-format` setting is
 # enabled.
 docstring-code-line-length = "dynamic"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.2.0",
+]

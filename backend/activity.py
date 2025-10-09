@@ -23,6 +23,7 @@ PARENT_TAGS = {
 class Activity:
     def __init__(self, gpx_filename):
         try:
+            # Expect a valid path; do not prefix with './' (breaks absolute paths)
             self.gpx = gpxpy.parse(open(gpx_filename, "r"))
             self.set_valid_attributes()
             self.parse_data()

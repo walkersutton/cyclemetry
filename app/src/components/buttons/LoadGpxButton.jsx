@@ -3,9 +3,7 @@ import React from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 
-import loadGpxFile from "../../api/loadGpxFile";
-
-import { initGpxFilename } from "../../App";
+import saveFile from "./../../api/gpxUtils";
 
 const gpxSchema = {
   allowedType: "application/gpx+xml",
@@ -13,17 +11,37 @@ const gpxSchema = {
   inputId: "file-load-gpx",
 };
 
-function LoadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
+import useStore from "../../store/useStore";
+
+function LoadGpxButton() {
+  const { gpxFilename } = useStore();
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    if (file && file.type === gpxSchema.allowedType) {
-      loadGpxFile(file, handleGpxFilenameStateChange);
-    } else {
-      console.log("Invalid file type. Please select a GPX file.");
+
+    console.log("📁 File selected:", {
+      file: file ? file.name : "none",
+      type: file ? file.type : "none",
+      expectedType: gpxSchema.allowedType,
+    });
+
+    if (!file) {
+      console.warn("⚠️ No file selected");
+      return;
     }
+
+    // if (file.type === gpxSchema.allowedType) {
+      console.log("✅ File type valid, uploading...");
+      saveFile(file);
+    // } else {
+    //   console.error("❌ Invalid file type:", {
+    //     received: file.type,
+    //     expected: gpxSchema.allowedType,
+    //   });
+    //   alert(`Invalid file type. Expected GPX file (${gpxSchema.allowedType}), got ${file.type || "unknown"}`);
+    // }
   };
 
-  const usingStockGpxFile = gpxFilename === initGpxFilename;
+  const hasActivity = gpxFilename !== null;
 
   return (
     <>
@@ -34,31 +52,22 @@ function LoadGpxButton({ gpxFilename, handleGpxFilenameStateChange }) {
         className="file-input"
         onChange={handleFileChange}
       />
-      {usingStockGpxFile ? (
-        <OverlayTrigger
-          overlay={
-            <Tooltip id="tooltip-top">
-              The image above is currently being rendered using a demo activity
-            </Tooltip>
-          }
-          placement={"top"}
+      <OverlayTrigger
+        overlay={
+          <Tooltip id="tooltip-top">
+            {hasActivity ? "WARNING: Loading a new activity will replace your current activity" : "Select an activity GPX"}
+          </Tooltip>
+        }
+        placement={"top"}
+      >
+        <label
+          htmlFor={gpxSchema.inputId}
+          className={`btn ${hasActivity ? "btn-warning" : "btn-primary"}`}
         >
-          <label htmlFor={gpxSchema.inputId} className="btn btn-warning m-1">
-            Load Activity
-          </label>
-        </OverlayTrigger>
-      ) : (
-        <OverlayTrigger
-          overlay={
-            <Tooltip id="tooltip-top">Replace existing activity</Tooltip>
-          }
-          placement={"top"}
-        >
-          <label htmlFor={gpxSchema.inputId} className="btn btn-success m-1">
-            {gpxFilename}
-          </label>
-        </OverlayTrigger>
-      )}
+          {hasActivity ? "Replace Activity" : "Load Activity"}
+
+        </label>
+      </OverlayTrigger>
     </>
   );
 }

@@ -1,60 +1,22 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import { Panel, PanelResizeHandle, PanelGroup } from "react-resizable-panels";
-
-import Editor from "./Editor";
-// import Editor from "./Editor2";
+import Editor from './Editor';
 import PreviewPanel from "./PreviewPanel";
-
-export const initGpxFilename = "demo.gpxinit";
+import TemplatesSection from "./components/TemplatesSection";
+import useStore from "./store/useStore";
+import "jsoneditor-react/es/editor.min.css";
 
 function App() {
-  const [gpxFilename, setGpxFilename] = useState(initGpxFilename);
-  const [gpxFilestring, setGpxFilestring] = useState(null);
-  const [imageFilename, setImageFilename] = useState(null);
-  const [editor, setEditor] = useState(null);
-  const [generatingImage, setGeneratingImage] = useState(false);
+  const { config } = useStore();
+  const [yourJson, setYourJson] = useState({
+    a: 23,
+    b: ["ab", "cd"],
+  });
+  const handleChange = (e) => {
+    console.log(e, "yk");
+  };
 
-  useEffect(() => {
-    const fetchFile = async () => {
-      try {
-        const response = await fetch(gpxFilename); // Path to your file in the public folder
-        const fileBlob = await response.blob(); // Convert the response to a Blob
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          // Assign the base64 string to the state variable
-          const val = reader.result.split(",")[1]; // Remove the data URL prefix
-          // setgpxFilestring(vall);
-          handleGpxFilestringStateChange(val);
-          // handleGpxFilestringStateChange(vall);
-          // setGpxFilename("heyyyyyy.gpx");
-        };
-
-        reader.readAsDataURL(fileBlob); // Convert the Blob to Base64 string
-      } catch (error) {
-        console.error("Error fetching file:", error);
-      }
-    };
-    fetchFile();
-    // can't this go into handlegpxfilenamestatechange?
-  }, [gpxFilename]);
-
-  const handleGpxFilenameStateChange = (state) => {
-    setGpxFilename(state);
-  };
-  const handleGpxFilestringStateChange = (state) => {
-    setGpxFilestring(state);
-  };
-  const handleImageFilenameStateChange = (state) => {
-    setImageFilename(state);
-  };
-  const handleEditorStateChange = (state) => {
-    setEditor(state);
-  };
-  const handleGeneratingImageStateChange = (state) => {
-    setGeneratingImage(state);
-  };
   return (
     <>
       <PanelGroup
@@ -69,23 +31,49 @@ function App() {
               <strong>cyclemetry</strong>
             </a>
           </div>
-          <Editor
-            gpxFilename={gpxFilename}
-            gpxFilestring={gpxFilestring}
-            handleEditorStateChange={handleEditorStateChange}
-            handleGeneratingImageStateChange={handleGeneratingImageStateChange}
-            handleImageFilenameStateChange={handleImageFilenameStateChange}
-          />
+
+          {/* Template Selector */}
+          <div className="px-2 mb-2">
+            <TemplatesSection />
+          </div>
+
+          {config ? (
+            <Editor
+              value={yourJson}
+              onChange={handleChange}
+              theme="ace/theme/bootstrap"
+              allowedModes={["tree", "text"]}
+            />
+          ) : (
+            <div className="p-4 text-center bg-light rounded border m-2">
+              <div className="mb-3">
+                <svg
+                  width="60"
+                  height="60"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-muted"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <line x1="9" y1="15" x2="15" y2="15" />
+                </svg>
+              </div>
+              <h6 className="text-muted">No Template Selected</h6>
+              <p className="small text-muted mb-0">
+                Select a community template above to see the configuration here.
+              </p>
+            </div>
+          )}
         </Panel>
         <PanelResizeHandle />
         <Panel className="ps-1" minSize={30}>
-          <PreviewPanel
-            editor={editor}
-            generatingImage={generatingImage}
-            gpxFilename={gpxFilename}
-            handleGpxFilenameStateChange={handleGpxFilenameStateChange}
-            imageFilename={imageFilename}
-          />
+          <PreviewPanel />
         </Panel>
       </PanelGroup>
     </>

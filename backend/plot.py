@@ -164,7 +164,7 @@ def draw_points(fig, config, x, y):
                     color=color,
                     s=weight,
                     zorder=zorder,
-                    alpha=point_config["opacity"],
+                    alpha=point_config.get("opacity", 1.0),  # Default to fully opaque
                     edgecolor=edge_color,
                 )
             )

@@ -63,20 +63,51 @@ def demo_frame(gpx_filename, template_filename, second, headless):
 
 
 def demo_frame_v2(gpx_filename, config, second):
+    # Validate inputs
+    if not gpx_filename:
+        error_msg = "No GPX filename provided"
+        logging.error(f"demo_frame_v2: {error_msg}")
+        return {"error": error_msg, "error_code": "MISSING_GPX"}
+
+    if not config or not isinstance(config, dict):
+        error_msg = "Invalid config - must be a valid template object"
+        logging.error(f"demo_frame_v2: {error_msg}")
+        return {"error": error_msg, "error_code": "INVALID_CONFIG"}
+
+    if not isinstance(second, (int, float)):
+        logging.error(
+            f"demo_frame_v2: Invalid second value: {second} (type: {type(second)})"
+        )
+        try:
+            second = int(second)
+        except (ValueError, TypeError):
+            error_msg = f"Invalid second value: {second}"
+            logging.error("demo_frame_v2: Could not convert second to int")
+            return {"error": error_msg, "error_code": "INVALID_SECOND"}
+
     try:
         configs = build_configs_v2(config)
         activity = Activity(gpx_filename)
+    except FileNotFoundError as e:
+        error_msg = f"GPX file not found: {gpx_filename}"
+        logging.error(f"demo_frame_v2: {error_msg}")
+        logging.error(str(e))
+        return {"error": error_msg, "error_code": "GPX_NOT_FOUND"}
     except Exception as e:
-        logging.error("demo_frame_v2")
-        logging.error("fucked in setup")
-        logging.error(e)
+        error_msg = f"Failed to initialize: {str(e)}"
+        logging.error("demo_frame_v2: Setup failed")
+        logging.error(str(e))
+        import traceback
+
+        traceback.print_exc()
+        return {"error": error_msg, "error_code": "SETUP_ERROR"}
 
     if not hasattr(activity, "gpx"):
-        logging.error("demo_frame_v2 : activitty is fucked")
-        return
-    else:
-        logging.info("ACTIVITY IS NOT NONE")
-        logging.info(activity)
+        error_msg = "Invalid GPX file - missing required data"
+        logging.error(f"demo_frame_v2: {error_msg}")
+        return {"error": error_msg, "error_code": "INVALID_GPX"}
+
+    logging.info("Activity loaded successfully")
 
     try:
         start = configs["scene"]["start"] if "start" in configs["scene"] else 0
@@ -97,19 +128,59 @@ def demo_frame_v2(gpx_filename, config, second):
 
     scene = None
     try:
+        # Validate fps
+        fps = configs["scene"].get("fps", 30)
+        if not isinstance(fps, (int, float)) or fps <= 0:
+            logging.error(f"Invalid fps: {fps}, using default 30")
+            fps = 30
+            configs["scene"]["fps"] = fps
+
         activity.trim(start, end)
-        activity.interpolate(configs["scene"]["fps"])
+        activity.interpolate(fps)
         scene = Scene(activity, configs)
     except Exception as e:
-        logging.error("demo_frame_v2")
-        logging.error("fucked building scene")
-        logging.error(e)
+        error_msg = f"Failed to build scene: {str(e)}"
+        logging.error("demo_frame_v2: Scene building failed")
+        logging.error(str(e))
+        import traceback
+
+        traceback.print_exc()
+        return {"error": error_msg, "error_code": "SCENE_BUILD_ERROR"}
+
     try:
         scene.build_figures()
-        scene.render_demo(end - start, second)
+        # Convert absolute second to relative second (after trim)
+        duration = end - start
+        if duration <= 0:
+            error_msg = f"Invalid duration: start={start}, end={end}. End must be greater than start."
+            logging.error(f"demo_frame_v2: {error_msg}")
+            return {"error": error_msg, "error_code": "INVALID_DURATION"}
+
+        relative_second = max(0, min(second - start, duration - 1))
+        logging.info(
+            f"Rendering demo at second {second} (relative: {relative_second}, range: 0-{duration}, start={start}, end={end})"
+        )
+
+        if relative_second < 0 or relative_second >= duration:
+            error_msg = f"Selected second {second} is outside the activity range ({start}-{end})"
+            logging.error(f"demo_frame_v2: {error_msg}")
+            return {"error": error_msg, "error_code": "SECOND_OUT_OF_RANGE"}
+
+        scene.render_demo(duration, relative_second)
+    except KeyError as e:
+        error_msg = f"Template configuration error: Missing required field '{str(e)}'"
+        logging.error(f"demo_frame_v2: KeyError in template - {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        return {"error": error_msg, "error_code": "TEMPLATE_ERROR"}
     except Exception as e:
-        logging.error("demo_frame_v2")
-        logging.error("fuckd building and rendering")
-        logging.error(e)
+        error_msg = f"Failed to render: {str(e)}"
+        logging.error("demo_frame_v2: Rendering failed")
+        logging.error(str(e))
+        import traceback
+
+        traceback.print_exc()
+        return {"error": error_msg, "error_code": "RENDER_ERROR"}
 
     return scene

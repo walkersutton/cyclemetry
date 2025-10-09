@@ -1,91 +1,103 @@
-export default async function generateDemoFrame(
-  editor,
-  gpxFilestring,
-  handleGeneratingImageStateChange,
-  handleImageFilenameStateChange
-) {
-  if (!gpxFilestring) {
-    console.log("missing gpx file string");
-    return;
-  }
-  if (editor) {
-    const config = editor.getValue();
-    // if (isEqual(config, initConfig) && gpxFilename === "demo.gpx") {
-    //   handleImageFilenameStateChange("demo.png");
-    //   return;
-    // }
-    // we should validate the config - maybe do this in editor, since it's a tigter jump
-    // const errors = editor.validate(); -> not sure if this is sufficient - at minimum, should pass required checks of schema
-    // const configJson = JSON.stringify(config);
-    // TODO - remove this shitty hack of an upload pattern
-    // const configFilename = "myconfig.json";
-    // const configFile = new File([configJson], configFilename, {
-    // type: "application/json",
-    // });
-    // const postData = new FormData();
-    // postData.append("file", configFile);
-    // todo replace upload call if need?
-    // await axios
-    //   .post("/upload", postData, {
-    //     headers: {
-    //       "Content-Type": "multipart/form-data",
-    //     },
-    //   })
-    //   .then((response) => {
-    //     // console.log(response);
-    //   })
-    //   .catch((error) => {
-    //     console.log("generateDemoFrame failed to upload config file");
-    //     console.log(error);
-    //   });
+import useStore from "../store/useStore";
 
-    handleGeneratingImageStateChange(true);
+// Track if a request is in progress to prevent duplicate calls
+let isGenerating = false;
+let pendingRequest = null;
 
-    // let demoImageFilename = await demoonlyconfigarg(config, gpxFilestring)();
+export default async function generateDemoFrame(config) {
+  try {
+    const { gpxFilename, setImageFilename, setGeneratingImage, config: storeConfig, selectedSecond } =
+      useStore.getState();
 
-    fetch("http://localhost:3001/api/demo-light", {
+    const configToSend = config ?? storeConfig;
+
+    // Validate we have required data
+    if (!configToSend || !configToSend.scene) {
+      console.error("No valid config available");
+      return;
+    }
+
+    if (!gpxFilename) {
+      console.error("No GPX file selected");
+      return;
+    }
+
+    // If already generating, cancel the pending request and start a new one
+    if (isGenerating && pendingRequest) {
+      console.log("Cancelling previous demo generation request");
+      pendingRequest.abort();
+    }
+
+    isGenerating = true;
+    setGeneratingImage(true);
+
+    // Create an AbortController for this request
+    const controller = new AbortController();
+    pendingRequest = controller;
+
+    const payload = {
+      config: configToSend,
+      gpx_filename: gpxFilename,
+      second: selectedSecond,
+    };
+
+    console.log("📤 Sending demo request:", {
+      gpx: gpxFilename,
+      second: selectedSecond,
+      start: configToSend?.scene?.start,
+      end: configToSend?.scene?.end,
+    });
+
+    const response = await fetch("http://localhost:3001/api/demo", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        config: config,
-        gpx: gpxFilestring,
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Server responded with:", data);
-      })
-      .catch((error) => {
-        console.error("Fetch error:", error);
-      });
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
 
-    let demoImageFilename = "kimg.yo";
-
-    handleGeneratingImageStateChange(false);
-    if (demoImageFilename !== null) {
-      handleImageFilenameStateChange(demoImageFilename);
+    if (!response.ok) {
+      let errorMessage = `Server error ${response.status}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+          console.error("❌ Backend error:", errorData);
+        } else {
+          errorMessage = await response.text();
+        }
+      } catch (e) {
+        errorMessage = await response.text();
+      }
+      throw new Error(errorMessage);
     }
 
-    // console.log("new filename is");
-    // console.log(newFilename);
+    const data = await response.json();
 
-    // todo replace demo call must
-    //   await axios
-    //     .post("/demo", data)
-    //     .then((response) => {
-    //       handleGeneratingImageStateChange(false);
-    //       handleImageFilenameStateChange(response.data.data);
-    //     })
-    //     .catch((error) => {
-    //       handleGeneratingImageStateChange(false);
-    //       console.log("generateDemoFrame /demo error");
-    //       console.log(error);
-    //       alert(error);
-    //     });
-    // } else {
-    //   console.log("BAD BAD BAD generateDemoFrame");
-    // }
+    // Check if response contains an error even with 200 status
+    if (data.error) {
+      console.error("❌ Backend returned error:", data);
+      throw new Error(data.error);
+    }
+
+    const demoImageFilename = data.filename;
+    if (demoImageFilename) {
+      setImageFilename(demoImageFilename);
+    }
+  } catch (error) {
+    // Don't log abort errors as they're intentional
+    if (error.name !== 'AbortError') {
+      console.error("❌ Error in generateDemoFrame:", error);
+
+      // Show user-friendly error message
+      const errorMessage = error.message || "Failed to generate preview";
+      alert(`Preview Generation Error:\n\n${errorMessage}\n\nCheck the console for more details.`);
+    }
+  } finally {
+    isGenerating = false;
+    pendingRequest = null;
+    const { setGeneratingImage } = useStore.getState();
+    setGeneratingImage(false);
   }
 }

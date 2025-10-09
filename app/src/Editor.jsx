@@ -1,82 +1,95 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import { JSONEditor } from "@json-editor/json-editor";
-
 import generateDemoFrame from "./api/generateDemoFrame.jsx";
 import schema from "./config_schema.jsx";
+import useStore, { isUpdatingFromTimelineFlag } from "./store/useStore.js";
 
-export const initConfig = {
-  scene: {
-    color: "#ffffff",
-    height: 230,
-    width: 900,
-  },
-  labels: [
-    {
-      text: "Welcome to the Cyclemetry Template Editor!",
-      font_size: 40,
-      x: 50,
-      y: 40,
-    },
-    {
-      text: "Modify the template properties to change this image overlay",
-      font_size: 30,
-      x: 50,
-      y: 110,
-    },
-    {
-      text: "Load a GPX file to change the underlying data",
-      font_size: 30,
-      x: 50,
-      y: 150,
-    },
-  ],
+const editorConfig = {
+  use_name_attributes: false,
+  theme: "bootstrap5",
+  disable_edit_json: true,
+  disable_collapse: false,
+  schema: schema,
 };
-let config = null;
 
-function Editor({
-  gpxFilename,
-  gpxFilestring,
-  handleEditorStateChange,
-  handleGeneratingImageStateChange,
-  handleImageFilenameStateChange,
-}) {
+function Editor(props) {
   const editorRef = useRef(null);
-  const editorConfig = {
-    use_name_attributes: false,
-    theme: "bootstrap5",
-    disable_edit_json: true,
-    disable_properties: false,
-    disable_collapse: false,
-    schema: schema,
-  };
+  const editorInstanceRef = useRef(null);
+  const isInitializing = useRef(false);
+  // Prevent duplicate initialization under React 18 StrictMode in development
+  const hasInitializedRef = useRef(false);
+  const { config, setConfig, setEditor } = useStore();
 
-  // TODO fix editor loading errors seen in browser
+  const handleEditorChange = useCallback(
+    async (editor) => {
+      if (isInitializing.current) {
+        console.log("Editor change blocked - still initializing");
+        return;
+      }
+
+      // Don't trigger if we're updating from timeline
+      if (isUpdatingFromTimelineFlag()) {
+        console.log("Editor change blocked - updating from timeline");
+        return;
+      }
+
+      try {
+        const newConfig = editor.getValue();
+        console.log("Editor change detected, updating config");
+        setConfig(newConfig);
+        await generateDemoFrame(newConfig);
+      } catch (error) {
+        console.error("Error in generateDemoFrame:", error);
+      }
+    },
+    [setConfig]
+  );
+
   useEffect(() => {
+    if (hasInitializedRef.current) {
+      console.log("Editor already initialized, skipping");
+      return;
+    }
+
+    console.log("Initializing editor");
     const editor = new JSONEditor(editorRef.current, editorConfig);
+    editorInstanceRef.current = editor;
+    hasInitializedRef.current = true;
+
     editor.on("ready", function () {
-      handleEditorStateChange(editor);
+      console.log("Editor ready, setting up");
+      setEditor(editor);
       if (config) {
+        console.log("Setting initial config value");
+        isInitializing.current = true;
         editor.setValue(config);
-      } else {
-        editor.setValue(initConfig);
+        setTimeout(() => {
+          console.log("Initialization complete");
+          isInitializing.current = false;
+        }, 100); // Increased timeout
       }
     });
-    editor.on("change", async function () {
-      // TODO - do config validation before calling generate and assigning to current config - probably helper function
-      await generateDemoFrame(
-        editor,
-        gpxFilestring,
-        handleGeneratingImageStateChange,
-        handleImageFilenameStateChange
-      );
-      config = editor.getValue();
-    });
-    return () => {
-      editor.destroy();
-    };
-  }, [gpxFilename, gpxFilestring]);
 
-  return <div ref={editorRef} />;
+    editor.on("change", () => {
+      console.log("Editor change event fired");
+      handleEditorChange(editor);
+    });
+
+    return () => {
+      console.log("Cleaning up editor");
+      if (editorInstanceRef.current) {
+        editorInstanceRef.current.destroy();
+        editorInstanceRef.current = null;
+      }
+      if (editorRef.current) {
+        editorRef.current.innerHTML = "";
+      }
+      // Allow re-initialization on next mount (React 18 StrictMode double-invokes effects)
+      hasInitializedRef.current = false;
+    };
+  }, [handleEditorChange, setEditor]);
+
+  return <div ref={editorRef} className="json-editor-container" />;
 }
 
 export default Editor;

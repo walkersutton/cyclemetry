@@ -8,12 +8,15 @@ const templateSchema = {
   extension: ".json",
   inputId: "file-load-template",
 };
+import useStore from "../../store/useStore";
 
-function LoadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTemplateFilenameStateChange }) {
+function LoadTemplateButton() {
+  const { editor, loadedTemplateFilename, setLoadedTemplateFilename } =
+    useStore();
   const handleFileChange = (event) => {
     const f = event.target.files[0];
     if (f && f.type === templateSchema.allowedType) {
-      handleLoadedTemplateFilenameStateChange(f.name);
+      setLoadedTemplateFilename(f.name);
       const reader = new FileReader();
       reader.onload = function (e) {
         const fileContent = e.target.result;
@@ -53,14 +56,22 @@ function LoadTemplateButton({ editor, loadedTemplateFilename, handleLoadedTempla
           </Tooltip>
         }
         placement={"top"}
-      >{loadedTemplateFilename ?
-        <label htmlFor={templateSchema.inputId} className="btn btn-success m-1">
-          {loadedTemplateFilename}
-        </label> :
-        <label htmlFor={templateSchema.inputId} className="btn btn-warning m-1">
-          Load Template
-        </label>
-      }
+      >
+        {loadedTemplateFilename ? (
+          <label
+            htmlFor={templateSchema.inputId}
+            className="btn btn-success m-1"
+          >
+            {loadedTemplateFilename}
+          </label>
+        ) : (
+          <label
+            htmlFor={templateSchema.inputId}
+            className="btn btn-primary m-1"
+          >
+            Upload Template
+          </label>
+        )}
       </OverlayTrigger>
     </>
   );

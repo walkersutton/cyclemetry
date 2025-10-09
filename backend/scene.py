@@ -6,7 +6,6 @@ import constant
 from frame import Frame
 from plot import build_figure
 from template import build_configs
-from tqdm import tqdm
 
 
 class Scene:
@@ -20,9 +19,9 @@ class Scene:
             self.labels = []
         self.frames = []
 
-    def render_video(self, seconds):
+    def render_video(self, seconds, progress_callback=None, cancel_check=None):
         self.build_frames(seconds)
-        self.export_video()
+        self.export_video(progress_callback, cancel_check)
 
     def render_demo(self, seconds, second):
         self.build_frame(seconds, second, 0)
@@ -40,7 +39,7 @@ class Scene:
             os.makedirs(constant.FRAMES_DIR)
         if not hasattr(self, "figs"):
             self.figs = None
-        for frame in tqdm(self.frames, dynamic_ncols=True):
+        for frame in self.frames:
             frame.draw(self.template, self.figs).save(frame.full_path())
 
     def build_figures(self):
@@ -63,7 +62,7 @@ class Scene:
                 x, y = figure_data(config["value"])
                 self.figs[config["value"]] = build_figure(config, x, y)
 
-    def export_video(self):
+    def export_video(self, progress_callback=None, cancel_check=None):
         overlay_filename = (
             self.template["scene"]["overlay_filename"]
             if "overlay_filename" in self.template["scene"].keys()
@@ -94,9 +93,24 @@ class Scene:
             stdin=PIPE,
         )
         # TODO optimization opportunity here?
-        for frame in tqdm(self.frames, dynamic_ncols=True):
+        for idx, frame in enumerate(self.frames):
+            # Check for cancellation
+            if cancel_check and cancel_check():
+                print("Rendering cancelled, cleaning up...")
+                p.stdin.close()
+                p.terminate()
+                p.wait()
+                # Clean up partial video file
+                if os.path.exists(overlay_filename):
+                    os.remove(overlay_filename)
+                raise Exception("Rendering cancelled by user")
+
             image = frame.draw(self.template, self.figs)
             p.stdin.write(image.tobytes())
+
+            # Call progress callback if provided
+            if progress_callback:
+                progress_callback(idx + 1, len(self.frames))
 
         p.stdin.close()
         p.wait()

@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cyclemetry-backend-dev
+    ports:
+      - "3001:3001"
+    volumes:
+      # Mount source code for hot-reload
+      - ./backend:/app
+      - /app/__pycache__ # Exclude cache
+      - ./backend/tmp:/app/tmp
+      - ./backend/uploads:/app/uploads
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - PYTHONUNBUFFERED=1
+    command: python app.py
+    networks:
+      - cyclemetry-network-dev
+
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    container_name: cyclemetry-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source for hot-reload
+      - ./app:/app
+      - /app/node_modules # Exclude node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+      - CHOKIDAR_USEPOLLING=true
+    command: npm start
+    depends_on:
+      - backend
+    networks:
+      - cyclemetry-network-dev
+
+networks:
+  cyclemetry-network-dev:
+    driver: bridge

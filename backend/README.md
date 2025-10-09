@@ -9,7 +9,9 @@
 * uv run ruff check
 
 # run flask server
-uv run -- flask run -p 3000
+uv run -- flask run -p 3001
+ORRrrrr.. uv run -- flask --app app:app run -p 3001
+
 ```
 
 ## running pre-commit hooks
