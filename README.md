@@ -24,6 +24,8 @@ $ open http://localhost:3000
 
 ## Features
 
+<img src="https://github.com/user-attachments/assets/8a811981-7933-4bed-b833-c511df373fe0" width="500">
+
 - Route tracking
 - Elevation profiles
 - Metrics
