@@ -26,15 +26,26 @@ function BackendStatus() {
         if (response.ok) {
           const data = await response.json();
           const connected = data.status === "ok";
-          console.log("Backend check:", connected ? "✓ connected" : "✗ disconnected");
+          console.log(
+            "Backend check:",
+            connected ? "✓ connected" : "✗ disconnected",
+          );
           setIsConnected(connected);
         } else {
-          console.log("Backend check: ✗ disconnected (status:", response.status, ")");
+          console.log(
+            "Backend check: ✗ disconnected (status:",
+            response.status,
+            ")",
+          );
           setIsConnected(false);
         }
         setLastCheck(new Date());
       } catch (error) {
-        console.log("Backend check: ✗ disconnected (error:", error.message, ")");
+        console.log(
+          "Backend check: ✗ disconnected (error:",
+          error.message,
+          ")",
+        );
         setIsConnected(false);
         setLastCheck(new Date());
       }
@@ -43,30 +54,35 @@ function BackendStatus() {
     // Check immediately on mount
     checkBackend();
 
-    // Check every 10 seconds
-    const interval = setInterval(checkBackend, 10000);
+    // Check every 30 seconds (reduced from 10s to minimize network requests)
+    const interval = setInterval(checkBackend, 30000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Only show alert if disconnected
   if (!isConnected && isConnected !== null) {
     return (
       <Alert variant="danger" className="m-2">
-        <Alert.Heading className="h6">⚠️ Backend Server Not Running</Alert.Heading>
+        <Alert.Heading className="h6">
+          ⚠️ Backend Server Not Running
+        </Alert.Heading>
         <p className="mb-2">
-          Cannot connect to Flask server at <code>http://localhost:3001</code>
+          The backend server is not responding. This usually happens when:
         </p>
-        <hr />
-        <p className="mb-0 small">
-          <strong>To start the backend:</strong>
-          <br />
-          <code>cd backend && python app.py</code>
-          <br />
-          <span className="text-muted">
-            Last checked: {lastCheck?.toLocaleTimeString()}
-          </span>
+        <ul className="mb-2 small">
+          <li>The server crashed due to invalid configuration</li>
+          <li>Docker containers were stopped</li>
+          <li>Network connection issues</li>
+        </ul>
+        <p className="mb-2">
+          <strong>To restart:</strong>
         </p>
+        <code className="d-block bg-dark text-light p-2 rounded mb-2">
+          make clean && make dev
+        </code>
+        <small className="text-muted">
+          Last checked: {lastCheck?.toLocaleTimeString() || "Never"}
+        </small>
       </Alert>
     );
   }

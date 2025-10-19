@@ -10,6 +10,7 @@ const useStore = create((set, get) => ({
   editor: null,
   generatingImage: false,
   renderingVideo: false,
+  errorMessage: null, // For displaying user-friendly errors
   imageFilename: localStorage.getItem("imageFilename") || null,
   videoFilename: localStorage.getItem("videoFilename") || null,
   gpxFilename: localStorage.getItem("gpxFilename") || null,
@@ -58,10 +59,12 @@ const useStore = create((set, get) => ({
 
     if (val.scene) {
       // Only update timeline if we don't have values yet (initial load)
-      const hasExistingTimeline = currentState.startSecond !== 0 || currentState.endSecond !== currentState.dummyDurationSeconds;
+      const hasExistingTimeline =
+        currentState.startSecond !== 0 ||
+        currentState.endSecond !== currentState.dummyDurationSeconds;
 
       if (!hasExistingTimeline) {
-        console.log("📍 No existing timeline, using config values");
+        // Use config values for timeline
         if (val.scene.start !== undefined) {
           updates.startSecond = val.scene.start;
         }
@@ -73,12 +76,26 @@ const useStore = create((set, get) => ({
           updates.selectedSecond = val.scene.start;
         }
       } else {
-        console.log("📍 Preserving existing timeline values");
-        // Update config to match current timeline values
-        val.scene.start = currentState.startSecond;
-        val.scene.end = currentState.endSecond;
-        updates.config = val;
-        localStorage.setItem("editorConfig", JSON.stringify(val));
+        // User has edited start/end in the editor - update timeline to match
+        if (
+          val.scene.start !== undefined &&
+          val.scene.start !== currentState.startSecond
+        ) {
+          updates.startSecond = val.scene.start;
+          localStorage.setItem("startSecond", val.scene.start.toString());
+        }
+        if (
+          val.scene.end !== undefined &&
+          val.scene.end !== currentState.endSecond
+        ) {
+          updates.endSecond = val.scene.end;
+          updates.dummyDurationSeconds = val.scene.end;
+          localStorage.setItem("endSecond", val.scene.end.toString());
+          localStorage.setItem(
+            "dummyDurationSeconds",
+            val.scene.end.toString(),
+          );
+        }
       }
     }
 
@@ -92,6 +109,8 @@ const useStore = create((set, get) => ({
 
   setGeneratingImage: (generating) => set({ generatingImage: generating }),
   setRenderingVideo: (rendering) => set({ renderingVideo: rendering }),
+  setErrorMessage: (message) => set({ errorMessage: message }),
+  clearError: () => set({ errorMessage: null }),
 
   setDummyDurationSeconds: (duration) => {
     localStorage.setItem("dummyDurationSeconds", duration.toString());
@@ -99,7 +118,6 @@ const useStore = create((set, get) => ({
   },
 
   setStartSecond: (second) => {
-    console.log("📍 setStartSecond called:", second);
     localStorage.setItem("startSecond", second.toString());
 
     const state = get();
@@ -107,30 +125,15 @@ const useStore = create((set, get) => ({
 
     // Always update config to match, unless we're in the middle of loading config
     if (!isUpdatingFromConfig && state.config && state.config.scene) {
-      isUpdatingFromTimeline = true;
-
       const newConfig = JSON.parse(JSON.stringify(state.config)); // Deep clone
       newConfig.scene.start = second;
       updates.config = newConfig;
       localStorage.setItem("editorConfig", JSON.stringify(newConfig));
-      console.log("📍 Config updated: start =", second);
 
-      // Update editor if it exists
-      const editor = state.editor;
-      if (editor) {
-        try {
-          editor.setValue(newConfig);
-          console.log("📍 Editor updated with new config");
-        } catch (e) {
-          console.warn("⚠️ Could not update editor:", e.message);
-        }
-      }
-
-      setTimeout(() => {
-        isUpdatingFromTimeline = false;
-      }, 100);
+      // Don't update editor during drag - it will be updated when drag ends
+      // This prevents the editor from being updated on every pixel of drag
     } else if (isUpdatingFromConfig) {
-      console.log("📍 Skipping config update (loading from config)");
+      // Skip config update while loading from config
     } else {
       console.warn("⚠️ No scene in config, cannot update start");
     }
@@ -139,7 +142,6 @@ const useStore = create((set, get) => ({
   },
 
   setEndSecond: (second) => {
-    console.log("📍 setEndSecond called:", second);
     localStorage.setItem("endSecond", second.toString());
 
     const state = get();
@@ -147,30 +149,15 @@ const useStore = create((set, get) => ({
 
     // Always update config to match, unless we're in the middle of loading config
     if (!isUpdatingFromConfig && state.config && state.config.scene) {
-      isUpdatingFromTimeline = true;
-
       const newConfig = JSON.parse(JSON.stringify(state.config)); // Deep clone
       newConfig.scene.end = second;
       updates.config = newConfig;
       localStorage.setItem("editorConfig", JSON.stringify(newConfig));
-      console.log("📍 Config updated: end =", second);
 
-      // Update editor if it exists
-      const editor = state.editor;
-      if (editor) {
-        try {
-          editor.setValue(newConfig);
-          console.log("📍 Editor updated with new config");
-        } catch (e) {
-          console.warn("⚠️ Could not update editor:", e.message);
-        }
-      }
-
-      setTimeout(() => {
-        isUpdatingFromTimeline = false;
-      }, 100);
+      // Don't update editor during drag - it will be updated when drag ends
+      // This prevents the editor from being updated on every pixel of drag
     } else if (isUpdatingFromConfig) {
-      console.log("📍 Skipping config update (loading from config)");
+      // Skip config update while loading from config
     } else {
       console.warn("⚠️ No scene in config, cannot update end");
     }
@@ -198,7 +185,9 @@ const useStore = create((set, get) => ({
     localStorage.setItem("gpxFilename", filename);
     set({ gpxFilename: filename });
     // Only attempt to fetch local file contents for actual .gpx files
-    const isLikelyGpx = typeof filename === "string" && (filename.endsWith(".gpx") || filename.startsWith("http"));
+    const isLikelyGpx =
+      typeof filename === "string" &&
+      (filename.endsWith(".gpx") || filename.startsWith("http"));
     if (!isLikelyGpx) return;
     try {
       const response = await fetch(filename);
@@ -211,12 +200,13 @@ const useStore = create((set, get) => ({
       };
       reader.readAsDataURL(fileBlob);
     } catch (error) {
-      console.warn("setGpxFilename: could not fetch GPX file contents (expected for demo)");
+      console.warn(
+        "setGpxFilename: could not fetch GPX file contents (expected for demo)",
+      );
     }
   },
 
   setGpxFilenameFromFile: (file) => {
-    console.log("in setting from file");
     if (file) {
       set({ gpxFilename: file["name"] });
     } else {
@@ -239,36 +229,67 @@ const useStore = create((set, get) => ({
     if (!filename) return;
 
     try {
-      const url = `templates/${filename}`;
+      const url = `/templates/${filename}`;
       const response = await fetch(url);
 
       if (!response.ok) {
-        console.log("SelectCommunityTemplateButton: network response was bad");
-        throw new Error("Network response was not ok");
+        console.error(
+          "SelectCommunityTemplateButton: network response was bad",
+          response.status,
+        );
+        throw new Error(`Network response was not ok: ${response.status}`);
       }
 
       const data = await response.json();
+
       const editor = get().editor;
       const setConfig = get().setConfig;
+      const state = get();
+
+      // If no GPX file is loaded, automatically load the demo
+      if (!state.gpxFilename) {
+        // No GPX file loaded, automatically load demo
+        const {
+          setGpxFilename,
+          setDummyDurationSeconds,
+          setStartSecond,
+          setEndSecond,
+          setSelectedSecond,
+        } = get();
+        setGpxFilename("demo.gpxinit");
+        const demoDuration = 7946; // seward.gpx duration
+        setDummyDurationSeconds(demoDuration);
+        setStartSecond(0);
+        setEndSecond(demoDuration);
+        setSelectedSecond(0);
+      } else {
+        // GPX file already loaded
+      }
 
       // Always update the config in the store
-      console.log("Setting config from community template");
       setConfig(data);
 
       if (editor) {
         // Update the editor UI - this will trigger the change event
         // which will call generateDemoFrame
-        console.log("Setting editor value from community template");
         editor.setValue(data);
       } else {
-        console.warn("Editor is not set in store, generating demo frame directly");
+        console.warn(
+          "⚠️ Editor is not set in store, generating demo frame directly",
+        );
         // If editor isn't ready yet, manually trigger demo frame generation
-        const generateDemoFrame = (await import("../api/generateDemoFrame.jsx")).default;
+        const generateDemoFrame = (await import("../api/generateDemoFrame.jsx"))
+          .default;
         await generateDemoFrame(data);
       }
     } catch (error) {
-      console.log("Error with community templates");
-      console.error(error);
+      console.error("Error with community templates:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        filename: filename,
+      });
+      alert(`Failed to load template: ${error.message}`);
     }
   },
 }));

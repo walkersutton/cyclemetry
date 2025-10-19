@@ -36,7 +36,9 @@ function ResetButton() {
             <li>Selected GPX file</li>
             <li>All cached images</li>
           </ul>
-          <p className="mb-0"><strong>This action cannot be undone.</strong></p>
+          <p className="mb-0">
+            <strong>This action cannot be undone.</strong>
+          </p>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>

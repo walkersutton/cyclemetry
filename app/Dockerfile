@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (use legacy-peer-deps for compatibility)
+RUN npm ci --omit=dev --legacy-peer-deps
 
 # Copy application code
 COPY . .
@@ -23,8 +23,8 @@ FROM nginx:alpine
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx configuration from build stage
+COPY --from=build /app/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80

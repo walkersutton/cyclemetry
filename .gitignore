@@ -4,3 +4,7 @@
 *__pycache__*
 *build*
 nex/
+*.mov
+*.prof
+.ruff_cache
+

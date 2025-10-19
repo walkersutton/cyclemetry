@@ -5,14 +5,21 @@ import Tooltip from "react-bootstrap/Tooltip";
 import useStore from "../../store/useStore";
 
 function LoadDemoGpxButton() {
-  const { gpxFilename, setGpxFilename, setDummyDurationSeconds, setStartSecond, setEndSecond, setSelectedSecond } = useStore();
+  const {
+    gpxFilename,
+    setGpxFilename,
+    setDummyDurationSeconds,
+    setStartSecond,
+    setEndSecond,
+    setSelectedSecond,
+  } = useStore();
 
   const handleLoadDemo = () => {
     console.log("🎯 Loading demo GPX file");
     setGpxFilename("demo.gpxinit");
 
-    // Set demo activity duration (demo.gpxinit has 3104 seconds)
-    const demoDuration = 3104;
+    // Set demo activity duration (demo.gpxinit -> seward.gpx has 7946 seconds)
+    const demoDuration = 7946;
     console.log("✅ Setting demo duration:", demoDuration, "seconds");
     setDummyDurationSeconds(demoDuration);
     setStartSecond(0);

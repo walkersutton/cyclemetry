@@ -35,7 +35,9 @@ const TimeInputGroup = ({ label, value, onChange, maxMinutes, maxSeconds }) => (
         value={value % 60}
         onChange={(e) => {
           const secs = parseInt(e.target.value, 10);
-          const validSecs = Number.isNaN(secs) ? 0 : Math.max(0, Math.min(maxSeconds, secs));
+          const validSecs = Number.isNaN(secs)
+            ? 0
+            : Math.max(0, Math.min(maxSeconds, secs));
           const mins = Math.floor(value / 60);
           let total = mins * 60 + validSecs;
           total = Math.max(0, Math.min(maxMinutes, total));
@@ -46,12 +48,26 @@ const TimeInputGroup = ({ label, value, onChange, maxMinutes, maxSeconds }) => (
   </div>
 );
 
-const TimelineSlider = ({ sliderRef, didDragRef, getSecondFromClientX, setSelectedSecond, startSecond, endSecond, selectedSecond, dummyDurationSeconds, beginDrag }) => (
-  <div className="multi-slider mt-2" ref={sliderRef} onClick={(e) => {
-    if (didDragRef.current) return;
-    const sec = getSecondFromClientX(e.clientX);
-    setSelectedSecond(Math.max(startSecond, Math.min(endSecond, sec)));
-  }}>
+const TimelineSlider = ({
+  sliderRef,
+  didDragRef,
+  getSecondFromClientX,
+  setSelectedSecond,
+  startSecond,
+  endSecond,
+  selectedSecond,
+  dummyDurationSeconds,
+  beginDrag,
+}) => (
+  <div
+    className="multi-slider mt-2"
+    ref={sliderRef}
+    onClick={(e) => {
+      if (didDragRef.current) return;
+      const sec = getSecondFromClientX(e.clientX);
+      setSelectedSecond(Math.max(startSecond, Math.min(endSecond, sec)));
+    }}
+  >
     <div className="rail" />
     <div
       className="range"
@@ -64,27 +80,36 @@ const TimelineSlider = ({ sliderRef, didDragRef, getSecondFromClientX, setSelect
     <div
       className="handle handle-start"
       style={{ left: `${(startSecond / dummyDurationSeconds) * 100}%` }}
-      onPointerDown={beginDrag('start')}
-      onTouchStart={beginDrag('start')}
+      onPointerDown={beginDrag("start")}
+      onTouchStart={beginDrag("start")}
       onClick={(e) => e.stopPropagation()}
     />
     <div
       className="handle handle-current"
       style={{ left: `${(selectedSecond / dummyDurationSeconds) * 100}%` }}
-      onPointerDown={beginDrag('current')}
-      onTouchStart={beginDrag('current')}
+      onPointerDown={beginDrag("current")}
+      onTouchStart={beginDrag("current")}
       onClick={(e) => e.stopPropagation()}
     />
     <div
       className="handle handle-end"
       style={{ left: `${(endSecond / dummyDurationSeconds) * 100}%` }}
-      onPointerDown={beginDrag('end')}
-      onTouchStart={beginDrag('end')}
+      onPointerDown={beginDrag("end")}
+      onTouchStart={beginDrag("end")}
     />
   </div>
 );
 
-const TimelineInputs = ({ startSecond, endSecond, selectedSecond, dummyDurationSeconds, setStartSecond, setEndSecond, setSelectedSecond, onInputChange }) => (
+const TimelineInputs = ({
+  startSecond,
+  endSecond,
+  selectedSecond,
+  dummyDurationSeconds,
+  setStartSecond,
+  setEndSecond,
+  setSelectedSecond,
+  onInputChange,
+}) => (
   <div className="d-flex flex-column align-items-center gap-2">
     <TimeInputGroup
       label="Start"
@@ -153,80 +178,130 @@ function TimelineControls() {
   const debounceTimer = useRef(null);
   const lastRenderedSecond = useRef(selectedSecond);
 
-  const getSecondFromClientX = React.useCallback((clientX) => {
-    const track = sliderRef.current;
-    if (!track) return 0;
-    const rect = track.getBoundingClientRect();
-    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    return Math.round(percent * dummyDurationSeconds);
-  }, [dummyDurationSeconds]);
+  const getSecondFromClientX = React.useCallback(
+    (clientX) => {
+      const track = sliderRef.current;
+      if (!track) return 0;
+      const rect = track.getBoundingClientRect();
+      const percent = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
+      return Math.round(percent * dummyDurationSeconds);
+    },
+    [dummyDurationSeconds],
+  );
 
-  const onPointerMove = React.useCallback((e) => {
-    if (!draggingHandleRef.current) return;
-    const clientX = e.clientX ?? (e.touches && e.touches[0]?.clientX);
-    if (clientX == null) return;
-    const sec = getSecondFromClientX(clientX);
+  const onPointerMove = React.useCallback(
+    (e) => {
+      if (!draggingHandleRef.current) return;
+      const clientX = e.clientX ?? (e.touches && e.touches[0]?.clientX);
+      if (clientX == null) return;
+      const sec = getSecondFromClientX(clientX);
 
-    switch (draggingHandleRef.current) {
-      case 'start':
-        {
-          const newStart = Math.max(0, Math.min(sec, endSecond));
-          setStartSecond(newStart);
-          if (selectedSecond < newStart) setSelectedSecond(newStart);
-        }
-        break;
-      case 'end':
-        {
-          const newEnd = Math.max(startSecond, Math.min(sec, dummyDurationSeconds));
-          setEndSecond(newEnd);
-          if (selectedSecond > newEnd) setSelectedSecond(newEnd);
-        }
-        break;
-      case 'current':
-        {
-          const cur = Math.max(startSecond, Math.min(sec, endSecond));
-          setSelectedSecond(cur);
-        }
-        break;
-      default:
-        break;
-    }
-  }, [endSecond, getSecondFromClientX, selectedSecond, startSecond, dummyDurationSeconds, setStartSecond, setEndSecond, setSelectedSecond]);
+      switch (draggingHandleRef.current) {
+        case "start":
+          {
+            const newStart = Math.max(0, Math.min(sec, endSecond));
+            setStartSecond(newStart);
+            if (selectedSecond < newStart) setSelectedSecond(newStart);
+          }
+          break;
+        case "end":
+          {
+            const newEnd = Math.max(
+              startSecond,
+              Math.min(sec, dummyDurationSeconds),
+            );
+            setEndSecond(newEnd);
+            if (selectedSecond > newEnd) setSelectedSecond(newEnd);
+          }
+          break;
+        case "current":
+          {
+            const cur = Math.max(startSecond, Math.min(sec, endSecond));
+            setSelectedSecond(cur);
+          }
+          break;
+        default:
+          break;
+      }
+    },
+    [
+      endSecond,
+      getSecondFromClientX,
+      selectedSecond,
+      startSecond,
+      dummyDurationSeconds,
+      setStartSecond,
+      setEndSecond,
+      setSelectedSecond,
+    ],
+  );
 
   const stopDragging = React.useCallback(() => {
-    const wasStartOrEnd = draggingHandleRef.current === 'start' || draggingHandleRef.current === 'end';
+    const wasStartOrEnd =
+      draggingHandleRef.current === "start" ||
+      draggingHandleRef.current === "end";
     draggingHandleRef.current = null;
-    window.removeEventListener('pointermove', onPointerMove);
-    window.removeEventListener('pointerup', stopDragging);
-    window.removeEventListener('touchmove', onPointerMove);
-    window.removeEventListener('touchend', stopDragging);
-    setTimeout(() => { didDragRef.current = false; }, 0);
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", stopDragging);
+    window.removeEventListener("touchmove", onPointerMove);
+    window.removeEventListener("touchend", stopDragging);
+    setTimeout(() => {
+      didDragRef.current = false;
+    }, 0);
 
     // Trigger demo re-render after drag ends (debounced)
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
     debounceTimer.current = setTimeout(() => {
-      const currentSecond = useStore.getState().selectedSecond;
+      const state = useStore.getState();
+      const currentSecond = state.selectedSecond;
+
+      // Update editor with final values after drag
+      if (wasStartOrEnd && state.editor && state.config) {
+        console.log("📝 Updating editor with final timeline values");
+        const updatedConfig = {
+          ...state.config,
+          scene: {
+            ...state.config.scene,
+            start: state.startSecond,
+            end: state.endSecond,
+          },
+        };
+        try {
+          state.editor.setValue(updatedConfig);
+        } catch (e) {
+          console.warn("Could not update editor:", e);
+        }
+      }
+
       // Always re-render if we were dragging start/end, or if selected second changed
       if (wasStartOrEnd || currentSecond !== lastRenderedSecond.current) {
-        console.log(`Timeline drag ended, re-rendering demo at second ${currentSecond}`);
+        console.log(
+          `Timeline drag ended, re-rendering demo at second ${currentSecond}`,
+        );
         lastRenderedSecond.current = currentSecond;
         generateDemoFrame();
       }
     }, 300);
   }, [onPointerMove]);
 
-  const beginDrag = React.useCallback((handle) => (e) => {
-    draggingHandleRef.current = handle;
-    didDragRef.current = true;
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', stopDragging, { once: true });
-    window.addEventListener('touchmove', onPointerMove);
-    window.addEventListener('touchend', stopDragging, { once: true });
-    e.preventDefault();
-    e.stopPropagation();
-  }, [onPointerMove, stopDragging]);
+  const beginDrag = React.useCallback(
+    (handle) => (e) => {
+      draggingHandleRef.current = handle;
+      didDragRef.current = true;
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", stopDragging, { once: true });
+      window.addEventListener("touchmove", onPointerMove);
+      window.addEventListener("touchend", stopDragging, { once: true });
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    [onPointerMove, stopDragging],
+  );
 
   const handleInputChange = React.useCallback(() => {
     // Debounce input changes
@@ -236,7 +311,9 @@ function TimelineControls() {
     debounceTimer.current = setTimeout(() => {
       const currentSecond = useStore.getState().selectedSecond;
       if (currentSecond !== lastRenderedSecond.current) {
-        console.log(`Timeline input changed to second ${currentSecond}, re-rendering demo`);
+        console.log(
+          `Timeline input changed to second ${currentSecond}, re-rendering demo`,
+        );
         lastRenderedSecond.current = currentSecond;
         generateDemoFrame();
       }
@@ -246,9 +323,6 @@ function TimelineControls() {
   return (
     <div>
       <div className="d-flex flex-column gap-2">
-        <label htmlFor="timeline-combined" className="form-label m-0">
-          Timeline
-        </label>
         <TimelineInputs
           startSecond={startSecond}
           endSecond={endSecond}

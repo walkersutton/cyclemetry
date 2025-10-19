@@ -15,7 +15,7 @@ function ActivitySection() {
           <h6 className="card-title">Activity </h6>
           <div className="mb-3 text-muted small">
             <span>Name:</span> {gpxFilename ?? "None loaded"}
-            <br/>
+            <br />
             <span>Duration:</span> {minutes}m {seconds}s
           </div>
           <div className="d-flex flex-wrap gap-2">

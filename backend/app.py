@@ -1,20 +1,21 @@
+import gc
 import logging
 import os
+import psutil
 import shutil
+import threading
 import time
+import uuid
 
-# import jsonify
-from flask import request, make_response, Flask, jsonify
+from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 
-from designer import demo_frame_v2
 from activity import Activity
+from designer import demo_frame
 from scene import Scene
 
 # Use extension names without leading dots
 ALLOWED_EXTENSIONS = {"gpx", "js", "html", "jpg", "png", "mov"}
-
 # Global variable to track video render progress
 video_render_progress = {
     "current": 0,
@@ -22,10 +23,15 @@ video_render_progress = {
     "status": "idle",  # idle, rendering, complete, error, cancelled
     "message": "",
     "start_time": None,
+    "frame_times": [],  # Track recent frame times for smoothing
 }
 
 # Global flag to cancel rendering
 cancel_render_flag = False
+
+# Lock to prevent concurrent demo frame generation (prevents OOM)
+demo_frame_lock = threading.Lock()
+demo_frame_in_progress = False
 
 logging.basicConfig(level=logging.INFO)
 
@@ -67,8 +73,7 @@ def upload():
     if file.filename == "":
         return make_response(jsonify({"error": "no file selected"}), 400)
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
         file.save(path)
 
         # Analyze the GPX file to get metadata
@@ -76,12 +81,14 @@ def upload():
             activity = Activity(path)
             duration_seconds = len(activity.time) if hasattr(activity, "time") else 0
 
-            logging.info(f"GPX uploaded: {filename}, duration: {duration_seconds}s")
+            logging.info(
+                f"GPX uploaded: {file.filename}, duration: {duration_seconds}s"
+            )
 
             return jsonify(
                 {
                     "data": "file uploaded",
-                    "filename": filename,
+                    "filename": file.filename,
                     "duration_seconds": duration_seconds,
                     "has_data": hasattr(activity, "time") and len(activity.time) > 0,
                 }
@@ -92,7 +99,7 @@ def upload():
             return jsonify(
                 {
                     "data": "file uploaded",
-                    "filename": filename,
+                    "filename": file.filename,
                     "duration_seconds": 0,
                     "has_data": False,
                     "error": "Could not analyze GPX file",
@@ -101,10 +108,44 @@ def upload():
     return make_response(jsonify({"error": "very bad"}), 400)
 
 
+def cleanup_old_previews():
+    """Remove old preview images to prevent disk space issues"""
+    try:
+        # Use /frontend-public which is mounted from docker-compose
+        public_dir = "/frontend-public"
+        if os.path.exists(public_dir):
+            for filename in os.listdir(public_dir):
+                if filename.startswith("preview_") and filename.endswith(".png"):
+                    filepath = os.path.join(public_dir, filename)
+                    try:
+                        os.remove(filepath)
+                        logging.debug(f"Cleaned up old preview: {filename}")
+                    except Exception as e:
+                        logging.warning(f"Failed to remove old preview {filename}: {e}")
+    except Exception as e:
+        logging.warning(f"Error during preview cleanup: {e}")
+
+
 @app.route("/api/demo", methods=["POST"])
 def demo():
+    global demo_frame_in_progress
+
+    # Check if a demo is already in progress
+    if demo_frame_in_progress:
+        logging.warning("Demo frame already in progress, rejecting request")
+        return jsonify(
+            {"error": "Demo frame generation already in progress", "error_code": "BUSY"}
+        ), 429
+
     data = request.json
-    logging.info("Demo endpoint called")
+
+    # Log memory usage
+    process = psutil.Process()
+    mem_before = process.memory_info().rss / 1024 / 1024  # MB
+    logging.info(f"Demo endpoint called - Memory before: {mem_before:.1f}MB")
+
+    # Clean up old preview images before generating new one
+    cleanup_old_previews()
     if (
         data
         and "config" in data
@@ -133,12 +174,24 @@ def demo():
         # config_filename = "tmp/" + data["config_filename"]
         # gpx_filename = "tmp/" + data["gpx_filename"]
 
-        scene = demo_frame_v2(
-            gpx_path,
-            config,
-            second,
-        )
-        logging.info("Demo frame generation completed")
+        # Acquire lock to prevent concurrent rendering
+        with demo_frame_lock:
+            demo_frame_in_progress = True
+            try:
+                scene = demo_frame(
+                    gpx_path,
+                    config,
+                    second,
+                )
+                logging.info("Demo frame generation completed")
+            finally:
+                demo_frame_in_progress = False
+                # Force garbage collection to free memory
+                gc.collect()
+                mem_after = process.memory_info().rss / 1024 / 1024  # MB
+                logging.info(
+                    f"Memory after: {mem_after:.1f}MB (delta: {mem_after - mem_before:+.1f}MB)"
+                )
 
         # Check if the result is an error dictionary
         if isinstance(scene, dict) and "error" in scene:
@@ -165,27 +218,38 @@ def demo():
 
         img_filepath = scene.frames[0].full_path()
         logging.info(f"Demo frame generated: {img_filepath}")
-        # Use a unique filename to avoid race conditions
-        filename = "yes.png"
-        obf_filepath = os.path.join(BASE_DIR, "..", "app", "public", filename)
+        # Use a unique filename with timestamp + uuid to avoid race conditions
+        filename = f"preview_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}.png"
+        # Use /frontend-public which is mounted from docker-compose
+        obf_filepath = os.path.join("/frontend-public", filename)
         try:
             # Use shutil.move instead of os.rename for better cross-filesystem support
             # and check if source exists first
-            if os.path.exists(img_filepath):
-                # Remove destination if it exists to avoid conflicts
-                if os.path.exists(obf_filepath):
-                    os.remove(obf_filepath)
-                shutil.move(img_filepath, obf_filepath)
-            else:
+            if not os.path.exists(img_filepath):
                 logging.error(f"Demo frame file not found: {img_filepath}")
                 return jsonify(
                     {"error": "demo frame file not found after generation"}
                 ), 500
+
+            # Ensure destination directory exists
+            dest_dir = os.path.dirname(obf_filepath)
+            if not os.path.exists(dest_dir):
+                logging.error(f"Destination directory not found: {dest_dir}")
+                return jsonify(
+                    {
+                        "error": "Frontend public directory not mounted. Please restart containers."
+                    }
+                ), 500
+
+            # Remove destination if it exists to avoid conflicts
+            if os.path.exists(obf_filepath):
+                os.remove(obf_filepath)
+
+            shutil.move(img_filepath, obf_filepath)
+            logging.info(f"Demo frame moved to: {obf_filepath}")
         except Exception as e:
             logging.error(f"Error moving demo frame: {str(e)}")
-            return jsonify(
-                {"error": "error moving file server side - couldn't find?"}
-            ), 400
+            return jsonify({"error": f"Error moving file: {str(e)}"}), 400
         # filename = os.path.basename(obf_filepath)
     else:
         logging.error("Demo request validation failed")
@@ -278,18 +342,31 @@ def render_progress():
     """Get the current video render progress."""
     progress_data = dict(video_render_progress)
 
-    # Calculate estimated time remaining if rendering
+    # Calculate estimated time remaining if rendering using smoothed frame rate
     if progress_data["status"] == "rendering" and progress_data["start_time"]:
         elapsed = time.time() - progress_data["start_time"]
-        if progress_data["current"] > 0:
-            frames_per_second = progress_data["current"] / elapsed
-            remaining_frames = progress_data["total"] - progress_data["current"]
-            estimated_seconds = (
-                remaining_frames / frames_per_second if frames_per_second > 0 else 0
-            )
+        if progress_data["current"] > 0 and elapsed > 0:
+            # Use exponential moving average for smoother estimates
+            # Keep last 20 samples for moving average
+            frame_times = progress_data.get("frame_times", [])
+            if len(frame_times) > 0:
+                # Calculate average time per frame from recent samples
+                avg_time_per_frame = sum(frame_times) / len(frame_times)
+                remaining_frames = progress_data["total"] - progress_data["current"]
+                estimated_seconds = remaining_frames * avg_time_per_frame
+            else:
+                # Fallback to simple calculation if no samples yet
+                frames_per_second = progress_data["current"] / elapsed
+                remaining_frames = progress_data["total"] - progress_data["current"]
+                estimated_seconds = (
+                    remaining_frames / frames_per_second if frames_per_second > 0 else 0
+                )
             progress_data["estimated_seconds_remaining"] = int(estimated_seconds)
         else:
             progress_data["estimated_seconds_remaining"] = None
+
+    # Remove frame_times from response (internal use only)
+    progress_data.pop("frame_times", None)
 
     return jsonify(progress_data)
 
@@ -346,6 +423,8 @@ def render_video():
         video_render_progress["status"] = "rendering"
         video_render_progress["message"] = "Initializing..."
         video_render_progress["start_time"] = time.time()
+        video_render_progress["frame_times"] = []
+        video_render_progress["last_frame_time"] = time.time()
 
         # Create activity and scene
         activity = Activity(gpx_path)
@@ -368,10 +447,22 @@ def render_video():
         video_render_progress["total"] = total_frames
         video_render_progress["message"] = f"Rendering {total_frames} frames..."
 
-        # Define progress callback
+        # Define progress callback with frame time tracking
         def update_progress(current, total):
+            now = time.time()
+            last_time = video_render_progress.get("last_frame_time", now)
+            frame_time = now - last_time
+
+            # Keep a rolling window of the last 20 frame times for smoothing
+            frame_times = video_render_progress.get("frame_times", [])
+            frame_times.append(frame_time)
+            if len(frame_times) > 20:
+                frame_times.pop(0)
+
             video_render_progress["current"] = current
             video_render_progress["total"] = total
+            video_render_progress["frame_times"] = frame_times
+            video_render_progress["last_frame_time"] = now
 
         # Define cancel check
         def should_cancel():
@@ -396,7 +487,7 @@ def render_video():
         # Move video to public directory for serving
         timestamp = int(time.time())
         public_filename = f"video_{timestamp}.mov"
-        public_path = os.path.join(BASE_DIR, "..", "app", "public", public_filename)
+        public_path = os.path.join("/frontend-public", public_filename)
 
         shutil.move(video_path, public_path)
         logging.info(f"Video saved to: {public_path}")
@@ -438,4 +529,4 @@ def render_video():
 if __name__ == "__main__":
     # Allow running directly via `uv run app.py`
     logging.info("Starting Flask app on http://localhost:3001")
-    app.run(host="127.0.0.1", port=3001, debug=True)
+    app.run(host="0.0.0.0", port=3001, debug=True)

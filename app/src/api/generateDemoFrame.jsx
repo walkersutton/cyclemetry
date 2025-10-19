@@ -6,8 +6,13 @@ let pendingRequest = null;
 
 export default async function generateDemoFrame(config) {
   try {
-    const { gpxFilename, setImageFilename, setGeneratingImage, config: storeConfig, selectedSecond } =
-      useStore.getState();
+    const {
+      gpxFilename,
+      setImageFilename,
+      setGeneratingImage,
+      config: storeConfig,
+      selectedSecond,
+    } = useStore.getState();
 
     const configToSend = config ?? storeConfig;
 
@@ -19,7 +24,9 @@ export default async function generateDemoFrame(config) {
 
     if (!gpxFilename) {
       console.error("No GPX file selected");
-      return;
+      throw new Error(
+        "Please load a GPX file first. Click 'Load Demo Activity' or upload your own GPX file.",
+      );
     }
 
     // If already generating, cancel the pending request and start a new one
@@ -61,6 +68,15 @@ export default async function generateDemoFrame(config) {
       let errorMessage = `Server error ${response.status}`;
       try {
         const errorData = await response.json();
+
+        // Handle 429 (Too Many Requests / Busy) gracefully - don't throw error
+        if (response.status === 429 && errorData.error_code === "BUSY") {
+          console.log(
+            "⏳ Backend is busy generating another frame, skipping this request",
+          );
+          return; // Silently skip this request
+        }
+
         if (errorData.error) {
           errorMessage = errorData.error;
           console.error("❌ Backend error:", errorData);
@@ -84,15 +100,22 @@ export default async function generateDemoFrame(config) {
     const demoImageFilename = data.filename;
     if (demoImageFilename) {
       setImageFilename(demoImageFilename);
+      console.log("✅ Image filename set:", demoImageFilename);
+
+      // Clear any previous errors on success
+      const { clearError } = useStore.getState();
+      clearError();
     }
   } catch (error) {
     // Don't log abort errors as they're intentional
-    if (error.name !== 'AbortError') {
-      console.error("❌ Error in generateDemoFrame:", error);
+    if (error.name !== "AbortError") {
+      console.error("Error generating demo frame:", error);
 
-      // Show user-friendly error message
-      const errorMessage = error.message || "Failed to generate preview";
-      alert(`Preview Generation Error:\n\n${errorMessage}\n\nCheck the console for more details.`);
+      // Set user-friendly error message in store
+      const { setErrorMessage } = useStore.getState();
+      setErrorMessage(error.message || "Failed to generate preview");
+
+      // Don't re-throw - we've handled it by setting the error state
     }
   } finally {
     isGenerating = false;

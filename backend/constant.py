@@ -65,9 +65,6 @@ DEFAULT_SUFFIX_MAP = {
     },
 }
 
-# COLORS
-ANSI_COLOR_MAP = {"green": "\033[92m", "red": "\033[91m", "yellow": "\033[93m"}
-ANSI_RESET_CODE = "\033[0m"
 
 # DEFAULT CONFIG VALUES
 DEFAULT_OVERLAY_FILENAME = "overlay.mov"

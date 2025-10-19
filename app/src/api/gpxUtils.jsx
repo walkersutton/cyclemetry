@@ -42,14 +42,23 @@ export default async function saveFile(file) {
     console.log("✅ Upload successful:", result);
 
     // Update store with filename and duration
-    const { setDummyDurationSeconds, setEndSecond, setStartSecond, setSelectedSecond } = useStore.getState();
+    const {
+      setDummyDurationSeconds,
+      setEndSecond,
+      setStartSecond,
+      setSelectedSecond,
+    } = useStore.getState();
 
     setGpxFilename(file.name);
     console.log("✅ GPX filename set in store:", file.name);
 
     // Update duration if available
     if (result.duration_seconds && result.duration_seconds > 0) {
-      console.log("✅ Setting activity duration:", result.duration_seconds, "seconds");
+      console.log(
+        "✅ Setting activity duration:",
+        result.duration_seconds,
+        "seconds",
+      );
       setDummyDurationSeconds(result.duration_seconds);
       setStartSecond(0);
       setEndSecond(result.duration_seconds);
@@ -61,7 +70,9 @@ export default async function saveFile(file) {
     // Trigger demo generation if we have a config
     const { config, setConfig } = useStore.getState();
     if (config) {
-      console.log("✅ Config exists, updating timeline and generating demo frame after GPX upload");
+      console.log(
+        "✅ Config exists, updating timeline and generating demo frame after GPX upload",
+      );
 
       // Update config with new timeline values
       if (result.duration_seconds && result.duration_seconds > 0) {
@@ -70,8 +81,8 @@ export default async function saveFile(file) {
           scene: {
             ...config.scene,
             start: 0,
-            end: result.duration_seconds
-          }
+            end: result.duration_seconds,
+          },
         };
         setConfig(updatedConfig);
       }

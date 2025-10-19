@@ -1,6 +1,7 @@
 import math
 import os
 from subprocess import PIPE, Popen
+import logging
 
 import constant
 from frame import Frame
@@ -24,12 +25,19 @@ class Scene:
         self.export_video(progress_callback, cancel_check)
 
     def render_demo(self, seconds, second):
-        self.build_frame(seconds, second, 0)
-        self.draw_frames()
-        # TODO is there a better way to close plots on the fly?
         import matplotlib.pyplot as plt
 
-        plt.close("all")
+        try:
+            self.build_frame(seconds, second, 0)
+            self.draw_frames()
+        finally:
+            # Always close all matplotlib figures to prevent memory leaks
+            plt.close("all")
+            # Clear any figure references
+            if hasattr(self, "figs") and self.figs:
+                for fig in self.figs:
+                    plt.close(fig)
+                self.figs = None
 
     def update_configs(self, config_filename):
         self.template = build_configs(config_filename)
@@ -53,7 +61,7 @@ class Scene:
                     x = [ii for ii in range(len(self.activity.elevation))]
                     y = self.activity.elevation
                 case _:
-                    print("you fucked up")
+                    raise ValueError(f"Unknown attribute: {attribute}")
             return x, y
 
         if "plots" in self.template.keys():
@@ -72,7 +80,64 @@ class Scene:
             self.template["scene"]["width"],
             self.template["scene"]["height"],
         )
-        less_verbose = ["-loglevel", "warning"]
+
+        # Pre-render static elements once (labels and static plot backgrounds)
+        # This avoids redrawing them for every frame
+        from PIL import Image
+
+        base_image = Image.new("RGBA", (width, height))
+
+        # Cache static labels
+        if "labels" in self.template.keys():
+            for config in self.template["labels"]:
+                # Draw static labels onto base image
+                if len(self.frames) > 0:
+                    base_image = self.frames[0].draw_value(
+                        base_image,
+                        config["text"],
+                        config,
+                        self.template.get("scene", {}),
+                    )
+
+        # Cache static plot backgrounds (without position markers)
+        # Position markers will be drawn per-frame
+        plot_backgrounds = {}
+        if "plots" in self.template.keys() and hasattr(self, "figs"):
+            for config in self.template["plots"]:
+                attribute = config["value"]
+                if attribute in self.figs:
+                    # Check if this plot has dynamic position markers (points)
+                    has_position_markers = (
+                        "points" in config and len(config.get("points", [])) > 0
+                    )
+
+                    if not has_position_markers:
+                        # Static plot - cache it on base image
+                        if len(self.frames) > 0:
+                            base_image = self.frames[0].draw_figure(
+                                base_image,
+                                config,
+                                attribute,
+                                self.figs[attribute],
+                                fps=self.fps,
+                            )
+                    else:
+                        # Dynamic plot - cache the background separately
+                        # We'll draw position markers per-frame
+                        plot_bg = Image.new("RGBA", (width, height))
+                        if len(self.frames) > 0:
+                            # Draw the plot without position markers
+                            config_without_points = {**config, "points": []}
+                            plot_bg = self.frames[0].draw_figure(
+                                plot_bg,
+                                config_without_points,
+                                attribute,
+                                self.figs[attribute],
+                                fps=self.fps,
+                            )
+                        plot_backgrounds[attribute] = (plot_bg, config)
+
+        # FFmpeg command to encode video from raw frames
         framerate = ["-r", str(self.fps)]
         fmt = ["-f", "rawvideo"]
         input_files = ["-i", "-"]
@@ -80,40 +145,81 @@ class Scene:
         pixel_format = ["-pix_fmt", "rgba"]
         size = ["-s", f"{width}x{height}"]
         output = ["-y", overlay_filename]
-        p = Popen(
+
+        ffmpeg_cmd = (
             ["ffmpeg"]
-            + less_verbose
+            + ["-loglevel", "error"]  # Only show errors
             + fmt
             + size
             + pixel_format
             + framerate
             + input_files
             + codec
-            + output,
-            stdin=PIPE,
+            + output
         )
-        # TODO optimization opportunity here?
+
+        logging.info(f"Starting ffmpeg with command: {' '.join(ffmpeg_cmd)}")
+
+        try:
+            p = Popen(ffmpeg_cmd, stdin=PIPE, stderr=PIPE, stdout=PIPE)
+        except Exception as e:
+            logging.error(f"Failed to start ffmpeg process: {e}")
+            raise Exception(f"Could not start ffmpeg: {str(e)}")
+        # Sequential rendering - memory efficient, no multiprocessing overhead
+        logging.info(f"Rendering {len(self.frames)} frames sequentially")
+
         for idx, frame in enumerate(self.frames):
             # Check for cancellation
             if cancel_check and cancel_check():
-                print("Rendering cancelled, cleaning up...")
+                logging.info("Rendering cancelled by user")
                 p.stdin.close()
                 p.terminate()
                 p.wait()
-                # Clean up partial video file
                 if os.path.exists(overlay_filename):
                     os.remove(overlay_filename)
                 raise Exception("Rendering cancelled by user")
 
-            image = frame.draw(self.template, self.figs)
-            p.stdin.write(image.tobytes())
+            # Check if ffmpeg is still alive
+            if p.poll() is not None:
+                stderr_output = p.stderr.read().decode("utf-8", errors="replace")
+                stdout_output = p.stdout.read().decode("utf-8", errors="replace")
+                logging.error(f"ffmpeg process died unexpectedly at frame {idx}")
+                logging.error(f"ffmpeg stderr: {stderr_output}")
+                logging.error(f"ffmpeg stdout: {stdout_output}")
+                logging.error(f"ffmpeg exit code: {p.returncode}")
+                raise Exception(f"ffmpeg died (exit {p.returncode}): {stderr_output}")
 
-            # Call progress callback if provided
+            # Render frame and pipe directly to ffmpeg
+            try:
+                image = frame.draw(
+                    self.template, self.figs, base_image, plot_backgrounds
+                )
+                p.stdin.write(image.tobytes())
+            except BrokenPipeError:
+                logging.error("Broken pipe when writing to ffmpeg")
+                stderr_output = p.stderr.read().decode("utf-8", errors="replace")
+                logging.error(f"ffmpeg stderr: {stderr_output}")
+                raise Exception("ffmpeg pipe broken - video encoding failed")
+
+            # Progress callback
             if progress_callback:
                 progress_callback(idx + 1, len(self.frames))
 
         p.stdin.close()
-        p.wait()
+        return_code = p.wait()
+
+        # Check if ffmpeg succeeded
+        if return_code != 0:
+            stderr_output = p.stderr.read().decode("utf-8", errors="replace")
+            stdout_output = p.stdout.read().decode("utf-8", errors="replace")
+            logging.error(f"ffmpeg failed with exit code {return_code}")
+            logging.error(f"ffmpeg stderr: {stderr_output}")
+            logging.error(f"ffmpeg stdout: {stdout_output}")
+            raise Exception(
+                f"ffmpeg encoding failed (exit {return_code}): {stderr_output}"
+            )
+
+        logging.info(f"ffmpeg completed successfully, output: {overlay_filename}")
 
         # TODO - try to not depend on ffmpeg subprocess call please
         # clips = [

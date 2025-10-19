@@ -100,8 +100,8 @@ const sceneExtension = {
     minimum: 1,
     description: "frames per second",
     options: {
-      hidden: true
-    }
+      hidden: true,
+    },
   },
   height: {
     type: "integer",
@@ -109,8 +109,8 @@ const sceneExtension = {
     minimum: 1,
     description: "height in pixels",
     options: {
-      hidden: true
-    }
+      hidden: true,
+    },
   },
   width: {
     type: "integer",
@@ -118,8 +118,8 @@ const sceneExtension = {
     minimum: 1,
     description: "width in pixels",
     options: {
-      hidden: true
-    }
+      hidden: true,
+    },
   },
   start: {
     type: "integer",
@@ -127,8 +127,8 @@ const sceneExtension = {
     minimum: 0,
     description: "second to start render from (affects plots for demo)",
     options: {
-      hidden: true
-    }
+      hidden: true,
+    },
   },
   end: {
     type: "integer",
@@ -136,8 +136,8 @@ const sceneExtension = {
     minimum: 0,
     description: "second to end render from (affects plots for demo)",
     options: {
-      hidden: true
-    }
+      hidden: true,
+    },
   },
   overlay_fileanme: {
     title: "overlay filename",

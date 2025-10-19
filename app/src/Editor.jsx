@@ -23,50 +23,60 @@ function Editor(props) {
   const handleEditorChange = useCallback(
     async (editor) => {
       if (isInitializing.current) {
-        console.log("Editor change blocked - still initializing");
+        console.log("⛔ Editor change blocked - still initializing");
         return;
       }
 
       // Don't trigger if we're updating from timeline
       if (isUpdatingFromTimelineFlag()) {
-        console.log("Editor change blocked - updating from timeline");
+        console.log("⛔ Editor change blocked - updating from timeline");
         return;
       }
 
       try {
         const newConfig = editor.getValue();
-        console.log("Editor change detected, updating config");
+        // Get current config from store instead of closure
+        const oldConfig = useStore.getState().config;
+
+        // Check if settings that require regeneration changed
+        const needsRegeneration =
+          !oldConfig ||
+          oldConfig.scene?.width !== newConfig.scene?.width ||
+          oldConfig.scene?.height !== newConfig.scene?.height ||
+          oldConfig.scene?.start !== newConfig.scene?.start ||
+          oldConfig.scene?.end !== newConfig.scene?.end;
+
         setConfig(newConfig);
+
+        // Always regenerate when config changes (unless blocked by guards above)
+        // Errors are handled in generateDemoFrame and displayed via ErrorAlert
         await generateDemoFrame(newConfig);
       } catch (error) {
-        console.error("Error in generateDemoFrame:", error);
+        // Error already handled by generateDemoFrame
+        console.error("❌ Error in editor change handler:", error);
       }
     },
-    [setConfig]
+    [setConfig],
   );
 
   useEffect(() => {
     if (hasInitializedRef.current) {
-      console.log("Editor already initialized, skipping");
       return;
     }
 
-    console.log("Initializing editor");
     const editor = new JSONEditor(editorRef.current, editorConfig);
     editorInstanceRef.current = editor;
     hasInitializedRef.current = true;
 
     editor.on("ready", function () {
-      console.log("Editor ready, setting up");
       setEditor(editor);
-      if (config) {
-        console.log("Setting initial config value");
+      const currentConfig = useStore.getState().config;
+      if (currentConfig) {
         isInitializing.current = true;
-        editor.setValue(config);
+        editor.setValue(currentConfig);
         setTimeout(() => {
-          console.log("Initialization complete");
           isInitializing.current = false;
-        }, 100); // Increased timeout
+        }, 100);
       }
     });
 

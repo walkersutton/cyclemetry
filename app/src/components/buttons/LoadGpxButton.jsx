@@ -30,8 +30,8 @@ function LoadGpxButton() {
     }
 
     // if (file.type === gpxSchema.allowedType) {
-      console.log("✅ File type valid, uploading...");
-      saveFile(file);
+    console.log("✅ File type valid, uploading...");
+    saveFile(file);
     // } else {
     //   console.error("❌ Invalid file type:", {
     //     received: file.type,
@@ -55,7 +55,9 @@ function LoadGpxButton() {
       <OverlayTrigger
         overlay={
           <Tooltip id="tooltip-top">
-            {hasActivity ? "WARNING: Loading a new activity will replace your current activity" : "Select an activity GPX"}
+            {hasActivity
+              ? "WARNING: Loading a new activity will replace your current activity"
+              : "Select an activity GPX"}
           </Tooltip>
         }
         placement={"top"}
@@ -65,7 +67,6 @@ function LoadGpxButton() {
           className={`btn ${hasActivity ? "btn-warning" : "btn-primary"}`}
         >
           {hasActivity ? "Replace Activity" : "Load Activity"}
-
         </label>
       </OverlayTrigger>
     </>

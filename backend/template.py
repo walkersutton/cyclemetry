@@ -104,9 +104,7 @@ def build_configs_v2(template):
     # global_config = template["global"]
 
     # desired_components = components(template)
-    # print(desired_components)
-    exit()
-
+    # NOTE: Commented out old code - can be removed in future cleanup
     # if len(desired_components["values"] > 0):
     #     configs["values"] = []
     #     for value_component in desired_components["values"]:

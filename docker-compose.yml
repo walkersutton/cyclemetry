@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   backend:
     build:
@@ -9,28 +7,25 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      # Mount volumes for persistent storage
+      # Mount source code for hot-reload
+      - ./backend:/app
+      - /app/__pycache__ # Exclude cache
       - ./backend/tmp:/app/tmp
       - ./backend/uploads:/app/uploads
-      - ./backend/templates:/app/templates
-      # Mount demo GPX file
-      - ./backend/demo.gpxinit:/app/demo.gpxinit:ro
+      # Mount frontend public folder so backend can write preview images
+      - ./app/public:/frontend-public
     environment:
-      - FLASK_ENV=production
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
-    restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import requests; requests.get('http://localhost:3001/api/health')",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    command: uv run app.py
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          # Allow some memory swapping to handle spikes
+        reservations:
+          memory: 1G
     networks:
       - cyclemetry-network
 
@@ -40,32 +35,23 @@ services:
       dockerfile: Dockerfile
     container_name: cyclemetry-frontend
     ports:
-      - "80:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - cyclemetry-network
+      - "3000:3000"
+    volumes:
+      # Mount source for hot-reload
+      - ./app:/app
+      - /app/node_modules # Exclude node_modules
+      # Mount templates folder at root so the symlink ../../templates works from /app/public/templates
+      - ./templates:/templates
     environment:
       - REACT_APP_API_URL=http://localhost:3001
+      - CHOKIDAR_USEPOLLING=true
+      - SASS_PATH=node_modules:src
+    command: npm start
+    depends_on:
+      - backend
+    networks:
+      - cyclemetry-network
 
 networks:
   cyclemetry-network:
     driver: bridge
-
-volumes:
-  backend-tmp:
-  backend-uploads:

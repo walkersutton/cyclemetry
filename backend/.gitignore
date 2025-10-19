@@ -16,8 +16,10 @@ jupyter/
 
 # dev
 *.gpx
+!demo.gpxinit
 *.swp
 frames/
 dist/
 build/
 node_modules/
+.venv

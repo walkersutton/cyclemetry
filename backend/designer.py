@@ -3,7 +3,7 @@ import subprocess
 
 from activity import Activity
 from scene import Scene
-from template import build_configs, build_configs_v2
+from template import build_configs_v2
 
 """
 designer types
@@ -26,76 +26,75 @@ notes:
 """
 
 
-def demo_frame(gpx_filename, template_filename, second, headless):
-    # bring the loop in here
-    # open a browser window,
-    # asked to specify which template and gpx file to consider
-    # also asked to specify what time to render demo frame for
-    # present form that allows user to edit template in real time using a form on left side of screen
-    # listeners on inputs to re-render frame as template is updated
-    # right side of browser shows updated frame
-    # should be accessed simply using ./demo or a similarly simple command
+def demo_frame(gpx_filename, config, second, headless=True):
+    """
+    Generate a demo frame from a GPX file and template configuration.
 
-    configs = build_configs(template_filename)
-    activity = Activity(gpx_filename)
+    Args:
+        gpx_filename: Path to the GPX file
+        config: Either a dict (parsed template) or str (path to template file)
+        second: The second in the activity to render
+        headless: If False, opens the generated frame in default viewer (default: True)
 
-    start = configs["scene"]["start"] if "start" in configs["scene"] else 0
-
-    if "end" in configs["scene"]:
-        end = configs["scene"]["end"]
-    else:
-        attributes = activity.valid_attributes
-        if attributes:
-            end = len(getattr(activity, attributes[0]))
-        else:
-            print("wtf")
-            end = 69
-
-    activity.trim(start, end)
-    activity.interpolate(configs["scene"]["fps"])
-    scene = Scene(activity, configs)
-
-    scene.build_figures()
-    scene.render_demo(end - start, second)
-    if not headless:
-        subprocess.call(["open", scene.frames[0].full_path()])
-    return scene
-
-
-def demo_frame_v2(gpx_filename, config, second):
+    Returns:
+        Scene object on success, or dict with error info on failure
+    """
     # Validate inputs
     if not gpx_filename:
         error_msg = "No GPX filename provided"
-        logging.error(f"demo_frame_v2: {error_msg}")
+        logging.error(f"demo_frame: {error_msg}")
         return {"error": error_msg, "error_code": "MISSING_GPX"}
 
-    if not config or not isinstance(config, dict):
-        error_msg = "Invalid config - must be a valid template object"
-        logging.error(f"demo_frame_v2: {error_msg}")
+    if not config:
+        error_msg = "No config provided"
+        logging.error(f"demo_frame: {error_msg}")
+        return {"error": error_msg, "error_code": "INVALID_CONFIG"}
+
+    # Handle both file path (str) and parsed config (dict)
+    if isinstance(config, str):
+        # Config is a file path, load it
+        try:
+            from template import build_configs
+
+            configs = build_configs(config)
+        except Exception as e:
+            error_msg = f"Failed to load template from file: {str(e)}"
+            logging.error(f"demo_frame: {error_msg}")
+            return {"error": error_msg, "error_code": "TEMPLATE_LOAD_ERROR"}
+    elif isinstance(config, dict):
+        # Config is already parsed, use build_configs_v2
+        try:
+            configs = build_configs_v2(config)
+        except Exception as e:
+            error_msg = f"Failed to parse template config: {str(e)}"
+            logging.error(f"demo_frame: {error_msg}")
+            return {"error": error_msg, "error_code": "TEMPLATE_PARSE_ERROR"}
+    else:
+        error_msg = "Invalid config - must be a file path (str) or template dict"
+        logging.error(f"demo_frame: {error_msg}")
         return {"error": error_msg, "error_code": "INVALID_CONFIG"}
 
     if not isinstance(second, (int, float)):
         logging.error(
-            f"demo_frame_v2: Invalid second value: {second} (type: {type(second)})"
+            f"demo_frame: Invalid second value: {second} (type: {type(second)})"
         )
         try:
             second = int(second)
         except (ValueError, TypeError):
             error_msg = f"Invalid second value: {second}"
-            logging.error("demo_frame_v2: Could not convert second to int")
+            logging.error("demo_frame: Could not convert second to int")
             return {"error": error_msg, "error_code": "INVALID_SECOND"}
 
     try:
-        configs = build_configs_v2(config)
         activity = Activity(gpx_filename)
     except FileNotFoundError as e:
         error_msg = f"GPX file not found: {gpx_filename}"
-        logging.error(f"demo_frame_v2: {error_msg}")
+        logging.error(f"demo_frame: {error_msg}")
         logging.error(str(e))
         return {"error": error_msg, "error_code": "GPX_NOT_FOUND"}
     except Exception as e:
         error_msg = f"Failed to initialize: {str(e)}"
-        logging.error("demo_frame_v2: Setup failed")
+        logging.error("demo_frame: Setup failed")
         logging.error(str(e))
         import traceback
 
@@ -104,7 +103,7 @@ def demo_frame_v2(gpx_filename, config, second):
 
     if not hasattr(activity, "gpx"):
         error_msg = "Invalid GPX file - missing required data"
-        logging.error(f"demo_frame_v2: {error_msg}")
+        logging.error(f"demo_frame: {error_msg}")
         return {"error": error_msg, "error_code": "INVALID_GPX"}
 
     logging.info("Activity loaded successfully")
@@ -119,11 +118,11 @@ def demo_frame_v2(gpx_filename, config, second):
             if attributes:
                 end = len(getattr(activity, attributes[0]))
             else:
-                print("wtf")
+                logging.warning("No valid attributes found, using default end value")
                 end = 69
     except Exception as e:
-        logging.error("demo_frame_v2")
-        logging.error("fucked setting start and end")
+        logging.error("demo_frame")
+        logging.error("Error setting start and end")
         logging.error(e)
 
     scene = None
@@ -140,7 +139,7 @@ def demo_frame_v2(gpx_filename, config, second):
         scene = Scene(activity, configs)
     except Exception as e:
         error_msg = f"Failed to build scene: {str(e)}"
-        logging.error("demo_frame_v2: Scene building failed")
+        logging.error("demo_frame: Scene building failed")
         logging.error(str(e))
         import traceback
 
@@ -153,7 +152,7 @@ def demo_frame_v2(gpx_filename, config, second):
         duration = end - start
         if duration <= 0:
             error_msg = f"Invalid duration: start={start}, end={end}. End must be greater than start."
-            logging.error(f"demo_frame_v2: {error_msg}")
+            logging.error(f"demo_frame: {error_msg}")
             return {"error": error_msg, "error_code": "INVALID_DURATION"}
 
         relative_second = max(0, min(second - start, duration - 1))
@@ -163,20 +162,24 @@ def demo_frame_v2(gpx_filename, config, second):
 
         if relative_second < 0 or relative_second >= duration:
             error_msg = f"Selected second {second} is outside the activity range ({start}-{end})"
-            logging.error(f"demo_frame_v2: {error_msg}")
+            logging.error(f"demo_frame: {error_msg}")
             return {"error": error_msg, "error_code": "SECOND_OUT_OF_RANGE"}
 
         scene.render_demo(duration, relative_second)
+
+        # Open in viewer if not headless
+        if not headless:
+            subprocess.call(["open", scene.frames[0].full_path()])
     except KeyError as e:
         error_msg = f"Template configuration error: Missing required field '{str(e)}'"
-        logging.error(f"demo_frame_v2: KeyError in template - {str(e)}")
+        logging.error(f"demo_frame: KeyError in template - {str(e)}")
         import traceback
 
         traceback.print_exc()
         return {"error": error_msg, "error_code": "TEMPLATE_ERROR"}
     except Exception as e:
         error_msg = f"Failed to render: {str(e)}"
-        logging.error("demo_frame_v2: Rendering failed")
+        logging.error("demo_frame: Rendering failed")
         logging.error(str(e))
         import traceback
 

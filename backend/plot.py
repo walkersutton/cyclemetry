@@ -6,7 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-from utils import printc
+import logging
 
 mpl.use("agg")
 
@@ -102,7 +102,7 @@ def build_figure(config, x, y):
         try:
             plt.axis(config["axis"])
         except ValueError as e:
-            printc(f"Invalid axis value: {e}", "red")
+            logging.error(f"Invalid axis value: {e}")
     if "fill" in config.keys():
         opacity = get_opacity(config["fill"])
         min_threshold = min(y) * 0.99

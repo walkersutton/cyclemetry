@@ -124,6 +124,14 @@ class Activity:
         for attribute in self.valid_attributes:
             if attribute == constant.ATTR_GRADIENT:
                 data[attribute] = smooth_gradients(data[attribute])
+            elif attribute == constant.ATTR_ELEVATION:
+                # Apply smoothing to elevation data to reduce jaggedness
+                from scipy.signal import savgol_filter
+
+                # Use Savitzky-Golay filter for smooth elevation curves
+                data[attribute] = savgol_filter(
+                    data[attribute], window_length=11, polyorder=3
+                ).tolist()
             setattr(self, attribute, data[attribute])
 
     def interpolate(self, fps: int):
@@ -150,13 +158,11 @@ class Activity:
         for attribute in self.valid_attributes:
             data = getattr(self, attribute)
             if start > len(data):
-                print(
-                    f"invalid scene start value in config. Value should be less than {len(data)}. Current value is {start}"
+                raise ValueError(
+                    f"Invalid scene start value in config. Value should be less than {len(data)}. Current value is {start}"
                 )
-                exit(1)
             if end > len(data) or end < start:
-                print(
-                    f"invalid scene end value in config. Value should be at most {len(data)} and greater than {start}. Current value is {end}"
+                raise ValueError(
+                    f"Invalid scene end value in config. Value should be at most {len(data)} and greater than {start}. Current value is {end}"
                 )
-                exit(1)
             setattr(self, attribute, data[start:end])

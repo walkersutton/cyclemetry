@@ -1,4 +1,4 @@
-.PHONY: help build up down logs clean dev prod restart
+.PHONY: help build up down logs clean dev restart lint format check
 
 help:
 	@echo "Cyclemetry Docker Commands"
@@ -9,53 +9,74 @@ help:
 	@echo "  make logs-backend - View backend logs only"
 	@echo "  make logs-frontend- View frontend logs only"
 	@echo ""
-	@echo "Production:"
-	@echo "  make build        - Build all Docker images"
-	@echo "  make up           - Start production services"
-	@echo "  make down         - Stop all services"
-	@echo "  make restart      - Restart all services"
-	@echo "  make prod         - Build and start production"
+	@echo "Code Quality:"
+	@echo "  make format       - Auto-format all code (Python + JS)"
+	@echo "  make lint         - Run linters on all code"
+	@echo "  make check        - Run all checks (CI-ready)"
 	@echo ""
 	@echo "Maintenance:"
+	@echo "  make build        - Rebuild Docker images"
+	@echo "  make down         - Stop all services"
+	@echo "  make restart      - Restart all services"
 	@echo "  make clean        - Remove containers, volumes, and images"
 	@echo "  make ps           - Show running containers"
 	@echo "  make stats        - Show container resource usage"
 
 dev:
-	docker-compose -f docker-compose.dev.yml up
+	docker compose up
 
 build:
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 up:
-	docker-compose up -d
+	docker compose up -d
 
 down:
-	docker-compose down
+	docker compose down
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-backend:
-	docker-compose logs -f backend
+	docker compose logs -f backend
 
 logs-frontend:
-	docker-compose logs -f frontend
+	docker compose logs -f frontend
 
 restart:
-	docker-compose restart
-
-prod: build up
-	@echo "Production services started"
-	@echo "Frontend: http://localhost"
-	@echo "Backend: http://localhost:3001"
+	docker compose restart
 
 clean:
-	docker-compose down -v
+	docker compose down -v
 	docker system prune -f
 
 ps:
-	docker-compose ps
+	docker compose ps
 
 stats:
 	docker stats
+
+# Code Quality
+lint:
+	@echo "🔍 Running linters..."
+	@echo "Checking Python code with ruff..."
+	cd backend && uv run ruff check .
+	@echo "Checking frontend formatting with prettier..."
+	cd app && npx prettier --check "src/**/*.{js,jsx,json,css}" --log-level warn || true
+
+format:
+	@echo "✨ Formatting code..."
+	@echo "Formatting Python with ruff..."
+	cd backend && uv run ruff format .
+	@echo "Formatting frontend with prettier..."
+	cd app && npx prettier --write "src/**/*.{js,jsx,json,css}" --log-level warn
+
+check:
+	@echo "🔎 Running all checks..."
+	@echo "1. Formatting check..."
+	cd backend && uv run ruff format --check .
+	@echo "2. Linting..."
+	cd backend && uv run ruff check .
+	@echo "3. Frontend formatting check..."
+	cd app && npx prettier --check "src/**/*.{js,jsx,json,css}" --log-level warn || true
+	@echo "✅ All checks passed!"

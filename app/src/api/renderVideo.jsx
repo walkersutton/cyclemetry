@@ -2,12 +2,8 @@ import useStore from "../store/useStore";
 
 export default async function renderVideo() {
   try {
-    const {
-      gpxFilename,
-      config,
-      setRenderingVideo,
-      setVideoFilename
-    } = useStore.getState();
+    const { gpxFilename, config, setRenderingVideo, setVideoFilename } =
+      useStore.getState();
 
     // Validate we have required data
     if (!config || !config.scene) {
@@ -78,7 +74,7 @@ export default async function renderVideo() {
       setVideoFilename(videoFilename);
       // Trigger download
       const downloadUrl = `/${videoFilename}`;
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = videoFilename;
       document.body.appendChild(link);
@@ -89,7 +85,6 @@ export default async function renderVideo() {
     }
 
     throw new Error("No video filename returned");
-
   } catch (error) {
     console.error("Error in renderVideo:", error);
     throw error;
