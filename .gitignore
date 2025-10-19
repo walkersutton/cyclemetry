@@ -1,2 +1,4 @@
 .DS_Store
 .vscode
+app/public/*.png
+app/public/*.mov
