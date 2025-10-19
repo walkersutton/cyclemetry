@@ -3,3 +3,8 @@
 *node_modules*
 *__pycache__*
 *build*
+nex/
+*.mov
+*.prof
+.ruff_cache
+

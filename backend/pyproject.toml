@@ -1,0 +1,125 @@
+[project]
+name = "cyclemetry_backend"
+version = "0.1.0"
+description = "TODO"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "altgraph==0.17.4",
+    "blessed==1.20.0",
+    "blinker==1.8.1",
+    "bottle-websocket==0.2.9",
+    "bottle==0.13.2",
+    "cfgv==3.4.0",
+    "click==8.1.7",
+    "contourpy==1.1.0",
+    "cycler==0.11.0",
+    "distlib==0.3.9",
+    "eel==0.18.1",
+    "filelock==3.18.0",
+    "flask-cors==4.0.0",
+    "flask==3.0.3",
+    "fonttools==4.42.0",
+    "future==1.0.0",
+    "gevent-websocket==0.10.1",
+    "gevent==24.11.1",
+    "gpxpy==1.5.0",
+    "greenlet==3.1.1",
+    "gunicorn==22.0.0",
+    "identify==2.6.12",
+    "inquirer==3.1.3",
+    "itsdangerous==2.2.0",
+    "jinja2==3.1.3",
+    "jsonify>=0.5",
+    "kiwisolver==1.4.4",
+    "macholib==1.16.3",
+    "markupsafe==2.1.5",
+    "matplotlib==3.7.2",
+    "nodeenv==1.9.1",
+    "numpy==1.25.2",
+    "packaging==23.1",
+    "pillow==10.0.0",
+    "platformdirs==4.3.8",
+    "pre-commit==4.2.0",
+    "psutil>=5.9.0",
+    "pyinstaller-hooks-contrib==2024.10",
+    "pyinstaller==6.11.1",
+    "pyparsing==3.0.9",
+    "python-dateutil==2.8.2",
+    "python-editor==1.0.4",
+    "pyyaml==6.0.2",
+    "readchar==4.0.5",
+    "ruff>=0.11.13",
+    "scipy==1.11.1",
+    "simdkalman==1.0.2",
+    "six==1.16.0",
+    "tqdm==4.66.1",
+    "tsmoothie==1.0.4",
+    "typing-extensions==4.12.2",
+    "virtualenv==20.31.2",
+    "wcwidth==0.2.6",
+    "werkzeug==3.0.2",
+    "zope-event==5.0",
+    "zope-interface==7.1.1",
+]
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+]
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`) codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.2.0",
+]
