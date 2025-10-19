@@ -1,3 +1,17 @@
+# backend
+
+TODO
+- do we need docs for running backend server independently?
+- will prioritize this if move away from docker compose
+
+
+<!--
+
+TODO clean
+
+----------
+
+
 ## Dependencies
 
 - python
@@ -13,49 +27,9 @@ uv run -- flask run -p 3001
 ORRrrrr.. uv run -- flask --app app:app run -p 3001
 
 ```
+----------
 
-## running pre-commit hooks
-
-```
-(venv) $ pre-commit run --all-files
-```
-
-- Make sure pre-commit is installed using pip and/or your activated your virtual environment
-- If there were issues on the first call, run command again to see if issues were self-resolved
-
-## How to run dev environment
-
-### one command
-
-`npm run start`
-
-you'll have to wait a few seconds for eel server to start
-
-### two commands
-
-#### start python app
-
-`npm run start:eel`
-
-- you can verify this is working by making a GET request to localhost:8000/eel.js. i.e. `curl localhost:8000/eel.js`
-- doesn't seem like it's necessary to do any virtual environment setup??
-
-#### start react app
-
-`npm run start:js`
-your browser should open to http://localhost:3000/. Check dev tools network tab to make sure the request for `eel.js` has a good response code
-
-## How to build app
-
-- TODO - clean up requirements.txt once build is working
-- I think the issue might be related to file paths with public folder. might want to use a folder in Documents on user's computer??????? idk. Maybe a dot folder under home? ~/.cyclemetry/
-- maybe try just commenting nearly everything out and slowly bringing back functionality until build breaks
-
-```
-npm run build
-```
-
-<!-- - [ffmpeg](https://FFmpeg.org/) # TODO - maybe move this to pip?
+- [ffmpeg](https://FFmpeg.org/) # TODO - maybe move this to pip?
 
 # Run Flask server locally
 
