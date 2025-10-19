@@ -2,20 +2,21 @@
   <img src="https://i.imgur.com/O7GvHXd.png"/ style="width: 69px;">
   <h1>cyclemetry</h1>
   <p>
-    <b>cyclemetry is a tool for creating telemetry video overlays.</b>
+    <b>cyclemetry is a tool for creating telemetry video overlays</b>
   </p>
 </div>
 
 ![The_Tremola_by Safa_Brian](https://github.com/walkersutton/cyclemetry/assets/25811783/71aa4902-dd29-453f-b4a5-a87ddabd2437)
 
-## How To: Generating Video Overlays and Design Templates
+## Setup
 
 ### Prerequisites
 
 - [Docker](https://www.docker.com/products/docker-desktop/)
+- [Make](https://www.gnu.org/software/make/make.html)
 
 ```bash
-$ # clone repo
+$ git clone
 $ cd cyclemetry
 $ make dev
 $ open http://localhost:3000
@@ -23,16 +24,16 @@ $ open http://localhost:3000
 
 ## Features
 
-- Check out the [community templates](https://github.com/walkersutton/cyclemetry/blob/main/templates/README.md) to see what Cyclemetry is capable of
-- Live maps
-- Live elevation profiles
-- Performance metrics
+- Route tracking
+- Elevation profiles
+- Metrics
   - Speed
   - Power
   - Heart rate
   - Cadence
   - Elevation
   - Gradient
+- Check out the [community templates](https://github.com/walkersutton/cyclemetry/tree/main/templates) to see what Cyclemetry is capable of
 
 ## Videos Made With Cyclemetry
 
@@ -48,8 +49,6 @@ $ open http://localhost:3000
 
 
 ## Development
-
-I 
 
 ### Makefile Commands
 
