@@ -30,7 +30,6 @@ Thumbs.db
 # Docker
 Dockerfile
 .dockerignore
-nginx.conf
 
 # Environment
 .env.local

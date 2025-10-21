@@ -9,44 +9,45 @@ services:
     volumes:
       # Mount source code for hot-reload
       - ./backend:/app
-      - /app/__pycache__ # Exclude cache
+      # Exclude container-managed directories (use container's version, not host's)
+      - /app/__pycache__
+      - /app/.venv
+      # Persist uploaded GPX files between container restarts
       - ./backend/tmp:/app/tmp
-      - ./backend/uploads:/app/uploads
       # Mount frontend public folder so backend can write preview images
       - ./app/public:/frontend-public
     environment:
       - FLASK_ENV=development
-      - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
     command: uv run app.py
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
           # Allow some memory swapping to handle spikes
         reservations:
-          memory: 1G
+          memory: 2G
     networks:
       - cyclemetry-network
 
   frontend:
     build:
-      context: ./app
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./app/Dockerfile
     container_name: cyclemetry-frontend
     ports:
       - "3000:3000"
     volumes:
       # Mount source for hot-reload
       - ./app:/app
-      - /app/node_modules # Exclude node_modules
-      # Mount templates folder at root so the symlink ../../templates works from /app/public/templates
-      - ./templates:/templates
+      # Exclude node_modules (use container's version)
+      - /app/node_modules
+      # Exclude templates (use container's copied version)
+      - /app/public/templates
     environment:
       - REACT_APP_API_URL=http://localhost:3001
       - CHOKIDAR_USEPOLLING=true
       - SASS_PATH=node_modules:src
-    command: npm start
     depends_on:
       - backend
     networks:

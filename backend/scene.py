@@ -1,3 +1,4 @@
+import gc
 import math
 import os
 from subprocess import PIPE, Popen
@@ -204,6 +205,10 @@ class Scene:
             # Progress callback
             if progress_callback:
                 progress_callback(idx + 1, len(self.frames))
+            
+            # Force garbage collection every 30 frames to manage memory
+            if (idx + 1) % 30 == 0:
+                gc.collect()
 
         p.stdin.close()
         return_code = p.wait()
