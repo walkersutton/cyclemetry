@@ -23,7 +23,7 @@ help:
 	@echo "  make stats        - Show container resource usage"
 
 dev:
-	docker compose up
+	docker compose up --build
 
 build:
 	docker compose build --no-cache

@@ -1,33 +1,19 @@
-# Multi-stage build for optimized production image
-
-# Stage 1: Build
-FROM node:18-alpine AS build
+# Development image for hot-reload
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files and install dependencies during build
+COPY app/package*.json ./
+RUN npm install --legacy-peer-deps
 
-# Install dependencies (use legacy-peer-deps for compatibility)
-RUN npm ci --omit=dev --legacy-peer-deps
+# Copy templates so they're available in public folder
+COPY templates /app/public/templates
 
-# Copy application code
-COPY . .
-
-# Build the application
-RUN npm run build
-
-# Stage 2: Production
-FROM nginx:alpine
-
-# Copy built assets from build stage
-COPY --from=build /app/build /usr/share/nginx/html
-
-# Copy nginx configuration from build stage
-COPY --from=build /app/nginx.conf /etc/nginx/conf.d/default.conf
+# Source code will be mounted as volume at runtime
 
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start development server
+CMD ["npm", "start"]

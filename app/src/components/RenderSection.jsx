@@ -159,7 +159,7 @@ function RenderSection() {
               onClick={() => generateDemoFrame()}
               disabled={generatingImage}
             >
-              {generatingImage ? "Generating..." : "Regenerate Preview"}
+              {generatingImage ? "Rendering..." : "Render Preview Image"}
             </button>
 
             {!renderingVideo ? (

@@ -3,7 +3,6 @@ import logging
 import os
 import psutil
 import shutil
-import threading
 import time
 import uuid
 
@@ -29,8 +28,7 @@ video_render_progress = {
 # Global flag to cancel rendering
 cancel_render_flag = False
 
-# Lock to prevent concurrent demo frame generation (prevents OOM)
-demo_frame_lock = threading.Lock()
+# Flag to prevent concurrent demo frame generation (prevents OOM)
 demo_frame_in_progress = False
 
 logging.basicConfig(level=logging.INFO)
@@ -174,24 +172,23 @@ def demo():
         # config_filename = "tmp/" + data["config_filename"]
         # gpx_filename = "tmp/" + data["gpx_filename"]
 
-        # Acquire lock to prevent concurrent rendering
-        with demo_frame_lock:
-            demo_frame_in_progress = True
-            try:
-                scene = demo_frame(
-                    gpx_path,
-                    config,
-                    second,
-                )
-                logging.info("Demo frame generation completed")
-            finally:
-                demo_frame_in_progress = False
-                # Force garbage collection to free memory
-                gc.collect()
-                mem_after = process.memory_info().rss / 1024 / 1024  # MB
-                logging.info(
-                    f"Memory after: {mem_after:.1f}MB (delta: {mem_after - mem_before:+.1f}MB)"
-                )
+        # Set flag to prevent concurrent rendering
+        demo_frame_in_progress = True
+        try:
+            scene = demo_frame(
+                gpx_path,
+                config,
+                second,
+            )
+            logging.info("Demo frame generation completed")
+        finally:
+            demo_frame_in_progress = False
+            # Force garbage collection to free memory
+            gc.collect()
+            mem_after = process.memory_info().rss / 1024 / 1024  # MB
+            logging.info(
+                f"Memory after: {mem_after:.1f}MB (delta: {mem_after - mem_before:+.1f}MB)"
+            )
 
         # Check if the result is an error dictionary
         if isinstance(scene, dict) and "error" in scene:
@@ -528,5 +525,7 @@ def render_video():
 
 if __name__ == "__main__":
     # Allow running directly via `uv run app.py`
+    # Note: debug=False in Docker to prevent reloader issues (exit code 247)
+    # Use FLASK_DEBUG=1 env var for development logging without reloader
     logging.info("Starting Flask app on http://localhost:3001")
-    app.run(host="0.0.0.0", port=3001, debug=True)
+    app.run(host="0.0.0.0", port=3001, debug=False, use_reloader=False)
