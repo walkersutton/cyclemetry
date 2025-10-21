@@ -39,9 +39,9 @@ $ open http://localhost:3000
 
 ## Videos Made With Cyclemetry
 
-| Seward Park Crit                                                                                                                  | Stunt Descent                                                                                                                  | Descent into Rincon                                                                                                                  |
-| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| [![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/gKugPA0xGhw/0.jpg)](https://www.youtube.com/watch?v=gKugPA0xGhw) | [![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc) | [![Descent into Rincon by Walker Sutton](https://img.youtube.com/vi/i2vdPIfIswc/0.jpg)](https://www.youtube.com/watch?v=i2vdPIfIswc) |
+| [![Testing Cyclemetry By Paolo Tagliaferri](https://img.youtube.com/vi/JmavtEU6Vvo/0.jpg)](https://www.youtube.com/watch?v=JmavtEU6Vvo) | [![Descent into Rincon by Walker Sutton](https://img.youtube.com/vi/i2vdPIfIswc/0.jpg)](https://www.youtube.com/watch?v=i2vdPIfIswc) |
+| --- | --- |
+| [![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc) | [![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/gKugPA0xGhw/0.jpg)](https://www.youtube.com/watch?v=gKugPA0xGhw) |
 
 ## [Alternative Tools](https://alternativeto.net/software/garmin-virb-edit/)
 
