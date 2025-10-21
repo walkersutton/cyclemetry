@@ -7,4 +7,5 @@ nex/
 *.mov
 *.prof
 .ruff_cache
+app/public/preview*.png
 
