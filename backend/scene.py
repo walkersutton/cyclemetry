@@ -44,8 +44,8 @@ class Scene:
         self.template = build_configs(config_filename)
 
     def draw_frames(self):
-        if not os.path.exists(constant.FRAMES_DIR):
-            os.makedirs(constant.FRAMES_DIR)
+        if not os.path.exists(constant.FRAMES_DIR()):
+            os.makedirs(constant.FRAMES_DIR())
         if not hasattr(self, "figs"):
             self.figs = None
         for frame in self.frames:
@@ -77,6 +77,8 @@ class Scene:
             if "overlay_filename" in self.template["scene"].keys()
             else constant.DEFAULT_OVERLAY_FILENAME
         )
+        if not os.path.isabs(overlay_filename):
+            overlay_filename = os.path.join(constant.WRITE_DIR(), overlay_filename)
         width, height = (
             self.template["scene"]["width"],
             self.template["scene"]["height"],
@@ -147,8 +149,16 @@ class Scene:
         size = ["-s", f"{width}x{height}"]
         output = ["-y", overlay_filename]
 
+        import sys
+        
+        # Resolve ffmpeg path - use bundled binary if frozen (PyInstaller)
+        ffmpeg_bin = "ffmpeg"
+        if getattr(sys, 'frozen', False):
+            ffmpeg_bin = os.path.join(sys._MEIPASS, "ffmpeg")
+            logging.info(f"Using bundled ffmpeg: {ffmpeg_bin}")
+        
         ffmpeg_cmd = (
-            ["ffmpeg"]
+            [ffmpeg_bin]
             + ["-loglevel", "error"]  # Only show errors
             + fmt
             + size
@@ -161,8 +171,18 @@ class Scene:
 
         logging.info(f"Starting ffmpeg with command: {' '.join(ffmpeg_cmd)}")
 
+        # Add common paths for Homebrew and macOS
+        env = os.environ.copy()
+        extra_paths = [
+            "/opt/homebrew/bin",      # Apple Silicon Homebrew
+            "/usr/local/bin",         # Intel Homebrew
+            "/usr/bin",
+            "/bin",
+        ]
+        env["PATH"] = ":".join(extra_paths) + ":" + env.get("PATH", "")
+
         try:
-            p = Popen(ffmpeg_cmd, stdin=PIPE, stderr=PIPE, stdout=PIPE)
+            p = Popen(ffmpeg_cmd, stdin=PIPE, stderr=PIPE, stdout=PIPE, env=env)
         except Exception as e:
             logging.error(f"Failed to start ffmpeg process: {e}")
             raise Exception(f"Could not start ffmpeg: {str(e)}")

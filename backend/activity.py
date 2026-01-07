@@ -41,12 +41,20 @@ class Activity:
     def __init__(self, gpx_filename):
         try:
             # Expect a valid path; do not prefix with './' (breaks absolute paths)
-            self.gpx = gpxpy.parse(open(gpx_filename, "r"))
+            logging.info(f"Activity: Opening GPX file: {gpx_filename}")
+            with open(gpx_filename, "r") as f:
+                self.gpx = gpxpy.parse(f)
+            logging.info(f"Activity: GPX parsed successfully, tracks: {len(self.gpx.tracks)}")
             self.set_valid_attributes()
             self.parse_data()
+        except FileNotFoundError as e:
+            logging.error(f"Activity: GPX file not found: {gpx_filename}")
+            raise
         except Exception as e:
-            logging.error("Activity __init__ error:")
-            logging.error(e)
+            logging.error(f"Activity __init__ error: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     def set_valid_attributes(self):
         present_attributes = set()

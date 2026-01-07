@@ -15,12 +15,12 @@ class Frame:
         self.frame_number = frame_number
 
     def full_path(self):
-        return f"{constant.FRAMES_DIR}{self.filename}"
+        return f"{constant.FRAMES_DIR()}{self.filename}"
 
     def draw_value(self, img, value: str, config: dict, scene_config: dict = None):
         def draw_value_helper(text, color, x, y, font_size, font="Arial.ttf"):
             if not os.path.exists(font):
-                font = constant.FONTS_DIR + font
+                font = constant.FONTS_DIR() + font
             font = ImageFont.truetype(font, font_size)
             ImageDraw.Draw(img).text(
                 (x, y), text, font=font, fill=ImageColor.getcolor(color, "RGBA")

@@ -111,9 +111,19 @@ export default async function generateDemoFrame(config) {
     if (error.name !== "AbortError") {
       console.error("Error generating demo frame:", error);
 
-      // Set user-friendly error message in store
-      const { setErrorMessage } = useStore.getState();
-      setErrorMessage(error.message || "Failed to generate preview");
+      // Check if backend is still starting up (within grace period)
+      const startupTime = window.__SIDECAR_DEBUG__?.startTime
+        ? Date.now() - window.__SIDECAR_DEBUG__.startTime
+        : 0;
+      const isStartingUp = startupTime < 20000; // 20 second grace period
+
+      // Only show error to user if backend is not starting up
+      if (!isStartingUp) {
+        const { setErrorMessage } = useStore.getState();
+        setErrorMessage(error.message || "Failed to generate preview");
+      } else {
+        console.log("Suppressing error during backend startup:", error.message);
+      }
 
       // Don't re-throw - we've handled it by setting the error state
     }

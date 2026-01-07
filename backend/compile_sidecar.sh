@@ -17,10 +17,20 @@ rm -rf dist build
 # Run PyInstaller via uv if available
 if command -v uv &> /dev/null; then
     echo "Using uv..."
-    uv run pyinstaller --clean --onefile --name cyclemetry-server --add-data "demo.gpxinit:." --add-data "frames:frames" --add-data "fonts:fonts" app.py
+    uv run pyinstaller --clean --onefile --name cyclemetry-server \
+        --add-data "demo.gpxinit:." \
+        --add-data "frames:frames" \
+        --add-data "fonts:fonts" \
+        --add-binary "ffmpeg:." \
+        app.py
 else
     echo "uv not found, assuming environment is set up..."
-    pyinstaller --clean --onefile --name cyclemetry-server --add-data "demo.gpxinit:." --add-data "frames:frames" --add-data "fonts:fonts" app.py
+    pyinstaller --clean --onefile --name cyclemetry-server \
+        --add-data "demo.gpxinit:." \
+        --add-data "frames:frames" \
+        --add-data "fonts:fonts" \
+        --add-binary "ffmpeg:." \
+        app.py
 fi
 
 # Create binaries dir in src-tauri

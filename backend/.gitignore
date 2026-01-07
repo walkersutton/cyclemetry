@@ -23,3 +23,4 @@ dist/
 build/
 node_modules/
 .venv
+ffmpeg

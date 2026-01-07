@@ -1,25 +1,38 @@
+import sys
+
+# Immediate debug output BEFORE any redirects - goes to original stderr
+_original_stderr = sys.stderr
+print("DEBUG: app.py module loading - before any imports", file=_original_stderr, flush=True)
+
 import gc
 import logging
 import os
+
+print("DEBUG: basic imports done (gc, logging, os)", file=_original_stderr, flush=True)
+
 import psutil
+print("DEBUG: psutil imported", file=_original_stderr, flush=True)
+
 import shutil
 import time
 import uuid
-import sys
 import tempfile
-import os
 
-# Set up file logging immediately
+print("DEBUG: all stdlib imports done", file=_original_stderr, flush=True)
+
+# Set up file logging - but keep original stderr reference
 log_file = os.path.join(tempfile.gettempdir(), "cyclemetry-backend.log")
 sys.stderr = open(log_file, "w", buffering=1)
 sys.stdout = sys.stderr
 
 print("DEBUG: app.py starting imports...", flush=True)
+print(f"DEBUG: Log file at {log_file}", file=_original_stderr, flush=True)
 
 from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 
-print("DEBUG: flask imported", flush=True)
+import constant
+print("DEBUG: constant imported", flush=True)
 
 from activity import Activity
 print("DEBUG: Activity imported", flush=True)
@@ -29,8 +42,6 @@ print("DEBUG: designer imported", flush=True)
 
 from scene import Scene
 print("DEBUG: Scene imported", flush=True)
-
-# Use extension names without leading dots
 
 # Use extension names without leading dots
 ALLOWED_EXTENSIONS = {"gpx", "js", "html", "jpg", "png", "mov"}
@@ -57,22 +68,18 @@ import tempfile
 
 app = Flask(__name__)
 
-# Configure directories
+# Configure directories using constant.py helper functions
+WRITE_DIR = constant.WRITE_DIR()
+PUBLIC_DIR = constant.PUBLIC_DIR()
+UPLOAD_DIR = os.path.join(WRITE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 if getattr(sys, 'frozen', False):
     # Running as compiled PyInstaller bundle
     BASE_DIR = sys._MEIPASS
-    # Use system temp dir for write operations
-    WRITE_DIR = os.path.join(tempfile.gettempdir(), "cyclemetry")
 else:
     # Running from source
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    WRITE_DIR = os.path.join(BASE_DIR, "tmp")
-
-os.makedirs(WRITE_DIR, exist_ok=True)
-UPLOAD_DIR = os.path.join(WRITE_DIR, "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-PUBLIC_DIR = os.path.join(WRITE_DIR, "public")
-os.makedirs(PUBLIC_DIR, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_DIR
 
@@ -263,10 +270,10 @@ def demo():
                     {"error": "demo frame file not found after generation"}
                 ), 500
 
-            if not os.path.exists(dest_dir):
-                logging.error(f"Destination directory not found: {dest_dir}")
+            if not os.path.exists(PUBLIC_DIR):
+                logging.error(f"Destination directory not found: {PUBLIC_DIR}")
                 # Create it just in case
-                os.makedirs(dest_dir, exist_ok=True)
+                os.makedirs(PUBLIC_DIR, exist_ok=True)
 
             # Remove destination if it exists to avoid conflicts
             if os.path.exists(obf_filepath):
@@ -288,6 +295,48 @@ def demo():
 def serve_image(filename):
     from flask import send_from_directory
     return send_from_directory(PUBLIC_DIR, filename)
+
+
+@app.route("/api/open-downloads", methods=["POST"])
+def open_downloads():
+    """Open the Downloads/Cyclemetry folder in Finder."""
+    try:
+        downloads_dir = constant.DOWNLOADS_DIR()
+        # Ensure it exists before opening
+        os.makedirs(downloads_dir, exist_ok=True)
+        # Use 'open' command on macOS
+        os.system(f'open "{downloads_dir}"')
+        return jsonify({"message": "Folder opened"})
+    except Exception as e:
+        logging.error(f"Error opening folder: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/open-video", methods=["POST"])
+def open_video():
+    """Open a specific video in the default media player."""
+    data = request.json
+    if not data or "filename" not in data:
+        return jsonify({"error": "filename is required"}), 400
+
+    filename = data["filename"]
+    # Check public dir first
+    video_path = os.path.join(PUBLIC_DIR, filename)
+
+    # If not in public, check downloads
+    if not os.path.exists(video_path):
+        video_path = os.path.join(constant.DOWNLOADS_DIR(), filename)
+
+    if not os.path.exists(video_path):
+        return jsonify({"error": "Video file not found"}), 404
+
+    try:
+        logging.info(f"Opening video: {video_path}")
+        os.system(f'open "{video_path}"')
+        return jsonify({"message": "Video opened"})
+    except Exception as e:
+        logging.error(f"Error opening video: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 def bootboot():
@@ -503,7 +552,7 @@ def render_video():
         overlay_filename = config.get("scene", {}).get(
             "overlay_filename", "overlay.mov"
         )
-        video_path = os.path.join(BASE_DIR, overlay_filename)
+        video_path = os.path.join(WRITE_DIR, overlay_filename)
 
         if not os.path.isfile(video_path):
             logging.error("Video file was not created: %s", video_path)
@@ -515,7 +564,20 @@ def render_video():
         public_path = os.path.join(PUBLIC_DIR, public_filename)
 
         shutil.move(video_path, public_path)
-        logging.info(f"Video saved to: {public_path}")
+        logging.info(f"Video saved to public dir: {public_path}")
+
+        # Also copy to user's Downloads folder for easy access
+        try:
+            downloads_dir = constant.DOWNLOADS_DIR()
+            os.makedirs(downloads_dir, exist_ok=True)
+            downloads_path = os.path.join(downloads_dir, public_filename)
+            shutil.copy2(public_path, downloads_path)
+            logging.info(f"Video copied to Downloads: {downloads_path}")
+        except Exception as e:
+            logging.error(f"Failed to copy video to Downloads: {e}")
+            # Log more detail to help debug
+            import traceback
+            logging.error(traceback.format_exc())
 
         # Mark as complete
         video_render_progress["status"] = "complete"

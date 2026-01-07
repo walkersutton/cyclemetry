@@ -72,14 +72,17 @@ export default async function renderVideo() {
 
     if (videoFilename) {
       setVideoFilename(videoFilename);
-      // Trigger download
-      const downloadUrl = `/${videoFilename}`;
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = videoFilename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+
+      // Tell backend to open the video in default player
+      try {
+        await fetch("http://localhost:3001/api/open-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: videoFilename }),
+        });
+      } catch (e) {
+        console.error("Error calling open-video:", e);
+      }
 
       return { success: true, filename: videoFilename };
     }

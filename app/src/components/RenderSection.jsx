@@ -60,7 +60,11 @@ function RenderSection() {
 
     try {
       const result = await renderVideo();
-      setSuccess(`Video rendered successfully: ${result.filename}`);
+      setSuccess(
+        <span>
+          Video rendered successfully and saved to <b>Downloads/Cyclemetry</b>.
+        </span>,
+      );
       setRenderProgress(null);
     } catch (err) {
       const errorMsg = err.message || "Failed to render video";
@@ -71,6 +75,16 @@ function RenderSection() {
       }
       console.error("Video rendering error:", err);
       setRenderProgress(null);
+    }
+  };
+
+  const handleOpenDownloads = async () => {
+    try {
+      await fetch("http://localhost:3001/api/open-downloads", {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Error opening downloads folder:", err);
     }
   };
 
@@ -175,6 +189,13 @@ function RenderSection() {
                 Cancel Rendering
               </button>
             )}
+
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              onClick={handleOpenDownloads}
+            >
+              Open Downloads Folder
+            </button>
 
             <ResetButton />
           </div>

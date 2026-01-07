@@ -171,9 +171,12 @@ const useStore = create((set, get) => ({
   },
 
   setImageFilename: (filename) => {
-    // Fixed typo: was "imageFilename", should be "imageFilename"
-    localStorage.setItem("imageFilename", filename);
-    set({ imageFilename: filename });
+    // Prefix with backend URL if just a filename
+    const fullUrl = filename && !filename.startsWith('http') 
+      ? `http://localhost:3001/images/${filename}`
+      : filename;
+    localStorage.setItem("imageFilename", fullUrl);
+    set({ imageFilename: fullUrl });
   },
 
   setVideoFilename: (filename) => {

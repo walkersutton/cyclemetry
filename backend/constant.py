@@ -1,5 +1,50 @@
-FRAMES_DIR = "./frames/"
-FONTS_DIR = "./fonts/"
+import sys
+import os
+import tempfile
+
+
+def WRITE_DIR():
+    """Get the base directory for writing files - uses temp dir when running as frozen bundle."""
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle - use system temp directory
+        write_dir = os.path.join(tempfile.gettempdir(), "cyclemetry")
+    else:
+        # Running from source
+        write_dir = "."
+    os.makedirs(write_dir, exist_ok=True)
+    return write_dir
+
+
+def FRAMES_DIR():
+    """Get the frames directory."""
+    frames_dir = os.path.join(WRITE_DIR(), "frames")
+    os.makedirs(frames_dir, exist_ok=True)
+    return frames_dir
+
+
+def PUBLIC_DIR():
+    """Get the public directory for serving assets."""
+    public_dir = os.path.join(WRITE_DIR(), "public")
+    os.makedirs(public_dir, exist_ok=True)
+    return public_dir
+
+
+def DOWNLOADS_DIR():
+    """Get the user's Downloads directory for final output."""
+    downloads = os.path.join(os.path.expanduser("~"), "Downloads", "Cyclemetry")
+    os.makedirs(downloads, exist_ok=True)
+    return downloads
+
+
+def FONTS_DIR():
+    """Get the fonts directory - uses bundled fonts when frozen."""
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle - fonts bundled with app
+        return os.path.join(sys._MEIPASS, "fonts") + "/"
+    else:
+        # Running from source
+        return "./fonts/"
+
 
 # UNITS
 UNIT_IMPERIAL = "imperial"
