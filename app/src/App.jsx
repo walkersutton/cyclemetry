@@ -7,7 +7,36 @@ import TemplatesSection from "./components/TemplatesSection";
 import useStore from "./store/useStore";
 import "jsoneditor-react/es/editor.min.css";
 
+import { Command } from "@tauri-apps/plugin-shell";
+
 function App() {
+  useEffect(() => {
+    const spawnBackend = async () => {
+      // Check if running in Tauri context
+      if (typeof window.__TAURI__ === 'undefined') {
+        console.log("Not running in Tauri context, skipping sidecar spawn");
+        return;
+      }
+      
+      try {
+        console.log("Attempting to spawn sidecar...");
+        const command = Command.sidecar("binaries/cyclemetry-server");
+        
+        // Listen for stdout/stderr
+        command.stdout.on("data", (line) => console.log(`[sidecar stdout] ${line}`));
+        command.stderr.on("data", (line) => console.log(`[sidecar stderr] ${line}`));
+        command.on("close", (data) => console.log(`[sidecar] Process exited with code ${data.code}`));
+        command.on("error", (error) => console.error(`[sidecar error] ${error}`));
+        
+        const child = await command.spawn();
+        console.log("Sidecar spawned with PID:", child.pid);
+      } catch (err) {
+        console.error("Failed to spawn sidecar:", err);
+      }
+    };
+    spawnBackend();
+  }, []);
+
   const { config } = useStore();
   const [yourJson, setYourJson] = useState({
     a: 23,

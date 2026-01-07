@@ -3,12 +3,14 @@ from pathlib import Path
 
 import constant
 import matplotlib as mpl
+
+# CRITICAL: Set backend BEFORE importing pyplot to avoid PyInstaller hanging
+mpl.use("agg")
+
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 import logging
-
-mpl.use("agg")
 
 
 def get_dpi(config):

@@ -1,11 +1,28 @@
 import logging
 from collections import defaultdict
+import sys
+print("DEBUG: activity.py imports starting", file=sys.stderr)
+sys.stderr.flush()
 
 import constant
+print("DEBUG: constant imported", file=sys.stderr)
+sys.stderr.flush()
+
 import gpxpy
+print("DEBUG: gpxpy imported", file=sys.stderr)
+sys.stderr.flush()
+
 import numpy as np
+print("DEBUG: numpy imported", file=sys.stderr)
+sys.stderr.flush()
+
 from gradient import gradient, smooth_gradients
+print("DEBUG: gradient imported", file=sys.stderr)
+sys.stderr.flush()
+
 from scipy.interpolate import interp1d
+print("DEBUG: scipy.interpolate imported", file=sys.stderr)
+sys.stderr.flush()
 
 ATTRIBUTE_MAP = {
     "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}atemp": "temperature",

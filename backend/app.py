@@ -5,13 +5,32 @@ import psutil
 import shutil
 import time
 import uuid
+import sys
+import tempfile
+import os
+
+# Set up file logging immediately
+log_file = os.path.join(tempfile.gettempdir(), "cyclemetry-backend.log")
+sys.stderr = open(log_file, "w", buffering=1)
+sys.stdout = sys.stderr
+
+print("DEBUG: app.py starting imports...", flush=True)
 
 from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 
+print("DEBUG: flask imported", flush=True)
+
 from activity import Activity
+print("DEBUG: Activity imported", flush=True)
+
 from designer import demo_frame
+print("DEBUG: designer imported", flush=True)
+
 from scene import Scene
+print("DEBUG: Scene imported", flush=True)
+
+# Use extension names without leading dots
 
 # Use extension names without leading dots
 ALLOWED_EXTENSIONS = {"gpx", "js", "html", "jpg", "png", "mov"}
@@ -33,17 +52,33 @@ demo_frame_in_progress = False
 
 logging.basicConfig(level=logging.INFO)
 
+import sys
+import tempfile
+
 app = Flask(__name__)
 
-# Configure uploads directory (create if missing)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, "tmp")
+# Configure directories
+if getattr(sys, 'frozen', False):
+    # Running as compiled PyInstaller bundle
+    BASE_DIR = sys._MEIPASS
+    # Use system temp dir for write operations
+    WRITE_DIR = os.path.join(tempfile.gettempdir(), "cyclemetry")
+else:
+    # Running from source
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    WRITE_DIR = os.path.join(BASE_DIR, "tmp")
+
+os.makedirs(WRITE_DIR, exist_ok=True)
+UPLOAD_DIR = os.path.join(WRITE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+PUBLIC_DIR = os.path.join(WRITE_DIR, "public")
+os.makedirs(PUBLIC_DIR, exist_ok=True)
+
 app.config["UPLOAD_FOLDER"] = UPLOAD_DIR
 
 CORS(
     app,
-    origins=["http://localhost:3000", "https://walkersutton.com"],
+    origins="*",  # Allow all origins temporarily for debugging
 )
 
 # app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -109,8 +144,8 @@ def upload():
 def cleanup_old_previews():
     """Remove old preview images to prevent disk space issues"""
     try:
-        # Use /frontend-public which is mounted from docker-compose
-        public_dir = "/frontend-public"
+        # Use PUBLIC_DIR
+        public_dir = PUBLIC_DIR
         if os.path.exists(public_dir):
             for filename in os.listdir(public_dir):
                 if filename.startswith("preview_") and filename.endswith(".png"):
@@ -217,8 +252,8 @@ def demo():
         logging.info(f"Demo frame generated: {img_filepath}")
         # Use a unique filename with timestamp + uuid to avoid race conditions
         filename = f"preview_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}.png"
-        # Use /frontend-public which is mounted from docker-compose
-        obf_filepath = os.path.join("/frontend-public", filename)
+        # Use PUBLIC_DIR
+        obf_filepath = os.path.join(PUBLIC_DIR, filename)
         try:
             # Use shutil.move instead of os.rename for better cross-filesystem support
             # and check if source exists first
@@ -228,15 +263,10 @@ def demo():
                     {"error": "demo frame file not found after generation"}
                 ), 500
 
-            # Ensure destination directory exists
-            dest_dir = os.path.dirname(obf_filepath)
             if not os.path.exists(dest_dir):
                 logging.error(f"Destination directory not found: {dest_dir}")
-                return jsonify(
-                    {
-                        "error": "Frontend public directory not mounted. Please restart containers."
-                    }
-                ), 500
+                # Create it just in case
+                os.makedirs(dest_dir, exist_ok=True)
 
             # Remove destination if it exists to avoid conflicts
             if os.path.exists(obf_filepath):
@@ -256,10 +286,8 @@ def demo():
 
 @app.route("/images/<filename>", methods=["GET"])
 def serve_image(filename):
-    # TODO images are never deleted! need to clean eventually . maybe some sort of daily job to keep things TIDY
-    # TODO satisfy ruffff
-    return filename
-    # return send_from_directory("frames", filename)
+    from flask import send_from_directory
+    return send_from_directory(PUBLIC_DIR, filename)
 
 
 def bootboot():
@@ -315,7 +343,7 @@ def demo_light():
     try:
         img_filepath = scene.frames[0].full_path()
         # obf_filepath = f"./frames/{int(time.time())}.png"
-        shutil.move(img_filepath, f"../app/public/{new_filename}")
+        shutil.move(img_filepath, os.path.join(PUBLIC_DIR, new_filename))
     except Exception as e:
         logging.error("app.py:demoonlyconfigarg()")
         logging.error("issue grabbing filename for demo image")
@@ -484,7 +512,7 @@ def render_video():
         # Move video to public directory for serving
         timestamp = int(time.time())
         public_filename = f"video_{timestamp}.mov"
-        public_path = os.path.join("/frontend-public", public_filename)
+        public_path = os.path.join(PUBLIC_DIR, public_filename)
 
         shutil.move(video_path, public_path)
         logging.info(f"Video saved to: {public_path}")
@@ -524,6 +552,8 @@ def render_video():
 
 
 if __name__ == "__main__":
+    print("DEBUG: Entering main block", file=sys.stderr)
+    sys.stderr.flush()
     # Allow running directly via `uv run app.py`
     # Note: debug=False in Docker to prevent reloader issues (exit code 247)
     # Use FLASK_DEBUG=1 env var for development logging without reloader

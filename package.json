@@ -1,0 +1,23 @@
+{
+  "name": "cyclemetry",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dev:frontend": "cd app && pnpm start",
+    "build:frontend": "cd app && pnpm build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.25.0",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.6"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-shell": "~2.3.3"
+  }
+}

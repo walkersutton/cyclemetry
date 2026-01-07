@@ -1,9 +1,24 @@
+import sys
+print("DEBUG: gradient.py imports starting", file=sys.stderr)
+sys.stderr.flush()
+
 import gpxpy
 import numpy as np
+print("DEBUG: numpy in gradient imported", file=sys.stderr)
+sys.stderr.flush()
+
 from gpxpy.geo import Location
 from scipy.signal import savgol_filter
+print("DEBUG: scipy.signal imported", file=sys.stderr)
+sys.stderr.flush()
+
 from scipy.stats import zscore
+print("DEBUG: scipy.stats imported", file=sys.stderr)
+sys.stderr.flush()
+
 from tsmoothie.smoother import LowessSmoother
+print("DEBUG: tsmoothie imported", file=sys.stderr)
+sys.stderr.flush()
 
 
 def gradient(point, previous_point):
