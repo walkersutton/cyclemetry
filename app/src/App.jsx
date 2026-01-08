@@ -2,8 +2,6 @@ import { useEffect, useState, useRef } from 'react'
 import useStore from './store/useStore'
 import './index.css'
 
-import { Command } from '@tauri-apps/plugin-shell'
-
 // UI components
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -82,8 +80,9 @@ function App() {
     setImageFilename,
     setGpxFilename,
     setRenderProgress,
-    renderProgress,
     gpxFilename,
+    selectedSecond,
+    setErrorMessage,
   } = useStore()
 
   const [selectedTemplate, setSelectedTemplate] = useState('')
@@ -169,7 +168,9 @@ function App() {
 
     const pollProgress = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/render-progress')
+        const response = await fetch(
+          'http://localhost:3001/api/render-progress',
+        )
         if (response.ok) {
           const data = await response.json()
           setRenderProgress({
@@ -218,7 +219,8 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           config: currentConfig,
-          gpx_filename: 'demo.gpxinit',
+          gpx_filename: gpxFilename || 'demo.gpxinit',
+          second: selectedSecond,
         }),
       })
 
@@ -226,9 +228,16 @@ function App() {
         const data = await response.json()
         setImageError(false)
         setImageFilename(`http://localhost:3001/images/${data.filename}`)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setErrorMessage(
+          `Preview failed: ${errorData.error || response.statusText}`,
+        )
+        setImageError(true)
       }
     } catch (err) {
       console.error('Error generating preview:', err)
+      setErrorMessage(`Failed to connect to backend: ${err.message}`)
     } finally {
       setGeneratingImage(false)
     }
@@ -333,7 +342,9 @@ function App() {
               >
                 <Activity className="h-3.5 w-3.5" />
                 <span className="max-w-[100px] truncate">
-                  {gpxFilename === 'demo.gpxinit' ? 'Load GPX' : (gpxFilename || 'Load GPX')}
+                  {gpxFilename === 'demo.gpxinit'
+                    ? 'Load GPX'
+                    : gpxFilename || 'Load GPX'}
                 </span>
               </Button>
             </div>
@@ -342,8 +353,10 @@ function App() {
               variant="outline"
               size="sm"
               className="gap-2 h-8 px-3 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/5"
-              onClick={handleGeneratePreview}
-              disabled={generatingImage}
+              onClick={() => handleGeneratePreview()}
+              disabled={
+                generatingImage || !config || backendStatus !== 'connected'
+              }
             >
               {generatingImage ? (
                 <Spinner className="h-3.5 w-3.5" />
