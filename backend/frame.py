@@ -57,6 +57,13 @@ class Frame:
         else:
             font = font or "Arial.ttf"
 
+        # Get font size from config or scene_config
+        font_size = config.get("font_size")
+        if font_size is None and scene_config:
+            font_size = scene_config.get("font_size", 32)
+        else:
+            font_size = font_size or 32
+
         draw_value_helper(
             value,
             hex_color_with_alpha(
@@ -65,7 +72,7 @@ class Frame:
             ),
             config["x"],
             config["y"],
-            config["font_size"],
+            font_size,
             font,
         )
         return img

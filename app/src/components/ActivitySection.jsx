@@ -1,12 +1,12 @@
-import React from "react";
-import useStore from "../store/useStore";
-import LoadGpxButton from "./buttons/LoadGpxButton";
-import LoadDemoGpxButton from "./buttons/LoadDemoGpxButton";
+import React from 'react'
+import useStore from '../store/useStore'
+import LoadGpxButton from './buttons/LoadGpxButton'
+import LoadDemoGpxButton from './buttons/LoadDemoGpxButton'
 
 function ActivitySection() {
-  const { gpxFilename, dummyDurationSeconds } = useStore();
-  const minutes = Math.floor(dummyDurationSeconds / 60);
-  const seconds = dummyDurationSeconds % 60;
+  const { gpxFilename, dummyDurationSeconds } = useStore()
+  const minutes = Math.floor(dummyDurationSeconds / 60)
+  const seconds = dummyDurationSeconds % 60
 
   return (
     <div className="col-auto">
@@ -14,7 +14,7 @@ function ActivitySection() {
         <div className="card-body">
           <h6 className="card-title">Activity </h6>
           <div className="mb-3 text-muted small">
-            <span>Name:</span> {gpxFilename ?? "None loaded"}
+            <span>Name:</span> {gpxFilename ?? 'None loaded'}
             <br />
             <span>Duration:</span> {minutes}m {seconds}s
           </div>
@@ -25,7 +25,7 @@ function ActivitySection() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default ActivitySection;
+export default ActivitySection

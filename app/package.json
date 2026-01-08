@@ -1,45 +1,49 @@
 {
-  "name": "cyclemetry-react",
-  "nhahhomepage": "localhost",
-  "version": "0.1.0",
+  "name": "app",
   "private": true,
-  "dependencies": {
-    "@json-editor/json-editor": "^2.15.1",
-    "@tauri-apps/plugin-shell": "^2.3.3",
-    "axios": "^1.7.2",
-    "bootstrap": "^5.3.3",
-    "gh-pages": "^6.1.1",
-    "jsoneditor": "^9.10.5",
-    "jsoneditor-react": "^3.1.2",
-    "lodash": "^4.17.21",
-    "npm-check": "^6.0.1",
-    "npm-run-all": "^4.1.5",
-    "react": "^18.3.1",
-    "react-bootstrap": "^2.10.4",
-    "react-dom": "^18.3.1",
-    "react-resizable-panels": "^2.0.22",
-    "react-scripts": "^5.0.1",
-    "web-vitals": "^4.0.1",
-    "zustand": "^5.0.5"
-  },
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "deploy": "gh-pages -d build",
-    "build": "react-scripts build",
-    "start": "react-scripts start"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slider": "^1.3.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@tauri-apps/plugin-shell": "^2.3.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.4.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "sass": "^1.77.3"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "@eslint/js": "^9.39.1",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "prettier": "^3.7.4",
+    "tailwindcss": "^4.1.18",
+    "tw-animate-css": "^1.4.0",
+    "vite": "^7.2.4"
   }
 }

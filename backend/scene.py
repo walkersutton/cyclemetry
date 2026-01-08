@@ -84,6 +84,12 @@ class Scene:
             self.template["scene"]["height"],
         )
 
+        # Ensure dimensions are even (required by most codecs including ProRes)
+        if width % 2 != 0:
+            width += 1
+        if height % 2 != 0:
+            height += 1
+
         # Pre-render static elements once (labels and static plot backgrounds)
         # This avoids redrawing them for every frame
         from PIL import Image
@@ -141,41 +147,47 @@ class Scene:
                         plot_backgrounds[attribute] = (plot_bg, config)
 
         # FFmpeg command to encode video from raw frames
+        # Input parameters (must come before -i)
         framerate = ["-r", str(self.fps)]
         fmt = ["-f", "rawvideo"]
-        input_files = ["-i", "-"]
-        codec = ["-c:v", "prores_ks"]  # helps with transparency
-        pixel_format = ["-pix_fmt", "rgba"]
+        pixel_format_in = ["-pix_fmt", "rgba"]
         size = ["-s", f"{width}x{height}"]
+
+        # Output parameters
+        codec = ["-c:v", "prores_ks"]  # helps with transparency
+        pixel_format_out = ["-pix_fmt", "yuva444p10le"]  # Required for ProRes + Alpha
         output = ["-y", overlay_filename]
 
         import sys
-        
+
         # Resolve ffmpeg path - use bundled binary if frozen (PyInstaller)
         ffmpeg_bin = "ffmpeg"
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             ffmpeg_bin = os.path.join(sys._MEIPASS, "ffmpeg")
             logging.info(f"Using bundled ffmpeg: {ffmpeg_bin}")
-        
+
         ffmpeg_cmd = (
             [ffmpeg_bin]
-            + ["-loglevel", "error"]  # Only show errors
+            + ["-loglevel", "info"]  # Show more info for debugging
             + fmt
             + size
-            + pixel_format
+            + pixel_format_in
             + framerate
-            + input_files
+            + ["-i", "-"]
             + codec
+            + pixel_format_out
             + output
         )
 
-        logging.info(f"Starting ffmpeg with command: {' '.join(ffmpeg_cmd)}")
+        logging.info(
+            f"Starting ffmpeg with dimensions {width}x{height} and command: {' '.join(ffmpeg_cmd)}"
+        )
 
         # Add common paths for Homebrew and macOS
         env = os.environ.copy()
         extra_paths = [
-            "/opt/homebrew/bin",      # Apple Silicon Homebrew
-            "/usr/local/bin",         # Intel Homebrew
+            "/opt/homebrew/bin",  # Apple Silicon Homebrew
+            "/usr/local/bin",  # Intel Homebrew
             "/usr/bin",
             "/bin",
         ]
@@ -225,7 +237,7 @@ class Scene:
             # Progress callback
             if progress_callback:
                 progress_callback(idx + 1, len(self.frames))
-            
+
             # Force garbage collection every 30 frames to manage memory
             if (idx + 1) % 30 == 0:
                 gc.collect()

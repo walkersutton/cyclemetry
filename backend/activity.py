@@ -1,26 +1,32 @@
 import logging
 from collections import defaultdict
 import sys
+
 print("DEBUG: activity.py imports starting", file=sys.stderr)
 sys.stderr.flush()
 
 import constant
+
 print("DEBUG: constant imported", file=sys.stderr)
 sys.stderr.flush()
 
 import gpxpy
+
 print("DEBUG: gpxpy imported", file=sys.stderr)
 sys.stderr.flush()
 
 import numpy as np
+
 print("DEBUG: numpy imported", file=sys.stderr)
 sys.stderr.flush()
 
 from gradient import gradient, smooth_gradients
+
 print("DEBUG: gradient imported", file=sys.stderr)
 sys.stderr.flush()
 
 from scipy.interpolate import interp1d
+
 print("DEBUG: scipy.interpolate imported", file=sys.stderr)
 sys.stderr.flush()
 
@@ -44,15 +50,18 @@ class Activity:
             logging.info(f"Activity: Opening GPX file: {gpx_filename}")
             with open(gpx_filename, "r") as f:
                 self.gpx = gpxpy.parse(f)
-            logging.info(f"Activity: GPX parsed successfully, tracks: {len(self.gpx.tracks)}")
+            logging.info(
+                f"Activity: GPX parsed successfully, tracks: {len(self.gpx.tracks)}"
+            )
             self.set_valid_attributes()
             self.parse_data()
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             logging.error(f"Activity: GPX file not found: {gpx_filename}")
             raise
         except Exception as e:
             logging.error(f"Activity __init__ error: {type(e).__name__}: {e}")
             import traceback
+
             traceback.print_exc()
             raise
 

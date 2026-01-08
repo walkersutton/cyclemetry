@@ -5,7 +5,7 @@ import tempfile
 
 def WRITE_DIR():
     """Get the base directory for writing files - uses temp dir when running as frozen bundle."""
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Running as PyInstaller bundle - use system temp directory
         write_dir = os.path.join(tempfile.gettempdir(), "cyclemetry")
     else:
@@ -38,7 +38,7 @@ def DOWNLOADS_DIR():
 
 def FONTS_DIR():
     """Get the fonts directory - uses bundled fonts when frozen."""
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Running as PyInstaller bundle - fonts bundled with app
         return os.path.join(sys._MEIPASS, "fonts") + "/"
     else:

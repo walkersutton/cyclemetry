@@ -2,7 +2,11 @@ import sys
 
 # Immediate debug output BEFORE any redirects - goes to original stderr
 _original_stderr = sys.stderr
-print("DEBUG: app.py module loading - before any imports", file=_original_stderr, flush=True)
+print(
+    "DEBUG: app.py module loading - before any imports",
+    file=_original_stderr,
+    flush=True,
+)
 
 import gc
 import logging
@@ -11,6 +15,7 @@ import os
 print("DEBUG: basic imports done (gc, logging, os)", file=_original_stderr, flush=True)
 
 import psutil
+
 print("DEBUG: psutil imported", file=_original_stderr, flush=True)
 
 import shutil
@@ -32,15 +37,19 @@ from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 
 import constant
+
 print("DEBUG: constant imported", flush=True)
 
 from activity import Activity
+
 print("DEBUG: Activity imported", flush=True)
 
 from designer import demo_frame
+
 print("DEBUG: designer imported", flush=True)
 
 from scene import Scene
+
 print("DEBUG: Scene imported", flush=True)
 
 # Use extension names without leading dots
@@ -74,7 +83,7 @@ PUBLIC_DIR = constant.PUBLIC_DIR()
 UPLOAD_DIR = os.path.join(WRITE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # Running as compiled PyInstaller bundle
     BASE_DIR = sys._MEIPASS
 else:
@@ -294,6 +303,7 @@ def demo():
 @app.route("/images/<filename>", methods=["GET"])
 def serve_image(filename):
     from flask import send_from_directory
+
     return send_from_directory(PUBLIC_DIR, filename)
 
 
@@ -555,28 +565,39 @@ def render_video():
         video_path = os.path.join(WRITE_DIR, overlay_filename)
 
         if not os.path.isfile(video_path):
-            logging.error("Video file was not created: %s", video_path)
-            return jsonify({"error": "video rendering failed"}), 500
+            logging.error(f"Video file NOT FOUND at expected path: {video_path}")
+            # Check if it was created in the current directory as a fallback
+            if os.path.isfile(overlay_filename):
+                video_path = os.path.abspath(overlay_filename)
+                logging.info(f"Fallback: Video found in current dir: {video_path}")
+            else:
+                return jsonify(
+                    {"error": f"Video generation failed - file not found: {video_path}"}
+                ), 500
 
         # Move video to public directory for serving
         timestamp = int(time.time())
         public_filename = f"video_{timestamp}.mov"
         public_path = os.path.join(PUBLIC_DIR, public_filename)
 
-        shutil.move(video_path, public_path)
-        logging.info(f"Video saved to public dir: {public_path}")
+        try:
+            logging.info(f"Moving video: {video_path} -> {public_path}")
+            shutil.move(video_path, public_path)
+        except Exception as e:
+            logging.error(f"Failed to move video to public dir: {e}")
+            return jsonify({"error": f"Failed to move video: {str(e)}"}), 500
 
         # Also copy to user's Downloads folder for easy access
         try:
             downloads_dir = constant.DOWNLOADS_DIR()
             os.makedirs(downloads_dir, exist_ok=True)
             downloads_path = os.path.join(downloads_dir, public_filename)
+            logging.info(f"Copying to Downloads: {public_path} -> {downloads_path}")
             shutil.copy2(public_path, downloads_path)
-            logging.info(f"Video copied to Downloads: {downloads_path}")
         except Exception as e:
             logging.error(f"Failed to copy video to Downloads: {e}")
-            # Log more detail to help debug
             import traceback
+
             logging.error(traceback.format_exc())
 
         # Mark as complete
@@ -613,7 +634,39 @@ def render_video():
         return jsonify({"error": f"video rendering failed: {str(e)}"}), 500
 
 
+def parent_watcher():
+    """Monitor the parent process and exit if it dies."""
+    import os
+    import time
+    import psutil
+
+    # Get the parent PID when we start
+    parent_pid = os.getppid()
+    if parent_pid <= 1:  # Not started by a user process
+        return
+
+    logging.info(f"Sidecar monitoring parent PID: {parent_pid}")
+
+    while True:
+        try:
+            # Check if parent is still running
+            parent = psutil.Process(parent_pid)
+            if not parent.is_running() or parent.status() == psutil.STATUS_ZOMBIE:
+                logging.info("Parent process gone, sidecar exiting...")
+                os._exit(0)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            logging.info("Parent process no longer accessible, sidecar exiting...")
+            os._exit(0)
+        time.sleep(2)
+
+
 if __name__ == "__main__":
+    import threading
+
+    # Start parent watcher thread
+    watcher_thread = threading.Thread(target=parent_watcher, daemon=True)
+    watcher_thread.start()
+
     print("DEBUG: Entering main block", file=sys.stderr)
     sys.stderr.flush()
     # Allow running directly via `uv run app.py`

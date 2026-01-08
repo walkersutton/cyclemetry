@@ -1,0 +1,109 @@
+{
+  "scene": {
+    "height": 2160,
+    "width": 3840,
+    "color": "#ffffff",
+    "font": "Evogria.otf",
+    "font_size": 30,
+    "decimal_rounding": 0,
+    "fps": 30,
+    "opacity": 0.5,
+    "start": 0,
+    "end": 1000
+  },
+  "labels": [
+    {
+      "text": "MPH",
+      "x": 100,
+      "y": 695,
+      "font_size": 70
+    },
+    {
+      "text": "KMH",
+      "x": 100,
+      "y": 1000,
+      "font_size": 70
+    },
+    {
+      "text": "Grad.",
+      "x": 44,
+      "y": 1889,
+      "font_size": 60
+    }
+  ],
+  "values": [
+    {
+      "value": "speed",
+      "x": 80,
+      "y": 724,
+      "font_size": 255,
+      "unit": "imperial",
+      "nahopacity": 0.3
+    },
+    {
+      "value": "speed",
+      "x": 80,
+      "y": 1029,
+      "font_size": 255,
+      "unit": "metric",
+      "nahopacity": 0.3
+    },
+    {
+      "value": "elevation",
+      "x": 0,
+      "y": 60
+    },
+    {
+      "value": "gradient",
+      "x": 37,
+      "y": 1928,
+      "font_size": 192
+    }
+  ],
+  "plots": [
+    {
+      "value": "course",
+      "x": -120,
+      "y": -160,
+      "width": 1100,
+      "height": 900,
+      "margin": 0.1,
+      "color": "#f4f4f4",
+      "line": {
+        "width": 1.75
+      },
+      "rotation": 95,
+      "points": [
+        {
+          "weight": 80
+        },
+        {
+          "weight": 345,
+          "opacity": 0.52
+        }
+      ]
+    },
+    {
+      "value": "elevation",
+      "x": -209,
+      "y": 1435,
+      "width": 1300,
+      "height": 650,
+      "color": "#f4f4f4",
+      "rotation": 0,
+      "line": {
+        "width": 2
+      },
+      "fill": {
+        "opacity": 0.65
+      },
+      "points": [
+        {
+          "weight": 14,
+          "opacity": 1,
+          "label": "Furore.otf font, round 0, xoffset 20, y_offset20, font size 12.5, units metric and imperial - these are really just moving values"
+        }
+      ]
+    }
+  ]
+}
