@@ -1,12 +1,22 @@
 .DS_Store
 .vscode
+# Build artifacts
 *node_modules*
 *__pycache__*
 *build*
-nex/
+dist/
+target/
+src-tauri/binaries/
+backend/dist/
+backend/build/
+backend/.venv/
+
+# App specifics
+next/
 *.mov
 *.prof
 .ruff_cache
 app/public/preview*.png
 tauri_build.log
+/tmp/cyclemetry.sock
 

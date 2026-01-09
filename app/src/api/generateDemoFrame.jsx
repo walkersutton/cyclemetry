@@ -1,8 +1,9 @@
 import useStore from '../store/useStore'
+import * as backend from './backend'
 
 // Track if a request is in progress to prevent duplicate calls
 let isGenerating = false
-let pendingRequest = null
+let pendingAbort = null
 
 export default async function generateDemoFrame(config) {
   try {
@@ -29,24 +30,14 @@ export default async function generateDemoFrame(config) {
       )
     }
 
-    // If already generating, cancel the pending request and start a new one
-    if (isGenerating && pendingRequest) {
-      console.log('Cancelling previous demo generation request')
-      pendingRequest.abort()
+    // If already generating, skip this request
+    if (isGenerating) {
+      console.log('Demo generation already in progress, skipping')
+      return
     }
 
     isGenerating = true
     setGeneratingImage(true)
-
-    // Create an AbortController for this request
-    const controller = new AbortController()
-    pendingRequest = controller
-
-    const payload = {
-      config: configToSend,
-      gpx_filename: gpxFilename,
-      second: selectedSecond,
-    }
 
     console.log('📤 Sending demo request:', {
       gpx: gpxFilename,
@@ -55,43 +46,21 @@ export default async function generateDemoFrame(config) {
       end: configToSend?.scene?.end,
     })
 
-    const response = await fetch('http://localhost:3001/api/demo', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    })
+    const data = await backend.generateDemo(
+      configToSend,
+      gpxFilename,
+      selectedSecond,
+    )
 
-    if (!response.ok) {
-      let errorMessage = `Server error ${response.status}`
-      try {
-        const errorData = await response.json()
-
-        // Handle 429 (Too Many Requests / Busy) gracefully - don't throw error
-        if (response.status === 429 && errorData.error_code === 'BUSY') {
-          console.log(
-            '⏳ Backend is busy generating another frame, skipping this request',
-          )
-          return // Silently skip this request
-        }
-
-        if (errorData.error) {
-          errorMessage = errorData.error
-          console.error('❌ Backend error:', errorData)
-        } else {
-          errorMessage = await response.text()
-        }
-      } catch {
-        errorMessage = await response.text()
-      }
-      throw new Error(errorMessage)
+    // Handle 429 (Too Many Requests / Busy) gracefully
+    if (data.error_code === 'BUSY') {
+      console.log(
+        '⏳ Backend is busy generating another frame, skipping this request',
+      )
+      return
     }
 
-    const data = await response.json()
-
-    // Check if response contains an error even with 200 status
+    // Check if response contains an error
     if (data.error) {
       console.error('❌ Backend returned error:', data)
       throw new Error(data.error)
@@ -99,7 +68,8 @@ export default async function generateDemoFrame(config) {
 
     const demoImageFilename = data.filename
     if (demoImageFilename) {
-      setImageFilename(demoImageFilename)
+      const imageUrl = await backend.getImageUrl(demoImageFilename)
+      setImageFilename(imageUrl)
       console.log('✅ Image filename set:', demoImageFilename)
 
       // Clear any previous errors on success
@@ -129,7 +99,7 @@ export default async function generateDemoFrame(config) {
     }
   } finally {
     isGenerating = false
-    pendingRequest = null
+    pendingAbort = null
     const { setGeneratingImage } = useStore.getState()
     setGeneratingImage(false)
   }

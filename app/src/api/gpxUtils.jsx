@@ -1,5 +1,6 @@
 import useStore from '../store/useStore'
 import generateDemoFrame from './generateDemoFrame'
+import * as backend from './backend'
 
 export default async function saveFile(file) {
   const { setGpxFilename } = useStore.getState()
@@ -11,35 +12,16 @@ export default async function saveFile(file) {
   })
 
   try {
-    const formData = new FormData()
-    formData.append('file', file)
-
     console.log('📡 Sending request to backend...')
-    const response = await fetch('http://localhost:3001/upload', {
-      method: 'POST',
-      // Let the browser set the correct multipart/form-data boundary
-      body: formData,
-    })
+    const result = await backend.uploadGpx(file)
 
-    console.log('📥 Response received:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-    })
+    console.log('✅ Upload successful:', result)
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ Upload failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      })
-      alert(`Failed to upload GPX file: ${response.statusText}`)
+    if (result.error) {
+      console.error('❌ Upload failed:', result.error)
+      alert(`Failed to upload GPX file: ${result.error}`)
       return
     }
-
-    const result = await response.json()
-    console.log('✅ Upload successful:', result)
 
     // Update store with filename and duration
     const {

@@ -5,8 +5,12 @@
   "main": "index.js",
   "scripts": {
     "tauri": "tauri",
-    "dev": "tauri dev",
+    "dev:backend": "cd backend && uv run app.py",
+    "dev": "concurrently --kill-others \"pnpm dev:backend\" \"tauri dev\"",
     "build": "tauri build",
+    "build:sidecar": "cd backend && uv run pyinstaller --onefile --add-data \"fonts:fonts\" --add-data \"demo.gpxinit:.\" --name cyclemetry-server-aarch64-apple-darwin app.py && mkdir -p ../src-tauri/binaries && cp dist/cyclemetry-server-aarch64-apple-darwin ../src-tauri/binaries/",
+    "dev:socket": "tauri dev",
+    "buildtest": "pnpm build:sidecar && pnpm dev:socket",
     "dev:frontend": "cd app && pnpm dev",
     "build:frontend": "cd app && pnpm build",
     "lint:frontend": "cd app && pnpm lint",
@@ -21,7 +25,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.25.0",
   "devDependencies": {
-    "@tauri-apps/cli": "^2.9.6"
+    "@tauri-apps/cli": "^2.9.6",
+    "concurrently": "^9.2.1"
   },
   "dependencies": {
     "@tauri-apps/plugin-shell": "~2.3.3"

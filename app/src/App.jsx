@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import useStore from './store/useStore'
 import './index.css'
+import * as backend from './api/backend'
 
 // UI components
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,7 @@ import ErrorAlert from '@/components/ErrorAlert'
 import RenderProgressOverlay from '@/components/RenderProgressOverlay'
 
 // Icons
-import { Upload, Play, Activity } from 'lucide-react'
+import { Upload, Play, Activity, FolderOpen } from 'lucide-react'
 
 // Global state for sidecar
 window.__SIDECAR_DEBUG__ = {
@@ -99,10 +100,10 @@ function App() {
       }
 
       try {
-        const response = await fetch('http://localhost:3001/api/health', {
-          signal: AbortSignal.timeout(1000),
-        })
-        if (response.ok) {
+        // Check if socket exists first (fast check)
+        const socketExists = await backend.socketReady()
+        if (socketExists) {
+          await backend.healthCheck()
           setBackendStatus('connected')
           return
         }
@@ -138,15 +139,9 @@ function App() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/health', {
-          signal: AbortSignal.timeout(2000),
-        })
-        if (response.ok) {
-          setBackendStatus('connected')
-          strikesRef.current = 0
-        } else {
-          throw new Error('Health check failed')
-        }
+        await backend.healthCheck()
+        setBackendStatus('connected')
+        strikesRef.current = 0
       } catch {
         strikesRef.current++
         // Be significantly more patient during initial connection (60 seconds)
@@ -168,19 +163,14 @@ function App() {
 
     const pollProgress = async () => {
       try {
-        const response = await fetch(
-          'http://localhost:3001/api/render-progress',
-        )
-        if (response.ok) {
-          const data = await response.json()
-          setRenderProgress({
-            current: data.current || 0,
-            total: data.total || 0,
-            status: data.status || 'rendering',
-            message: data.message || '',
-            estimatedSecondsRemaining: data.estimated_seconds_remaining,
-          })
-        }
+        const data = await backend.getRenderProgress()
+        setRenderProgress({
+          current: data.current || 0,
+          total: data.total || 0,
+          status: data.status || 'rendering',
+          message: data.message || '',
+          estimatedSecondsRemaining: data.estimated_seconds_remaining,
+        })
       } catch (err) {
         console.error('Error polling render progress:', err)
       }
@@ -214,26 +204,18 @@ function App() {
 
     try {
       setGeneratingImage(true)
-      const response = await fetch('http://localhost:3001/api/demo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: currentConfig,
-          gpx_filename: gpxFilename || 'demo.gpxinit',
-          second: selectedSecond,
-        }),
-      })
+      const data = await backend.generateDemo(
+        currentConfig,
+        gpxFilename || 'demo.gpxinit',
+        selectedSecond,
+      )
 
-      if (response.ok) {
-        const data = await response.json()
-        setImageError(false)
-        setImageFilename(`http://localhost:3001/images/${data.filename}`)
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        setErrorMessage(
-          `Preview failed: ${errorData.error || response.statusText}`,
-        )
+      if (data.error) {
+        setErrorMessage(`Preview failed: ${data.error}`)
         setImageError(true)
+      } else {
+        const imageUrl = await backend.getImageUrl(data.filename)
+        setImageFilename(imageUrl)
       }
     } catch (err) {
       console.error('Error generating preview:', err)
@@ -257,9 +239,7 @@ function App() {
   // Open downloads
   const handleOpenDownloads = async () => {
     try {
-      await fetch('http://localhost:3001/api/open-downloads', {
-        method: 'POST',
-      })
+      await backend.openDownloads()
     } catch (e) {
       console.error('Error opening downloads:', e)
     }
@@ -269,6 +249,11 @@ function App() {
   const handleGpxFileSelect = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (!file.name.toLowerCase().endsWith('.gpx')) {
+      useStore.getState().setErrorMessage('Please upload a valid .gpx file.')
+      return
+    }
 
     try {
       setGeneratingImage(true)
@@ -296,7 +281,7 @@ function App() {
           {/* Left - Logo & Template */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg" />
+              <img src="/logo192.png" alt="Cyclemetry" className="w-8 h-8 rounded-lg" />
               <div>
                 <h1 className="font-semibold text-sm">Cyclemetry</h1>
                 <p className="text-xs text-muted-foreground">
@@ -352,7 +337,7 @@ function App() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 h-8 px-3 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+              className="gap-2 h-8 px-3 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5"
               onClick={() => handleGeneratePreview()}
               disabled={
                 generatingImage || !config || backendStatus !== 'connected'
@@ -361,14 +346,14 @@ function App() {
               {generatingImage ? (
                 <Spinner className="h-3.5 w-3.5" />
               ) : (
-                <Upload className="h-3.5 w-3.5 text-emerald-500" />
+                <Upload className="h-3.5 w-3.5 text-red-500" />
               )}
               <span>Refresh Preview</span>
             </Button>
 
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
               disabled={
                 !config || renderingVideo || backendStatus !== 'connected'
               }
@@ -381,10 +366,10 @@ function App() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 h-8 px-3 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-muted-foreground hover:text-foreground"
+              className="gap-2 h-8 px-3 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5 text-muted-foreground hover:text-foreground"
               onClick={handleOpenDownloads}
             >
-              <Upload className="h-3.5 w-3.5" />
+              <FolderOpen className="h-3.5 w-3.5" />
               <span>Downloads</span>
             </Button>
 
@@ -494,7 +479,7 @@ function App() {
                         setBackendStatus('connecting')
                         strikesRef.current = 0
                       }}
-                      className="border-emerald-500/30 hover:bg-emerald-500/10"
+                      className="border-red-500/30 hover:bg-red-500/10"
                     >
                       Retry Connection
                     </Button>
@@ -534,7 +519,7 @@ function App() {
           <ControlPanel
             config={config}
             onConfigChange={setConfig}
-            onApply={() => handleGeneratePreview()}
+            onApply={(updatedConfig) => handleGeneratePreview(updatedConfig)}
           />
         </div>
       </div>

@@ -1,4 +1,5 @@
 import useStore from '../store/useStore'
+import * as backend from './backend'
 
 export default async function renderVideo() {
   try {
@@ -24,11 +25,6 @@ export default async function renderVideo() {
 
     setRenderingVideo(true)
 
-    const payload = {
-      config: config,
-      gpx_filename: gpxFilename,
-    }
-
     console.log('📤 Sending video render request:', {
       gpx: gpxFilename,
       start: config?.scene?.start,
@@ -36,36 +32,10 @@ export default async function renderVideo() {
       duration: (config?.scene?.end || 0) - (config?.scene?.start || 0),
     })
 
-    const response = await fetch('http://localhost:3001/api/render-video', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
+    const data = await backend.renderVideo(config, gpxFilename)
 
-    if (!response.ok) {
-      let errorMessage = `Server error ${response.status}`
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorMessage
-      } catch {
-        // If JSON parsing fails, try to get text
-        try {
-          const errorText = await response.text()
-          errorMessage = errorText.substring(0, 200) // Limit error message length
-        } catch {
-          // Use default error message
-        }
-      }
-      throw new Error(errorMessage)
-    }
-
-    let data
-    try {
-      data = await response.json()
-    } catch {
-      throw new Error('Invalid response from server - expected JSON')
+    if (data.error) {
+      throw new Error(data.error)
     }
 
     const videoFilename = data.filename
@@ -75,11 +45,7 @@ export default async function renderVideo() {
 
       // Tell backend to open the video in default player
       try {
-        await fetch('http://localhost:3001/api/open-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: videoFilename }),
-        })
+        await backend.openVideo(videoFilename)
       } catch (e) {
         console.error('Error calling open-video:', e)
       }

@@ -669,8 +669,29 @@ if __name__ == "__main__":
 
     print("DEBUG: Entering main block", file=sys.stderr)
     sys.stderr.flush()
-    # Allow running directly via `uv run app.py`
-    # Note: debug=False in Docker to prevent reloader issues (exit code 247)
-    # Use FLASK_DEBUG=1 env var for development logging without reloader
-    logging.info("Starting Flask app on http://localhost:3001")
-    app.run(host="0.0.0.0", port=3001, debug=False, use_reloader=False)
+
+    # Check if we should use Unix socket (production) or TCP port (development)
+    # Default to socket mode if running as a frozen bundle (sidecar)
+    is_frozen = getattr(sys, "frozen", False)
+    use_socket = is_frozen or os.getenv("CYCLEMETRY_USE_SOCKET", "").lower() in ("1", "true", "yes")
+    
+    if use_socket:
+        # Production/Socket mode: Use Unix socket to avoid port conflicts
+        socket_path = "/tmp/cyclemetry.sock"
+        
+        # Remove stale socket file if it exists
+        if os.path.exists(socket_path):
+            try:
+                os.remove(socket_path)
+                logging.info(f"Removed stale socket: {socket_path}")
+            except Exception as e:
+                logging.error(f"Failed to remove stale socket: {e}")
+
+        logging.info(f"Starting Flask app on unix://{socket_path}")
+        
+        from waitress import serve
+        serve(app, unix_socket=socket_path)
+    else:
+        # Development/TCP mode: Use TCP port
+        logging.info("Starting Flask app on http://localhost:31337")
+        app.run(host="0.0.0.0", port=31337, debug=False, use_reloader=False)

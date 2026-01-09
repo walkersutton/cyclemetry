@@ -187,7 +187,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
     }
 
     onConfigChange(newConfig)
-    onApply?.()
+    onApply?.(newConfig)
     if (id) setSelectedElementId(id)
   }
 
@@ -203,7 +203,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
         setSelectedElementId(null)
       }
       onConfigChange(newConfig)
-      onApply?.()
+      onApply?.(newConfig)
     }
   }
 
@@ -243,8 +243,8 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Element header */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-            <Icon className="h-5 w-5 text-emerald-500" />
+          <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+            <Icon className="h-5 w-5 text-red-500" />
           </div>
           <div>
             <h3 className="font-semibold">{el.name}</h3>
@@ -259,7 +259,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
         {/* Position */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Move className="h-4 w-4 text-emerald-500" />
+            <Move className="h-4 w-4 text-red-500" />
             <h4 className="font-medium text-sm">Position</h4>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -323,7 +323,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
           <>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Type className="h-4 w-4 text-emerald-500" />
+                <Type className="h-4 w-4 text-red-500" />
                 <h4 className="font-medium text-sm">Typography</h4>
               </div>
 
@@ -379,7 +379,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
           <>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4 text-emerald-500" />
+                <Palette className="h-4 w-4 text-red-500" />
                 <h4 className="font-medium text-sm">Style</h4>
               </div>
 
@@ -441,7 +441,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Apply button */}
         <Button
-          className="w-full bg-emerald-600 hover:bg-emerald-700"
+          className="w-full bg-red-600 hover:bg-red-700"
           onClick={onApply}
         >
           Apply Changes
@@ -456,7 +456,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       {/* Video Settings */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Video className="h-4 w-4 text-emerald-500" />
+          <Video className="h-4 w-4 text-red-500" />
           <h3 className="font-semibold">Video Settings</h3>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -511,7 +511,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Custom Resolution Inputs */}
         {resMode === 'custom' && (
-          <div className="grid grid-cols-2 gap-2 border-l-2 border-emerald-500/20 pl-3 pt-1">
+          <div className="grid grid-cols-2 gap-2 border-l-2 border-red-500/20 pl-3 pt-1">
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase font-bold mb-1 block">
                 Custom Width
@@ -543,7 +543,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Custom FPS Input */}
         {fpsMode === 'custom' && (
-          <div className="border-l-2 border-emerald-500/20 pl-3 pt-1">
+          <div className="border-l-2 border-red-500/20 pl-3 pt-1">
             <Label className="text-[10px] text-muted-foreground uppercase font-bold mb-1 block">
               Custom FPS
             </Label>
@@ -590,7 +590,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       {/* Global Style */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Settings2 className="h-4 w-4 text-emerald-500" />
+          <Settings2 className="h-4 w-4 text-red-500" />
           <h3 className="font-semibold">Global Style</h3>
         </div>
         <div>
@@ -635,7 +635,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       {/* Add Elements */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-emerald-400" />
+          <Sparkles className="h-4 w-4 text-red-400" />
           <h3 className="font-semibold">Add Overlay</h3>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -694,12 +694,12 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
               return (
                 <Card
                   key={el.id}
-                  className="p-3 cursor-pointer transition-all hover:border-emerald-500 hover:bg-emerald-500/10 group overflow-hidden relative"
+                  className="p-3 cursor-pointer transition-all hover:border-red-500 hover:bg-red-500/10 group overflow-hidden relative"
                   onClick={() => setSelectedElementId(el.id)}
                 >
                   <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-3">
-                      <Icon className="h-4 w-4 text-emerald-500" />
+                      <Icon className="h-4 w-4 text-red-500" />
                       <div>
                         <span className="text-sm font-medium">{el.name}</span>
                         <p className="text-[10px] text-muted-foreground">

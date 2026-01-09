@@ -22,9 +22,9 @@ export default function RenderProgressOverlay() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/90 backdrop-blur-md animate-in fade-in duration-300">
       <div className="w-full max-w-md p-8 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl space-y-6">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center relative">
-            <Loader2 className="h-10 w-10 text-emerald-500 animate-spin absolute" />
-            <Film className="h-5 w-5 text-emerald-500/50" />
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center relative">
+            <Loader2 className="h-10 w-10 text-red-500 animate-spin absolute" />
+            <Film className="h-5 w-5 text-red-500/50" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">
@@ -38,7 +38,7 @@ export default function RenderProgressOverlay() {
 
         <div className="space-y-3">
           <div className="flex justify-between text-xs font-medium">
-            <span className="text-emerald-500">{percent}% Complete</span>
+            <span className="text-red-500">{percent}% Complete</span>
             <span className="text-muted-foreground">
               {current.toLocaleString()} / {total.toLocaleString()} frames
             </span>
