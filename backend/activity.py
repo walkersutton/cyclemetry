@@ -1,11 +1,16 @@
 import logging
 from collections import defaultdict
+import sys
+
+from gradient import gradient, smooth_gradients
+
+print("DEBUG: constant imported", file=sys.stderr)
+sys.stderr.flush()
 
 import constant
-import gpxpy
-import numpy as np
-from gradient import gradient, smooth_gradients
-from scipy.interpolate import interp1d
+
+# Lazy imports for heavy libraries
+# gpxpy, numpy, and scipy are imported inside methods where needed
 
 ATTRIBUTE_MAP = {
     "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}atemp": "temperature",
@@ -24,12 +29,25 @@ class Activity:
     def __init__(self, gpx_filename):
         try:
             # Expect a valid path; do not prefix with './' (breaks absolute paths)
-            self.gpx = gpxpy.parse(open(gpx_filename, "r"))
+            logging.info(f"Activity: Opening GPX file: {gpx_filename}")
+            import gpxpy
+
+            with open(gpx_filename, "r") as f:
+                self.gpx = gpxpy.parse(f)
+            logging.info(
+                f"Activity: GPX parsed successfully, tracks: {len(self.gpx.tracks)}"
+            )
             self.set_valid_attributes()
             self.parse_data()
+        except FileNotFoundError:
+            logging.error(f"Activity: GPX file not found: {gpx_filename}")
+            raise
         except Exception as e:
-            logging.error("Activity __init__ error:")
-            logging.error(e)
+            logging.error(f"Activity __init__ error: {type(e).__name__}: {e}")
+            import traceback
+
+            traceback.print_exc()
+            raise
 
     def set_valid_attributes(self):
         present_attributes = set()
@@ -70,9 +88,7 @@ class Activity:
         self.tag_map = tag_map
 
     def parse_data(self):
-        def parse_attribute(
-            tag_map: tuple[int, str], trackpoint: gpxpy.gpx.GPXTrackPoint
-        ):
+        def parse_attribute(tag_map, trackpoint):
             extension = None
             for index, tag in tag_map:
                 extensions = extension if extension else trackpoint.extensions
@@ -136,6 +152,9 @@ class Activity:
 
     def interpolate(self, fps: int):
         def helper(data):
+            import numpy as np
+            from scipy.interpolate import interp1d
+
             data.append(2 * data[-1] - data[-2])
             x = np.arange(len(data))
             interp_func = interp1d(x, data)

@@ -1,7 +1,7 @@
-import React from "react";
-import SelectCommunityTemplateButton from "./buttons/SelectCommunityTemplateButton";
-import LoadTemplateButton from "./buttons/LoadTemplateButton";
-import SaveTemplateButton from "./buttons/SaveTemplateButton";
+import React from 'react'
+import SelectCommunityTemplateButton from './buttons/SelectCommunityTemplateButton'
+import LoadTemplateButton from './buttons/LoadTemplateButton'
+import SaveTemplateButton from './buttons/SaveTemplateButton'
 
 function TemplatesSection() {
   return (
@@ -15,7 +15,7 @@ function TemplatesSection() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default TemplatesSection;
+export default TemplatesSection

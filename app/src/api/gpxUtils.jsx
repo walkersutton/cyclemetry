@@ -1,45 +1,30 @@
-import useStore from "../store/useStore";
-import generateDemoFrame from "./generateDemoFrame";
+import useStore from '../store/useStore'
+import generateDemoFrame from './generateDemoFrame'
+import * as backend from './backend'
 
-export default async function saveFile(file) {
-  const { setGpxFilename } = useStore.getState();
+export default async function saveFile(fileOrPath) {
+  const { setGpxFilename } = useStore.getState()
+  const isPath = typeof fileOrPath === 'string'
+  const filename = isPath ? fileOrPath.split(/[\\/]/).pop() : fileOrPath.name
 
-  console.log("📤 Starting GPX upload:", {
-    filename: file.name,
-    size: file.size,
-    type: file.type,
-  });
+  console.log('📤 Starting GPX processing:', {
+    source: isPath ? 'path' : 'file',
+    filename,
+  })
 
   try {
-    const formData = new FormData();
-    formData.append("file", file);
+    console.log('📡 Sending request to backend...')
+    const result = isPath
+      ? await backend.loadGpxFromPath(fileOrPath)
+      : await backend.uploadGpx(fileOrPath)
 
-    console.log("📡 Sending request to backend...");
-    const response = await fetch("http://localhost:3001/upload", {
-      method: "POST",
-      // Let the browser set the correct multipart/form-data boundary
-      body: formData,
-    });
+    console.log('✅ Upload successful:', result)
 
-    console.log("📥 Response received:", {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Upload failed:", {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
-      alert(`Failed to upload GPX file: ${response.statusText}`);
-      return;
+    if (result.error) {
+      console.error('❌ Upload failed:', result.error)
+      alert(`Failed to upload GPX file: ${result.error}`)
+      return
     }
-
-    const result = await response.json();
-    console.log("✅ Upload successful:", result);
 
     // Update store with filename and duration
     const {
@@ -47,32 +32,32 @@ export default async function saveFile(file) {
       setEndSecond,
       setStartSecond,
       setSelectedSecond,
-    } = useStore.getState();
+    } = useStore.getState()
 
-    setGpxFilename(file.name);
-    console.log("✅ GPX filename set in store:", file.name);
+    setGpxFilename(filename)
+    console.log('✅ GPX filename set in store:', filename)
 
     // Update duration if available
     if (result.duration_seconds && result.duration_seconds > 0) {
       console.log(
-        "✅ Setting activity duration:",
+        '✅ Setting activity duration:',
         result.duration_seconds,
-        "seconds",
-      );
-      setDummyDurationSeconds(result.duration_seconds);
-      setStartSecond(0);
-      setEndSecond(result.duration_seconds);
-      setSelectedSecond(0);
+        'seconds',
+      )
+      setDummyDurationSeconds(result.duration_seconds)
+      setStartSecond(0)
+      setEndSecond(result.duration_seconds)
+      setSelectedSecond(0)
     } else {
-      console.warn("⚠️ No duration data from backend");
+      console.warn('⚠️ No duration data from backend')
     }
 
     // Trigger demo generation if we have a config
-    const { config, setConfig } = useStore.getState();
+    const { config, setConfig } = useStore.getState()
     if (config) {
       console.log(
-        "✅ Config exists, updating timeline and generating demo frame after GPX upload",
-      );
+        '✅ Config exists, updating timeline and generating demo frame after GPX upload',
+      )
 
       // Update config with new timeline values
       if (result.duration_seconds && result.duration_seconds > 0) {
@@ -83,19 +68,19 @@ export default async function saveFile(file) {
             start: 0,
             end: result.duration_seconds,
           },
-        };
-        setConfig(updatedConfig);
+        }
+        setConfig(updatedConfig)
       }
 
-      await generateDemoFrame();
+      await generateDemoFrame()
     } else {
-      console.log("⚠️ No config yet, skipping demo generation");
+      console.log('⚠️ No config yet, skipping demo generation')
     }
   } catch (error) {
-    console.error("❌ GPX upload error:", {
+    console.error('❌ GPX upload error:', {
       message: error.message,
       stack: error.stack,
-    });
-    alert(`Error uploading GPX file: ${error.message}`);
+    })
+    alert(`Error uploading GPX file: ${error.message}`)
   }
 }

@@ -1,5 +1,5 @@
-import React from "react";
-import Alert from "react-bootstrap/Alert";
+import React from 'react'
+import Alert from 'react-bootstrap/Alert'
 
 function OnboardingState() {
   return (
@@ -28,7 +28,7 @@ function OnboardingState() {
             <strong>Load an activity</strong>
             <br />
             <small className="text-muted">
-              Click <strong>"Try Demo Activity"</strong> to use sample data, or{" "}
+              Click <strong>"Try Demo Activity"</strong> to use sample data, or{' '}
               <strong>"Load Activity"</strong> to upload your own GPX file
             </small>
           </li>
@@ -60,7 +60,7 @@ function OnboardingState() {
         </p>
       </div>
     </div>
-  );
+  )
 }
 
-export default OnboardingState;
+export default OnboardingState

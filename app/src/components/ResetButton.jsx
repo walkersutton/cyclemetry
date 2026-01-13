@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import Button from "react-bootstrap/Button";
-import Modal from "react-bootstrap/Modal";
+import React, { useState } from 'react'
+import Button from 'react-bootstrap/Button'
+import Modal from 'react-bootstrap/Modal'
 
 function ResetButton() {
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false)
 
   const handleReset = () => {
     // Clear all localStorage
-    localStorage.clear();
+    localStorage.clear()
 
     // Reload the page to reset state
-    window.location.reload();
-  };
+    window.location.reload()
+  }
 
   return (
     <>
@@ -50,7 +50,7 @@ function ResetButton() {
         </Modal.Footer>
       </Modal>
     </>
-  );
+  )
 }
 
-export default ResetButton;
+export default ResetButton

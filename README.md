@@ -1,41 +1,59 @@
 <div align="center" style="text-align: center;">
-  <img src="https://i.imgur.com/O7GvHXd.png"/ style="width: 69px;">
-  <h1>cyclemetry</h1>
+  <img src="/app/public/logo192.png" style="width: 64px; border-radius: 12px;">
+  <h1>Cyclemetry</h1>
   <p>
-    <b>cyclemetry is a tool for creating telemetry video overlays</b>
+    <b>Create stunning telemetry video overlays from GPX data.</b>
   </p>
 </div>
 
 ![The_Tremola_by Safa_Brian](https://github.com/walkersutton/cyclemetry/assets/25811783/71aa4902-dd29-453f-b4a5-a87ddabd2437)
 
-## Setup
+## ✨ Features
+
+- **Route Tracking**: Real-time position on the map.
+- **Elevation Profiles**: Dynamic grade and altitude visualization.
+- **Rich Metrics**: Speed, Power, Heart Rate, Cadence, Gradient, and Temperature.
+- **Customizable Overlays**: Flexible designer to match your video style.
+
+![demo](https://github.com/user-attachments/assets/7e578b89-070b-4709-b016-075fcc364b13)
+
+## 🚀 Installation
+
+Download the latest version for macOS from **[GitHub Releases](https://github.com/walkersutton/cyclemetry/releases)**.
+
+Currently supported:
+- **macOS** (Apple Silicon & Intel) via `.dmg`
+
+## 🛠️ Development
 
 ### Prerequisites
 
-- [Docker](https://www.docker.com/products/docker-desktop/)
-- [Make](https://www.gnu.org/software/make/make.html)
+- [Node.js](https://nodejs.org/) & [pnpm](https://pnpm.io/)
+- [Python 3.10+](https://www.python.org/) & [uv](https://docs.astral.sh/uv/)
+- [Rust](https://www.rust-lang.org/)
+
+### Setup
 
 ```bash
-$ git clone
-$ cd cyclemetry
-$ make dev
-$ open http://localhost:3000
+# Install dependencies
+pnpm install
 ```
 
-## Features
+### Running Locally
 
-<img src="https://github.com/user-attachments/assets/8a811981-7933-4bed-b833-c511df373fe0" width="500">
+```bash
+# Run both frontend & backend concurrently (Development Mode - TCP)
+pnpm dev
+```
 
-- Route tracking
-- Elevation profiles
-- Metrics
-  - Speed
-  - Power
-  - Heart rate
-  - Cadence
-  - Elevation
-  - Gradient
-- Check out the [community templates](https://github.com/walkersutton/cyclemetry/tree/main/templates) to see what Cyclemetry is capable of
+### Testing Production (Unix Socket Mode)
+
+To verify the port-less Unix domain socket communication locally:
+
+```bash
+# Build sidecar and run in socket mode
+pnpm buildtest
+```
 
 ## Videos Made With Cyclemetry
 
@@ -44,31 +62,19 @@ $ open http://localhost:3000
 | [![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc) | [![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/gKugPA0xGhw/0.jpg)](https://www.youtube.com/watch?v=gKugPA0xGhw) |
 | [![Çamköy Tırmanışı ve Yağmurda Sürüş Disiplini by Berkay DEDEOĞLU](https://img.youtube.com/vi/mIcd7nUfpWU/0.jpg)](https://youtu.be/mIcd7nUfpWU?si=aqM1VSgaBr6MmCGa&t=1249) | |
 
-
-
-
 ## [Alternative Tools](https://alternativeto.net/software/garmin-virb-edit/)
 
 - [DashWare](http://www.dashware.net/) (only available on Windows)
 - [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
 - [GoPro Telemetry Extractor](https://goprotelemetryextractor.com/) ($150/$300? - fuck that)
 
-
-## Development
-
-### Makefile Commands
+## 📦 Releasing
 
 ```bash
-$ make format       # Format all code
-$ make lint         # Run linters
-$ make check        # Run all checks
-$ make dev          # Start with hot-reload
-$ make logs         # View all logs
-$ make down         # Stop everything
-$ make clean        # Remove all containers/volumes
-$ make restart      # Restart services
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
-## Contributors
+## 🤝 Contributing
 
-- All contributions are welcome
+Contributions are welcome! Please feel free to submit a Pull Request.

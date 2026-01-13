@@ -2,8 +2,10 @@ import os
 from datetime import timedelta
 
 import constant
-from PIL import Image, ImageColor, ImageDraw, ImageFont
-from plot import build_image
+
+# Lazy imports for:
+# from PIL import Image, ImageColor, ImageDraw, ImageFont
+# from plot import build_image
 
 
 class Frame:
@@ -15,12 +17,14 @@ class Frame:
         self.frame_number = frame_number
 
     def full_path(self):
-        return f"{constant.FRAMES_DIR}{self.filename}"
+        return f"{constant.FRAMES_DIR()}{self.filename}"
 
     def draw_value(self, img, value: str, config: dict, scene_config: dict = None):
         def draw_value_helper(text, color, x, y, font_size, font="Arial.ttf"):
+            from PIL import ImageColor, ImageDraw, ImageFont
+
             if not os.path.exists(font):
-                font = constant.FONTS_DIR + font
+                font = constant.FONTS_DIR() + font
             font = ImageFont.truetype(font, font_size)
             ImageDraw.Draw(img).text(
                 (x, y), text, font=font, fill=ImageColor.getcolor(color, "RGBA")
@@ -57,6 +61,13 @@ class Frame:
         else:
             font = font or "Arial.ttf"
 
+        # Get font size from config or scene_config
+        font_size = config.get("font_size")
+        if font_size is None and scene_config:
+            font_size = scene_config.get("font_size", 32)
+        else:
+            font_size = font_size or 32
+
         draw_value_helper(
             value,
             hex_color_with_alpha(
@@ -65,7 +76,7 @@ class Frame:
             ),
             config["x"],
             config["y"],
-            config["font_size"],
+            font_size,
             font,
         )
         return img
@@ -85,14 +96,14 @@ class Frame:
                 if "point_label" in config
                 else ""
             )
+        from plot import build_image
+
         plot_img, buffer = build_image(figure, config, x, y, text)
 
         if "rotation" in config.keys():
             angle = config["rotation"]
             if angle != 0:
-                plot_img = plot_img.rotate(
-                    angle, resample=Image.Resampling.BICUBIC, expand=True
-                )
+                plot_img = plot_img.rotate(angle, resample=3, expand=True)
         img.paste(plot_img, (config["x"], config["y"]), plot_img)
         buffer.close()  # faster to not close the buffer? maybe just small sample size - seems like better practice to close though, so let's for now
         return img
@@ -133,6 +144,8 @@ class Frame:
         if base_image is not None:
             img = base_image.copy()
         else:
+            from PIL import Image
+
             img = Image.new("RGBA", (self.width, self.height))
 
         scene_config = configs.get("scene", {})
