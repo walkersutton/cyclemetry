@@ -8,7 +8,14 @@
 
 ![The_Tremola_by Safa_Brian](https://github.com/walkersutton/cyclemetry/assets/25811783/71aa4902-dd29-453f-b4a5-a87ddabd2437)
 
-## 🚀 Getting Started
+## � Installation
+
+Download the latest version for macOS from **[GitHub Releases](https://github.com/walkersutton/cyclemetry/releases)**.
+
+Currently supported:
+- **macOS** (Apple Silicon & Intel) via `.dmg`
+
+## 🚀 Development
 
 ### Prerequisites
 
@@ -19,35 +26,11 @@
 ### Setup
 
 ```bash
-# Install root dependencies
+# Install dependencies
 pnpm install
-
-# Install frontend dependencies
-cd app && pnpm install
-
-# Setup backend
-cd ../backend
-uv sync
 ```
 
-### Development
-
-We use a port-less development workflow using Unix domain sockets in production to eliminate port conflicts.
-
-<img src="https://github.com/user-attachments/assets/8a811981-7933-4bed-b833-c511df373fe0" width="500">
-
-## Videos Made With Cyclemetry
-
-| [![Testing Cyclemetry By Paolo Tagliaferri](https://img.youtube.com/vi/JmavtEU6Vvo/0.jpg)](https://www.youtube.com/watch?v=JmavtEU6Vvo) | [![Descent into Rincon by Walker Sutton](https://img.youtube.com/vi/i2vdPIfIswc/0.jpg)](https://www.youtube.com/watch?v=i2vdPIfIswc) |
-| --- | --- |
-| [![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc) | [![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/gKugPA0xGhw/0.jpg)](https://www.youtube.com/watch?v=gKugPA0xGhw) |
-| [![Çamköy Tırmanışı ve Yağmurda Sürüş Disiplini by Berkay DEDEOĞLU](https://img.youtube.com/vi/mIcd7nUfpWU/0.jpg)](https://youtu.be/mIcd7nUfpWU?si=aqM1VSgaBr6MmCGa&t=1249) | |
-
-## [Alternative Tools](https://alternativeto.net/software/garmin-virb-edit/)
-
-- [DashWare](http://www.dashware.net/) (only available on Windows)
-- [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
-- [GoPro Telemetry Extractor](https://goprotelemetryextractor.com/) ($150/$300? - fuck that)
+### Running Locally
 
 ```bash
 # Run both frontend & backend concurrently (Development Mode - TCP)
@@ -62,6 +45,19 @@ To verify the port-less Unix domain socket communication locally:
 # Build sidecar and run in socket mode
 pnpm buildtest
 ```
+
+## Videos Made With Cyclemetry
+
+| [![Testing Cyclemetry By Paolo Tagliaferri](https://img.youtube.com/vi/JmavtEU6Vvo/0.jpg)](https://www.youtube.com/watch?v=JmavtEU6Vvo) | [![Descent into Rincon by Walker Sutton](https://img.youtube.com/vi/i2vdPIfIswc/0.jpg)](https://www.youtube.com/watch?v=i2vdPIfIswc) |
+| --- | --- |
+| [![Stunt Descent by Walker Sutton](https://img.youtube.com/vi/96_nwEF-Bfc/0.jpg)](https://www.youtube.com/watch?v=96_nwEF-Bfc) | [![Seward Park Crit by Walker Sutton](https://img.youtube.com/vi/gKugPA0xGhw/0.jpg)](https://www.youtube.com/watch?v=gKugPA0xGhw) |
+| [![Çamköy Tırmanışı ve Yağmurda Sürüş Disiplini by Berkay DEDEOĞLU](https://img.youtube.com/vi/mIcd7nUfpWU/0.jpg)](https://youtu.be/mIcd7nUfpWU?si=aqM1VSgaBr6MmCGa&t=1249) | |
+
+## [Alternative Tools](https://alternativeto.net/software/garmin-virb-edit/)
+
+- [DashWare](http://www.dashware.net/) (only available on Windows)
+- [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
+- [GoPro Telemetry Extractor](https://goprotelemetryextractor.com/) ($150/$300? - fuck that)
 
 ## ✨ Features
 
