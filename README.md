@@ -15,6 +15,8 @@
 - **Rich Metrics**: Speed, Power, Heart Rate, Cadence, Gradient, and Temperature.
 - **Customizable Overlays**: Flexible designer to match your video style.
 
+![demo](https://github.com/user-attachments/assets/7e578b89-070b-4709-b016-075fcc364b13)
+
 ## 🚀 Installation
 
 Download the latest version for macOS from **[GitHub Releases](https://github.com/walkersutton/cyclemetry/releases)**.
