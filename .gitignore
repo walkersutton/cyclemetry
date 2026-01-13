@@ -3,7 +3,7 @@
 # Build artifacts
 *node_modules*
 *__pycache__*
-*build*
+build/
 dist/
 target/
 src-tauri/binaries/
