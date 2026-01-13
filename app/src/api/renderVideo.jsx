@@ -35,6 +35,11 @@ export default async function renderVideo() {
     const data = await backend.renderVideo(config, gpxFilename)
 
     if (data.error) {
+      // Check for cancellation
+      if (data.cancelled || data.error.toLowerCase().includes('cancelled')) {
+        console.log('Render cancelled by user')
+        return { success: false, cancelled: true }
+      }
       throw new Error(data.error)
     }
 

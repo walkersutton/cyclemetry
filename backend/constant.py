@@ -36,6 +36,13 @@ def DOWNLOADS_DIR():
     return downloads
 
 
+def TEMPLATES_DIR():
+    """Get the user's templates directory."""
+    templates = os.path.join(WRITE_DIR(), "templates")
+    os.makedirs(templates, exist_ok=True)
+    return templates
+
+
 def FONTS_DIR():
     """Get the fonts directory - uses bundled fonts when frozen."""
     if getattr(sys, "frozen", False):

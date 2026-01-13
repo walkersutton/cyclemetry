@@ -28,6 +28,7 @@
       ]
     },
     "shell:allow-kill",
-    "shell:default"
+    "shell:default",
+    "dialog:default"
   ]
 }

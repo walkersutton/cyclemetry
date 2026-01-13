@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { BlurInput } from '@/components/ui/blur-input'
 import { Slider } from '@/components/ui/slider'
 import {
   Select,
@@ -11,6 +12,8 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import useStore from '../store/useStore'
 import {
   Tag,
   ChevronLeft,
@@ -26,8 +29,11 @@ import {
   Move,
   Type,
   Palette,
+  Save,
+  FolderOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import * as backend from '../api/backend'
 
 // Available fonts
 const FONTS = [
@@ -50,6 +56,16 @@ const ELEMENT_LABELS = {
   elevation: 'Elevation',
   gradient: 'Gradient',
   course: 'Route Map',
+}
+
+// Helper to sanitize numeric inputs (remove commas and leading zeros)
+function sanitizeNumber(val) {
+  if (val === undefined || val === null) return val
+  const sanitized = val
+    .toString()
+    .replace(/,/g, '')
+    .replace(/^0+(?!$)/, '')
+  return parseInt(sanitized, 10) || 0
 }
 
 // Parse config into flat element list
@@ -99,6 +115,16 @@ function parseElements(config) {
 }
 
 export default function ControlPanel({ config, onConfigChange, onApply }) {
+  const {
+    loadedTemplateFilename,
+    setLoadedTemplateFilename,
+    lastSavedConfig,
+    setLastSavedConfig,
+    setGpxFilename,
+    templates,
+    fetchTemplates,
+  } = useStore()
+
   const [selectedElementId, setSelectedElementId] = useState(null)
   const scene = config?.scene
   const elements = parseElements(config)
@@ -108,7 +134,12 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
   const [resMode, setResMode] = useState('1080p')
   const [fpsMode, setFpsMode] = useState('30')
 
-  // Sync mode with config when config changes (e.g. template reload)
+  // Fetch templates once
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
+
+  // Update resolution/fps labels when config changes
   useEffect(() => {
     if (scene) {
       if (scene.width === 3840 && scene.height === 2160) setResMode('4k')
@@ -116,20 +147,74 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
         setResMode('1080p')
       else setResMode('custom')
 
-      if ([24, 30, 60].includes(scene.fps)) setFpsMode(String(scene.fps))
+      if ([24, 30, 60].includes(scene.fps)) setFpsMode(scene.fps.toString())
       else setFpsMode('custom')
     }
   }, [scene])
 
-  // Reset selection when config changes significantly
-  useEffect(() => {
-    if (
-      selectedElementId &&
-      !elements.find((e) => e.id === selectedElementId)
-    ) {
-      setSelectedElementId(null)
+  // Status logic
+  const getStatus = () => {
+    if (!loadedTemplateFilename) return 'Draft'
+    if (!lastSavedConfig) return 'Saved' // Just loaded
+    const isModified =
+      JSON.stringify(config) !== JSON.stringify(lastSavedConfig)
+    return isModified ? 'Modified' : 'Saved'
+  }
+
+  const status = getStatus()
+
+  // Handle template selection
+  const handleTemplateChange = async (templateId) => {
+    if (!templateId) return
+    try {
+      const templateConfig = await backend.getTemplate(templateId)
+
+      onConfigChange(templateConfig)
+      setLoadedTemplateFilename(templateId)
+      setLastSavedConfig(templateConfig)
+      setGpxFilename('demo.gpxinit')
+
+      // Trigger preview with the new config directly to avoid race conditions
+      onApply?.(templateConfig)
+    } catch (err) {
+      console.error('Error loading template:', err)
+      alert('Failed to load template: ' + (err.message || err))
     }
-  }, [config, selectedElementId, elements, scene])
+  }
+
+  const handleSaveTemplate = async () => {
+    let filename = loadedTemplateFilename
+
+    // If draft or built-in, prompt for new name
+    const currentTemplate = templates.find((t) => t.id === filename)
+    if (!filename || currentTemplate?.type === 'built-in') {
+      const name = prompt(
+        'Enter a name for your new template:',
+        filename?.replace('.json', '') || 'my_template',
+      )
+      if (!name) return
+      filename = name.toLowerCase().replace(/\s+/g, '_')
+      if (!filename.endsWith('.json')) filename += '.json'
+    }
+
+    try {
+      await backend.saveTemplate(filename, config)
+      setLoadedTemplateFilename(filename)
+      setLastSavedConfig(config)
+      fetchTemplates() // Refresh list
+    } catch (err) {
+      console.error('Failed to save template:', err)
+      alert('Failed to save template: ' + (err.message || err))
+    }
+  }
+
+  const handleOpenFolder = async () => {
+    try {
+      await backend.openTemplatesFolder()
+    } catch (err) {
+      console.error('Failed to open folder:', err)
+    }
+  }
 
   const updateElement = (element, updates) => {
     const newConfig = { ...config }
@@ -138,7 +223,19 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
     if (newConfig[category]) {
       const newArray = [...newConfig[category]]
-      newArray[index] = { ...newArray[index], ...updates }
+
+      // Sanitize any numeric updates
+      const sanitizedUpdates = { ...updates }
+      if (updates.width !== undefined)
+        sanitizedUpdates.width = sanitizeNumber(updates.width)
+      if (updates.height !== undefined)
+        sanitizedUpdates.height = sanitizeNumber(updates.height)
+      if (updates.x !== undefined)
+        sanitizedUpdates.x = sanitizeNumber(updates.x)
+      if (updates.y !== undefined)
+        sanitizedUpdates.y = sanitizeNumber(updates.y)
+
+      newArray[index] = { ...newArray[index], ...sanitizedUpdates }
       newConfig[category] = newArray
       onConfigChange(newConfig)
     }
@@ -209,9 +306,14 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
   // Video settings update
   const updateScene = (key, value) => {
+    let finalValue = value
+    if (['width', 'height', 'x', 'y', 'start', 'end'].includes(key)) {
+      finalValue = sanitizeNumber(value)
+    }
+
     onConfigChange({
       ...config,
-      scene: { ...config.scene, [key]: value },
+      scene: { ...config.scene, [key]: finalValue },
     })
   }
 
@@ -265,7 +367,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs mb-1 block">X</Label>
-              <Input
+              <BlurInput
                 type="number"
                 value={el.data.x ?? 0}
                 onChange={(e) =>
@@ -275,7 +377,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
             </div>
             <div>
               <Label className="text-xs mb-1 block">Y</Label>
-              <Input
+              <BlurInput
                 type="number"
                 value={el.data.y ?? 0}
                 onChange={(e) =>
@@ -290,25 +392,19 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
             <div className="grid grid-cols-2 gap-3 mt-2">
               <div>
                 <Label className="text-xs mb-1 block">Width</Label>
-                <Input
+                <BlurInput
                   type="number"
-                  value={el.data.width ?? 400}
-                  onChange={(e) =>
-                    updateElement(el, {
-                      width: parseInt(e.target.value) || 400,
-                    })
-                  }
+                  value={el.data.width ?? ''}
+                  onChange={(e) => updateElement(el, { width: e.target.value })}
                 />
               </div>
               <div>
                 <Label className="text-xs mb-1 block">Height</Label>
-                <Input
+                <BlurInput
                   type="number"
-                  value={el.data.height ?? 200}
+                  value={el.data.height ?? ''}
                   onChange={(e) =>
-                    updateElement(el, {
-                      height: parseInt(e.target.value) || 200,
-                    })
+                    updateElement(el, { height: e.target.value })
                   }
                 />
               </div>
@@ -330,7 +426,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
               {el.category === 'labels' && (
                 <div>
                   <Label className="text-xs mb-1 block">Text</Label>
-                  <Input
+                  <BlurInput
                     value={el.data.text || ''}
                     onChange={(e) =>
                       updateElement(el, { text: e.target.value })
@@ -394,7 +490,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                     }
                     className="w-12 h-9 p-1 cursor-pointer"
                   />
-                  <Input
+                  <BlurInput
                     type="text"
                     value={el.data.color || '#ffffff'}
                     onChange={(e) =>
@@ -453,39 +549,108 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
   // Main element list view
   return (
     <div className="p-6 space-y-6">
+      {/* Template Selector & Status */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-red-500" />
+            <h3 className="font-semibold text-sm">Template</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={
+                status === 'Modified'
+                  ? 'secondary'
+                  : status === 'Draft'
+                    ? 'outline'
+                    : 'default'
+              }
+              className={
+                status === 'Modified'
+                  ? 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+                  : ''
+              }
+            >
+              {status}
+            </Badge>
+            {(status === 'Modified' || status === 'Draft') && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-red-500 hover:bg-red-500/10"
+                onClick={handleSaveTemplate}
+              >
+                <Save className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:bg-zinc-800"
+              onClick={handleOpenFolder}
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+        <Select
+          value={loadedTemplateFilename || ''}
+          onValueChange={handleTemplateChange}
+        >
+          <SelectTrigger className="w-full">
+            <div className="truncate text-left">
+              <SelectValue placeholder="Select a template..." />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            {templates.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.name} {t.type === 'user' && '(User)'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Separator />
+
       {/* Video Settings */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Video className="h-4 w-4 text-red-500" />
           <h3 className="font-semibold">Video Settings</h3>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="min-w-0">
             <Label className="text-xs mb-1 block">Resolution</Label>
             <Select
               value={resMode}
               onValueChange={(v) => {
                 setResMode(v)
                 if (v === '4k') {
-                  updateScene('width', 3840)
-                  updateScene('height', 2160)
+                  onConfigChange({
+                    ...config,
+                    scene: { ...config.scene, width: 3840, height: 2160 },
+                  })
                 } else if (v === '1080p') {
-                  updateScene('width', 1920)
-                  updateScene('height', 1080)
+                  onConfigChange({
+                    ...config,
+                    scene: { ...config.scene, width: 1920, height: 1080 },
+                  })
                 }
               }}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="h-9 px-2 text-xs">
+                <SelectValue placeholder="Res" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1080p">1080p (1920x1080)</SelectItem>
-                <SelectItem value="4k">4K (3840x2160)</SelectItem>
+                <SelectItem value="1080p">1080p</SelectItem>
+                <SelectItem value="4k">4K (UHD)</SelectItem>
                 <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="min-w-0">
             <Label className="text-xs mb-1 block">FPS</Label>
             <Select
               value={fpsMode}
@@ -496,13 +661,13 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                 }
               }}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="h-9 px-2 text-xs">
+                <SelectValue placeholder="FPS" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="24">24</SelectItem>
-                <SelectItem value="30">30</SelectItem>
-                <SelectItem value="60">60</SelectItem>
+                <SelectItem value="24">24 fps</SelectItem>
+                <SelectItem value="30">30 fps</SelectItem>
+                <SelectItem value="60">60 fps</SelectItem>
                 <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
@@ -516,12 +681,10 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
               <Label className="text-[10px] text-muted-foreground uppercase font-bold mb-1 block">
                 Custom Width
               </Label>
-              <Input
+              <BlurInput
                 type="number"
-                value={scene?.width ?? 1920}
-                onChange={(e) =>
-                  updateScene('width', parseInt(e.target.value) || 0)
-                }
+                value={scene?.width ?? ''}
+                onChange={(e) => updateScene('width', e.target.value)}
                 className="h-8 text-xs"
               />
             </div>
@@ -529,12 +692,10 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
               <Label className="text-[10px] text-muted-foreground uppercase font-bold mb-1 block">
                 Custom Height
               </Label>
-              <Input
+              <BlurInput
                 type="number"
-                value={scene?.height ?? 1080}
-                onChange={(e) =>
-                  updateScene('height', parseInt(e.target.value) || 0)
-                }
+                value={scene?.height ?? ''}
+                onChange={(e) => updateScene('height', e.target.value)}
                 className="h-8 text-xs"
               />
             </div>
@@ -547,7 +708,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
             <Label className="text-[10px] text-muted-foreground uppercase font-bold mb-1 block">
               Custom FPS
             </Label>
-            <Input
+            <BlurInput
               type="number"
               min={1}
               value={scene?.fps ?? 30}
@@ -562,7 +723,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label className="text-xs mb-1 block">Start (s)</Label>
-            <Input
+            <BlurInput
               type="number"
               min={0}
               value={scene?.start ?? 0}
@@ -573,7 +734,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
           </div>
           <div>
             <Label className="text-xs mb-1 block">End (s)</Label>
-            <Input
+            <BlurInput
               type="number"
               min={1}
               value={scene?.end ?? 60}

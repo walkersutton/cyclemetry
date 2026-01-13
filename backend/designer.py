@@ -1,9 +1,10 @@
 import logging
 import subprocess
 
-from activity import Activity
-from scene import Scene
-from template import build_configs_v2
+# Lazy imports for:
+# from activity import Activity
+# from scene import Scene
+# from template import build_configs_v2
 
 """
 designer types
@@ -64,6 +65,8 @@ def demo_frame(gpx_filename, config, second, headless=True):
     elif isinstance(config, dict):
         # Config is already parsed, use build_configs_v2
         try:
+            from template import build_configs_v2
+
             configs = build_configs_v2(config)
         except Exception as e:
             error_msg = f"Failed to parse template config: {str(e)}"
@@ -86,6 +89,8 @@ def demo_frame(gpx_filename, config, second, headless=True):
             return {"error": error_msg, "error_code": "INVALID_SECOND"}
 
     try:
+        from activity import Activity
+
         activity = Activity(gpx_filename)
     except FileNotFoundError as e:
         error_msg = f"GPX file not found: {gpx_filename}"
@@ -136,6 +141,8 @@ def demo_frame(gpx_filename, config, second, headless=True):
 
         activity.trim(start, end)
         activity.interpolate(fps)
+        from scene import Scene
+
         scene = Scene(activity, configs)
     except Exception as e:
         error_msg = f"Failed to build scene: {str(e)}"

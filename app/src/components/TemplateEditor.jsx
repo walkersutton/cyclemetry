@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { BlurInput } from '@/components/ui/blur-input'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -25,6 +26,16 @@ const RESOLUTIONS = [
   { id: '720p', name: '720p (1280×720)', width: 1280, height: 720 },
   { id: 'custom', name: 'Custom' },
 ]
+
+// Helper to sanitize numeric inputs (remove commas and leading zeros)
+function sanitizeNumber(val) {
+  if (val === undefined || val === null) return val
+  const sanitized = val
+    .toString()
+    .replace(/,/g, '')
+    .replace(/^0+(?!$)/, '')
+  return parseInt(sanitized, 10) || 0
+}
 
 export default function TemplateEditor({ config, onConfigChange, onApply }) {
   const [localConfig, setLocalConfig] = useState(config)
@@ -56,9 +67,15 @@ export default function TemplateEditor({ config, onConfigChange, onApply }) {
   const scene = localConfig.scene
 
   const updateScene = (key, value) => {
+    // Sanitize numeric inputs (width/height)
+    let finalValue = value
+    if (['width', 'height', 'start', 'end'].includes(key)) {
+      finalValue = sanitizeNumber(value)
+    }
+
     const newConfig = {
       ...localConfig,
-      scene: { ...localConfig.scene, [key]: value },
+      scene: { ...localConfig.scene, [key]: finalValue },
     }
     setLocalConfig(newConfig)
     onConfigChange(newConfig)
@@ -110,32 +127,18 @@ export default function TemplateEditor({ config, onConfigChange, onApply }) {
             <div className="grid grid-cols-2 gap-2 mt-2">
               <div>
                 <label className="text-xs text-muted-foreground">Width</label>
-                <Input
+                <BlurInput
                   type="number"
-                  min={100}
-                  max={7680}
-                  value={scene.width || 1920}
-                  onChange={(e) =>
-                    updateScene(
-                      'width',
-                      Math.max(100, parseInt(e.target.value) || 1920),
-                    )
-                  }
+                  value={scene.width || ''}
+                  onChange={(e) => updateScene('width', e.target.value)}
                 />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Height</label>
-                <Input
+                <BlurInput
                   type="number"
-                  min={100}
-                  max={4320}
-                  value={scene.height || 1080}
-                  onChange={(e) =>
-                    updateScene(
-                      'height',
-                      Math.max(100, parseInt(e.target.value) || 1080),
-                    )
-                  }
+                  value={scene.height || ''}
+                  onChange={(e) => updateScene('height', e.target.value)}
                 />
               </div>
             </div>
@@ -195,7 +198,7 @@ export default function TemplateEditor({ config, onConfigChange, onApply }) {
               onChange={(e) => updateScene('color', e.target.value)}
               className="w-12 h-9 p-1 cursor-pointer"
             />
-            <Input
+            <BlurInput
               type="text"
               value={scene.color || '#ffffff'}
               onChange={(e) => updateScene('color', e.target.value)}
@@ -272,7 +275,7 @@ export default function TemplateEditor({ config, onConfigChange, onApply }) {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-muted-foreground">Start</label>
-              <Input
+              <BlurInput
                 type="number"
                 min={0}
                 value={scene.start || 0}
@@ -286,7 +289,7 @@ export default function TemplateEditor({ config, onConfigChange, onApply }) {
             </div>
             <div>
               <label className="text-xs text-muted-foreground">End</label>
-              <Input
+              <BlurInput
                 type="number"
                 min={1}
                 value={scene.end || 60}

@@ -5,9 +5,11 @@ from subprocess import PIPE, Popen
 import logging
 
 import constant
-from frame import Frame
-from plot import build_figure
-from template import build_configs
+
+# Lazy imports for:
+# from frame import Frame
+# from plot import build_figure
+# from template import build_configs
 
 
 class Scene:
@@ -41,6 +43,8 @@ class Scene:
                 self.figs = None
 
     def update_configs(self, config_filename):
+        from template import build_configs
+
         self.template = build_configs(config_filename)
 
     def draw_frames(self):
@@ -66,6 +70,8 @@ class Scene:
             return x, y
 
         if "plots" in self.template.keys():
+            from plot import build_figure
+
             self.figs = {}
             for config in self.template["plots"]:
                 x, y = figure_data(config["value"])
@@ -198,6 +204,39 @@ class Scene:
         except Exception as e:
             logging.error(f"Failed to start ffmpeg process: {e}")
             raise Exception(f"Could not start ffmpeg: {str(e)}")
+        # Threaded monitoring of ffmpeg stderr to track progress and prevent deadlocks
+        import threading
+        import re
+
+        encoded_frames = 0
+        io_lock = threading.Lock()
+
+        def monitor_ffmpeg(process):
+            nonlocal encoded_frames
+
+            # Regex to find "frame= 123"
+            frame_pattern = re.compile(r"frame=\s*(\d+)")
+
+            while True:
+                line = process.stderr.readline()
+                if not line:
+                    break
+
+                line_str = line.decode("utf-8", errors="replace")
+
+                # Update progress
+                match = frame_pattern.search(line_str)
+                if match:
+                    with io_lock:
+                        encoded_frames = int(match.group(1))
+
+                # Log only errors or warnings, avoid spamming info
+                if "error" in line_str.lower() or "warning" in line_str.lower():
+                    logging.info(f"ffmpeg: {line_str.strip()}")
+
+        monitor_thread = threading.Thread(target=monitor_ffmpeg, args=(p,), daemon=True)
+        monitor_thread.start()
+
         # Sequential rendering - memory efficient, no multiprocessing overhead
         logging.info(f"Rendering {len(self.frames)} frames sequentially")
 
@@ -214,13 +253,11 @@ class Scene:
 
             # Check if ffmpeg is still alive
             if p.poll() is not None:
-                stderr_output = p.stderr.read().decode("utf-8", errors="replace")
-                stdout_output = p.stdout.read().decode("utf-8", errors="replace")
+                # Capture any remaining output
+                monitor_thread.join(timeout=1)
+                # stderr_output = "See logs above"
                 logging.error(f"ffmpeg process died unexpectedly at frame {idx}")
-                logging.error(f"ffmpeg stderr: {stderr_output}")
-                logging.error(f"ffmpeg stdout: {stdout_output}")
-                logging.error(f"ffmpeg exit code: {p.returncode}")
-                raise Exception(f"ffmpeg died (exit {p.returncode}): {stderr_output}")
+                raise Exception(f"ffmpeg died (exit {p.returncode})")
 
             # Render frame and pipe directly to ffmpeg
             try:
@@ -230,31 +267,38 @@ class Scene:
                 p.stdin.write(image.tobytes())
             except BrokenPipeError:
                 logging.error("Broken pipe when writing to ffmpeg")
-                stderr_output = p.stderr.read().decode("utf-8", errors="replace")
-                logging.error(f"ffmpeg stderr: {stderr_output}")
                 raise Exception("ffmpeg pipe broken - video encoding failed")
 
             # Progress callback
             if progress_callback:
-                progress_callback(idx + 1, len(self.frames))
+                current_enc = 0
+                with io_lock:
+                    current_enc = encoded_frames
+
+                # Pass both generation progress and encoding progress
+                # Callback signature: (current_gen, total_gen, current_enc)
+                try:
+                    progress_callback(idx + 1, len(self.frames), current_enc)
+                except TypeError:
+                    # Fallback for old signature
+                    progress_callback(idx + 1, len(self.frames))
 
             # Force garbage collection every 30 frames to manage memory
             if (idx + 1) % 30 == 0:
                 gc.collect()
 
+        # Close stdin to signal EOF to ffmpeg
         p.stdin.close()
-        return_code = p.wait()
+
+        # Wait for ffmpeg to finish
+        p.wait()
+        monitor_thread.join()
+        return_code = p.returncode
 
         # Check if ffmpeg succeeded
         if return_code != 0:
-            stderr_output = p.stderr.read().decode("utf-8", errors="replace")
-            stdout_output = p.stdout.read().decode("utf-8", errors="replace")
             logging.error(f"ffmpeg failed with exit code {return_code}")
-            logging.error(f"ffmpeg stderr: {stderr_output}")
-            logging.error(f"ffmpeg stdout: {stdout_output}")
-            raise Exception(
-                f"ffmpeg encoding failed (exit {return_code}): {stderr_output}"
-            )
+            raise Exception(f"ffmpeg encoding failed (exit {return_code})")
 
         logging.info(f"ffmpeg completed successfully, output: {overlay_filename}")
 
@@ -285,6 +329,8 @@ class Scene:
     def build_frame(self, seconds, second, frame_number):
         num_frames = seconds * self.fps
         frame_digits = int(math.log10(num_frames - 2)) + 1
+        from frame import Frame
+
         frame = Frame(
             f"{str(second * self.fps + frame_number).zfill(frame_digits)}.png",
             self.template["scene"]["width"],

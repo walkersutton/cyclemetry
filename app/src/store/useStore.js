@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import * as backend from '../api/backend'
 
 // Flags to prevent circular updates
 let isUpdatingFromConfig = false
@@ -6,11 +7,16 @@ let isUpdatingFromTimeline = false
 
 const useStore = create((set, get) => ({
   communityTemplateFilename: null,
-  loadedTemplateFilename: null,
+  loadedTemplateFilename:
+    localStorage.getItem('loadedTemplateFilename') || null,
+  templates: [],
   editor: null,
   generatingImage: false,
   renderingVideo: false,
   errorMessage: null, // For displaying user-friendly errors
+  hasUnrenderedChanges: false,
+  lastRenderedConfig: null,
+  autoRender: localStorage.getItem('autoRender') === 'true',
   imageFilename: localStorage.getItem('imageFilename') || null,
   videoFilename: localStorage.getItem('videoFilename') || null,
   gpxFilename: localStorage.getItem('gpxFilename') || null,
@@ -21,6 +27,16 @@ const useStore = create((set, get) => ({
     status: 'idle',
     message: '',
     estimatedSecondsRemaining: null,
+  },
+
+  setTemplates: (templates) => set({ templates }),
+  fetchTemplates: async () => {
+    try {
+      const templates = await backend.listTemplates()
+      set({ templates })
+    } catch (err) {
+      console.error('Failed to fetch templates:', err)
+    }
   },
 
   // Slider states - load from localStorage if available
@@ -54,12 +70,19 @@ const useStore = create((set, get) => ({
     return null
   })(), // This will hold the editor config
   setConfig: (val) => {
+    const currentState = get()
+
+    // Check if new config differs from what was last rendered
+    // If lastRenderedConfig is null (initial load), we assume no changes until first render
+    const isDifferent = currentState.lastRenderedConfig
+      ? JSON.stringify(val) !== JSON.stringify(currentState.lastRenderedConfig)
+      : false
+
     localStorage.setItem('editorConfig', JSON.stringify(val))
 
     // Set flag to prevent timeline setters from updating config
+    const wasUpdating = isUpdatingFromConfig
     isUpdatingFromConfig = true
-
-    const currentState = get()
 
     // Preserve existing timeline values if they exist
     // Only use config values if we don't have timeline values yet
@@ -106,10 +129,25 @@ const useStore = create((set, get) => ({
 
     set(updates)
 
+    // Mark that we have changes that haven't been rendered yet
+    // unless this is the initial load, a timeline sync, or no real change form rendered state
+    if (!wasUpdating) {
+      set({ hasUnrenderedChanges: isDifferent })
+    }
+
     // Reset flag after a short delay
     setTimeout(() => {
       isUpdatingFromConfig = false
     }, 100)
+  },
+
+  setHasUnrenderedChanges: (val) => set({ hasUnrenderedChanges: val }),
+  setLastRenderedConfig: (config) =>
+    set({ lastRenderedConfig: JSON.parse(JSON.stringify(config)) }),
+
+  setAutoRender: (val) => {
+    localStorage.setItem('autoRender', val.toString())
+    set({ autoRender: val })
   },
 
   setGeneratingImage: (generating) => set({ generatingImage: generating }),
@@ -120,6 +158,13 @@ const useStore = create((set, get) => ({
         ? Math.round((progress.current / progress.total) * 100)
         : 0
     set({ renderProgress: { ...progress, percent } })
+  },
+  lastSavedConfig: localStorage.getItem('lastSavedConfig')
+    ? JSON.parse(localStorage.getItem('lastSavedConfig'))
+    : null,
+  setLastSavedConfig: (config) => {
+    localStorage.setItem('lastSavedConfig', JSON.stringify(config))
+    set({ lastSavedConfig: config })
   },
   setErrorMessage: (message) => set({ errorMessage: message }),
   clearError: () => set({ errorMessage: null }),
@@ -133,13 +178,30 @@ const useStore = create((set, get) => ({
     localStorage.setItem('startSecond', second.toString())
 
     const state = get()
+    if (state.startSecond === second) return // No change
+
     const updates = { startSecond: second }
 
     // Always update config to match, unless we're in the middle of loading config
     if (!isUpdatingFromConfig && state.config && state.config.scene) {
+      if (state.config.scene.start === second) {
+        // Sync but no logical change to config
+        set(updates)
+        return
+      }
       const newConfig = JSON.parse(JSON.stringify(state.config)) // Deep clone
       newConfig.scene.start = second
       updates.config = newConfig
+
+      // Check against last rendered
+      if (state.lastRenderedConfig) {
+        const newConfigStr = JSON.stringify(newConfig)
+        const lastRenderedStr = JSON.stringify(state.lastRenderedConfig)
+        updates.hasUnrenderedChanges = newConfigStr !== lastRenderedStr
+      } else {
+        updates.hasUnrenderedChanges = true
+      }
+
       localStorage.setItem('editorConfig', JSON.stringify(newConfig))
 
       // Don't update editor during drag - it will be updated when drag ends
@@ -157,13 +219,30 @@ const useStore = create((set, get) => ({
     localStorage.setItem('endSecond', second.toString())
 
     const state = get()
+    if (state.endSecond === second) return // No change
+
     const updates = { endSecond: second }
 
     // Always update config to match, unless we're in the middle of loading config
     if (!isUpdatingFromConfig && state.config && state.config.scene) {
+      if (state.config.scene.end === second) {
+        // Sync but no logical change to config
+        set(updates)
+        return
+      }
       const newConfig = JSON.parse(JSON.stringify(state.config)) // Deep clone
       newConfig.scene.end = second
       updates.config = newConfig
+
+      // Check against last rendered
+      if (state.lastRenderedConfig) {
+        const newConfigStr = JSON.stringify(newConfig)
+        const lastRenderedStr = JSON.stringify(state.lastRenderedConfig)
+        updates.hasUnrenderedChanges = newConfigStr !== lastRenderedStr
+      } else {
+        updates.hasUnrenderedChanges = true
+      }
+
       localStorage.setItem('editorConfig', JSON.stringify(newConfig))
 
       // Don't update editor during drag - it will be updated when drag ends
@@ -227,6 +306,7 @@ const useStore = create((set, get) => ({
   },
 
   setLoadedTemplateFilename: (filename) => {
+    localStorage.setItem('loadedTemplateFilename', filename || '')
     set({ communityTemplateFilename: null, loadedTemplateFilename: filename })
   },
 

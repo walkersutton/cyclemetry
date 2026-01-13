@@ -2,18 +2,21 @@ import useStore from '../store/useStore'
 import generateDemoFrame from './generateDemoFrame'
 import * as backend from './backend'
 
-export default async function saveFile(file) {
+export default async function saveFile(fileOrPath) {
   const { setGpxFilename } = useStore.getState()
+  const isPath = typeof fileOrPath === 'string'
+  const filename = isPath ? fileOrPath.split(/[\\/]/).pop() : fileOrPath.name
 
-  console.log('📤 Starting GPX upload:', {
-    filename: file.name,
-    size: file.size,
-    type: file.type,
+  console.log('📤 Starting GPX processing:', {
+    source: isPath ? 'path' : 'file',
+    filename,
   })
 
   try {
     console.log('📡 Sending request to backend...')
-    const result = await backend.uploadGpx(file)
+    const result = isPath
+      ? await backend.loadGpxFromPath(fileOrPath)
+      : await backend.uploadGpx(fileOrPath)
 
     console.log('✅ Upload successful:', result)
 
@@ -31,8 +34,8 @@ export default async function saveFile(file) {
       setSelectedSecond,
     } = useStore.getState()
 
-    setGpxFilename(file.name)
-    console.log('✅ GPX filename set in store:', file.name)
+    setGpxFilename(filename)
+    console.log('✅ GPX filename set in store:', filename)
 
     // Update duration if available
     if (result.duration_seconds && result.duration_seconds > 0) {

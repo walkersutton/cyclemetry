@@ -1,16 +1,14 @@
 import io
 from pathlib import Path
+import logging
 
 import constant
-import matplotlib as mpl
 
-# CRITICAL: Set backend BEFORE importing pyplot to avoid PyInstaller hanging
-mpl.use("agg")
-
-import matplotlib.pyplot as plt
-import numpy as np
-from PIL import Image
-import logging
+# Lazy imports for:
+# import matplotlib as mpl
+# import matplotlib.pyplot as plt
+# import numpy as np
+# from PIL import Image
 
 
 def get_dpi(config):
@@ -76,6 +74,12 @@ def get_opacity(config):
 
 
 def build_figure(config, x, y):
+    import matplotlib as mpl
+
+    mpl.use("agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
     dpi = get_dpi(config)
     line_width = get_line_width(config)
 
@@ -121,12 +125,16 @@ def build_figure(config, x, y):
 
 
 def build_image(fig, config, x, y, text=""):
+    import matplotlib.pyplot as plt
+
     dpi = get_dpi(config)
     plt.figure(fig.number)
     fig, points = draw_points(fig, config, x, y)
     fig, labels = draw_labels(fig, config, x, y, text)
 
     # for some reason, faster to create buffer here than to pass as param - also prevents figure duplication issue
+    from PIL import Image
+
     buffer = io.BytesIO()
     plt.savefig(
         buffer,
@@ -149,6 +157,8 @@ def build_image(fig, config, x, y, text=""):
 
 
 def draw_points(fig, config, x, y):
+    import matplotlib.pyplot as plt
+
     points = []
     if "points" in config.keys():
         plt.figure(
@@ -177,6 +187,8 @@ def draw_points(fig, config, x, y):
 def draw_labels(
     fig, config, x, y, text
 ):  # probably want to make text a list? and iterate through labels?
+    import matplotlib.pyplot as plt
+
     plt.figure(fig.number)
     labels = []
     if "point_label" in config.keys():  # rename - label

@@ -2,33 +2,15 @@ import logging
 from collections import defaultdict
 import sys
 
-print("DEBUG: activity.py imports starting", file=sys.stderr)
-sys.stderr.flush()
-
-import constant
+from gradient import gradient, smooth_gradients
 
 print("DEBUG: constant imported", file=sys.stderr)
 sys.stderr.flush()
 
-import gpxpy
+import constant
 
-print("DEBUG: gpxpy imported", file=sys.stderr)
-sys.stderr.flush()
-
-import numpy as np
-
-print("DEBUG: numpy imported", file=sys.stderr)
-sys.stderr.flush()
-
-from gradient import gradient, smooth_gradients
-
-print("DEBUG: gradient imported", file=sys.stderr)
-sys.stderr.flush()
-
-from scipy.interpolate import interp1d
-
-print("DEBUG: scipy.interpolate imported", file=sys.stderr)
-sys.stderr.flush()
+# Lazy imports for heavy libraries
+# gpxpy, numpy, and scipy are imported inside methods where needed
 
 ATTRIBUTE_MAP = {
     "{http://www.garmin.com/xmlschemas/TrackPointExtension/v1}atemp": "temperature",
@@ -48,6 +30,8 @@ class Activity:
         try:
             # Expect a valid path; do not prefix with './' (breaks absolute paths)
             logging.info(f"Activity: Opening GPX file: {gpx_filename}")
+            import gpxpy
+
             with open(gpx_filename, "r") as f:
                 self.gpx = gpxpy.parse(f)
             logging.info(
@@ -104,9 +88,7 @@ class Activity:
         self.tag_map = tag_map
 
     def parse_data(self):
-        def parse_attribute(
-            tag_map: tuple[int, str], trackpoint: gpxpy.gpx.GPXTrackPoint
-        ):
+        def parse_attribute(tag_map, trackpoint):
             extension = None
             for index, tag in tag_map:
                 extensions = extension if extension else trackpoint.extensions
@@ -170,6 +152,9 @@ class Activity:
 
     def interpolate(self, fps: int):
         def helper(data):
+            import numpy as np
+            from scipy.interpolate import interp1d
+
             data.append(2 * data[-1] - data[-2])
             x = np.arange(len(data))
             interp_func = interp1d(x, data)

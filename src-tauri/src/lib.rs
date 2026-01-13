@@ -92,6 +92,12 @@ async fn backend_open_video(filename: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+async fn backend_load_gpx(path: String) -> Result<String, String> {
+    let body = serde_json::json!({ "path": path });
+    backend_post("/api/load-gpx", body.to_string()).await
+}
+
+#[tauri::command]
 async fn backend_upload(file_data: Vec<u8>, filename: String) -> Result<String, String> {
     // For file uploads, we need multipart form data
     // This is more complex; we'll send as base64 for simplicity
@@ -121,6 +127,33 @@ async fn backend_upload(file_data: Vec<u8>, filename: String) -> Result<String, 
     let body = res.into_body().collect().await.map_err(|e| e.to_string())?;
     let bytes = body.to_bytes();
     String::from_utf8(bytes.to_vec()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn backend_list_templates() -> Result<String, String> {
+    backend_get("/api/templates").await
+}
+
+#[tauri::command]
+async fn backend_save_template(config: String, filename: String) -> Result<String, String> {
+    let body = serde_json::json!({ "config": config, "filename": filename });
+    backend_post("/api/save-template", body.to_string()).await
+}
+
+#[tauri::command]
+async fn backend_get_template(filename: String) -> Result<String, String> {
+    let path = format!("/templates/{}", filename);
+    backend_get(&path).await
+}
+
+#[tauri::command]
+async fn backend_open_templates() -> Result<String, String> {
+    backend_post("/api/open-templates", "{}".to_string()).await
+}
+
+#[tauri::command]
+async fn backend_cancel() -> Result<String, String> {
+    backend_post("/api/cancel-render", "{}".to_string()).await
 }
 
 #[tauri::command]
@@ -169,11 +202,18 @@ async fn backend_image_data(filename: String) -> Result<String, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             backend_health,
             backend_demo,
             backend_render,
             backend_progress,
+            backend_cancel,
+            backend_load_gpx,
+            backend_list_templates,
+            backend_get_template,
+            backend_save_template,
+            backend_open_templates,
             backend_open_downloads,
             backend_open_video,
             backend_upload,
@@ -182,6 +222,25 @@ pub fn run() {
             backend_image_data
         ])
         .setup(|app| {
+            // Spawn the python sidecar
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_shell::ShellExt;
+                let sidecar_command = app.handle().shell().sidecar("cyclemetry-server");
+                if let Ok(cmd) = sidecar_command {
+                    match cmd.spawn() {
+                        Ok((_rx, _child)) => {
+                            log::info!("Successfully spawned sidecar: cyclemetry-server");
+                        }
+                        Err(e) => {
+                            log::error!("Failed to spawn sidecar: {}", e);
+                        }
+                    }
+                } else if let Err(e) = sidecar_command {
+                    log::error!("Failed to initialize sidecar command: {}", e);
+                }
+            }
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()

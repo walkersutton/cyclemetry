@@ -3,7 +3,6 @@ import * as backend from './backend'
 
 // Track if a request is in progress to prevent duplicate calls
 let isGenerating = false
-let pendingAbort = null
 
 export default async function generateDemoFrame(config) {
   try {
@@ -99,7 +98,6 @@ export default async function generateDemoFrame(config) {
     }
   } finally {
     isGenerating = false
-    pendingAbort = null
     const { setGeneratingImage } = useStore.getState()
     setGeneratingImage(false)
   }

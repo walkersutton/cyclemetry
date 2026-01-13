@@ -1,21 +1,18 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import useStore from './store/useStore'
 import './index.css'
 import * as backend from './api/backend'
+import { open } from '@tauri-apps/plugin-dialog'
 
 // UI components
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import ControlPanel from '@/components/ControlPanel'
 import ErrorAlert from '@/components/ErrorAlert'
 import RenderProgressOverlay from '@/components/RenderProgressOverlay'
+import { SimpleTooltip } from '@/components/ui/simple-tooltip'
 
 // Icons
 import { Upload, Play, Activity, FolderOpen } from 'lucide-react'
@@ -38,13 +35,7 @@ const logSidecar = (message) => {
   }
 }
 
-// Template list
-const TEMPLATES = [
-  { id: 'safa_brian_a_4k_gradient.json', name: 'Safa Brian A (4K)' },
-  { id: 'safa_brian_b_4k_gradient.json', name: 'Safa Brian B (4K)' },
-  { id: 'my_laps_1080.json', name: 'My Laps (1080p)' },
-]
-
+// Sidecar readiness monitoring
 // Spinner
 function Spinner({ className = 'h-4 w-4' }) {
   return (
@@ -79,59 +70,44 @@ function App() {
     renderingVideo,
     setGeneratingImage,
     setImageFilename,
-    setGpxFilename,
     setRenderProgress,
     gpxFilename,
     selectedSecond,
     setErrorMessage,
+    hasUnrenderedChanges,
+    setHasUnrenderedChanges,
+    setLastRenderedConfig,
+    autoRender,
+    setAutoRender,
   } = useStore()
 
-  const [selectedTemplate, setSelectedTemplate] = useState('')
   const [backendStatus, setBackendStatus] = useState('connecting')
+  const [backendReady, setBackendReady] = useState(false)
   const [imageError, setImageError] = useState(false)
-  const fileInputRef = useRef(null)
 
-  // Sidecar spawn
+  // Sidecar readiness monitoring
   useEffect(() => {
-    const spawnBackend = async () => {
+    const checkInitialBackend = async () => {
       if (typeof window.__TAURI__ === 'undefined') {
         setBackendStatus('connected')
         return
       }
 
       try {
-        // Check if socket exists first (fast check)
+        // Just check if socket exists or health check passes
         const socketExists = await backend.socketReady()
         if (socketExists) {
           await backend.healthCheck()
           setBackendStatus('connected')
-          return
+        } else {
+          logSidecar('Backend not yet ready, waiting for sidecar to start...')
         }
       } catch {
-        logSidecar('Backend not running, spawning...')
-      }
-
-      try {
-        const { Command } = await import('@tauri-apps/plugin-shell')
-        const command = Command.sidecar('binaries/cyclemetry-server')
-        command.on('close', (data) => {
-          if (data.code !== 0) setBackendStatus('error')
-        })
-        const child = await command.spawn()
-        window.__SIDECAR_DEBUG__.childProcess = child
-        logSidecar('Sidecar spawned, waiting for health check...')
-      } catch (err) {
-        console.error('Failed to spawn sidecar:', err)
-        setBackendStatus('error')
+        logSidecar('Backend not yet reachable')
       }
     }
 
-    spawnBackend()
-    return () => {
-      if (window.__SIDECAR_DEBUG__?.childProcess) {
-        window.__SIDECAR_DEBUG__.childProcess.kill()
-      }
-    }
+    checkInitialBackend()
   }, [])
 
   // Health polling with retry logic
@@ -139,13 +115,16 @@ function App() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        await backend.healthCheck()
+        const health = await backend.healthCheck()
         setBackendStatus('connected')
+        if (health && typeof health.ready !== 'undefined') {
+          setBackendReady(health.ready)
+        }
         strikesRef.current = 0
       } catch {
         strikesRef.current++
-        // Be significantly more patient during initial connection (60 seconds)
-        const threshold = backendStatus === 'connecting' ? 30 : 5
+        // Be much more patient during initial connection (180 seconds)
+        const threshold = backendStatus === 'connecting' ? 90 : 8
         if (strikesRef.current >= threshold && backendStatus !== 'error') {
           setBackendStatus('error')
         }
@@ -156,6 +135,53 @@ function App() {
     checkHealth()
     return () => clearInterval(interval)
   }, [backendStatus])
+
+  // Generate preview
+  const handleGeneratePreview = useCallback(
+    async (configOverride = null) => {
+      const currentConfig = configOverride || config
+      if (!currentConfig) return
+
+      try {
+        setGeneratingImage(true)
+        setImageError(false)
+        const data = await backend.generateDemo(
+          currentConfig,
+          gpxFilename || 'demo.gpxinit',
+          selectedSecond,
+        )
+
+        if (data.error) {
+          setErrorMessage(`Preview failed: ${data.error}`)
+          setImageError(true)
+        } else {
+          const imageUrl = await backend.getImageUrl(data.filename)
+          setImageFilename(imageUrl)
+          setHasUnrenderedChanges(false)
+          setLastRenderedConfig(currentConfig)
+        }
+      } catch (err) {
+        console.error('Error generating preview:', err)
+        setErrorMessage(
+          `Failed to connect to backend: ${
+            err.message || String(err) || 'Unknown error'
+          }`,
+        )
+      } finally {
+        setGeneratingImage(false)
+      }
+    },
+    [
+      config,
+      gpxFilename,
+      selectedSecond,
+      setGeneratingImage,
+      setErrorMessage,
+      setImageFilename,
+      setHasUnrenderedChanges,
+      setLastRenderedConfig,
+    ],
+  )
 
   // Render progress polling
   useEffect(() => {
@@ -181,55 +207,40 @@ function App() {
     return () => clearInterval(interval)
   }, [renderingVideo, setRenderProgress])
 
+  // Auto-render effect
+  useEffect(() => {
+    if (
+      autoRender &&
+      config &&
+      hasUnrenderedChanges &&
+      !generatingImage &&
+      backendStatus === 'connected'
+    ) {
+      const timer = setTimeout(() => {
+        handleGeneratePreview()
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [
+    config,
+    autoRender,
+    hasUnrenderedChanges,
+    generatingImage,
+    backendStatus,
+    handleGeneratePreview,
+  ])
+
   // Load template
-  const handleTemplateChange = async (templateId) => {
-    setSelectedTemplate(templateId)
-    if (!templateId) return
-
-    try {
-      const response = await fetch(`/templates/${templateId}`)
-      const templateConfig = await response.json()
-      setConfig(templateConfig)
-      setGpxFilename('demo.gpxinit')
-      await handleGeneratePreview(templateConfig)
-    } catch (err) {
-      console.error('Error loading template:', err)
-    }
-  }
-
-  // Generate preview
-  const handleGeneratePreview = async (configOverride = null) => {
-    const currentConfig = configOverride || config
-    if (!currentConfig) return
-
-    try {
-      setGeneratingImage(true)
-      const data = await backend.generateDemo(
-        currentConfig,
-        gpxFilename || 'demo.gpxinit',
-        selectedSecond,
-      )
-
-      if (data.error) {
-        setErrorMessage(`Preview failed: ${data.error}`)
-        setImageError(true)
-      } else {
-        const imageUrl = await backend.getImageUrl(data.filename)
-        setImageFilename(imageUrl)
-      }
-    } catch (err) {
-      console.error('Error generating preview:', err)
-      setErrorMessage(`Failed to connect to backend: ${err.message}`)
-    } finally {
-      setGeneratingImage(false)
-    }
-  }
 
   // Render video
   const handleRenderVideo = async () => {
     try {
       const { default: renderVideo } = await import('./api/renderVideo')
-      await renderVideo()
+      const result = await renderVideo()
+      if (result && result.cancelled) {
+        console.log('Render video cancelled (UI handled)')
+        return
+      }
     } catch (err) {
       console.error('Render failed:', err)
       useStore.getState().setErrorMessage(err.message || 'Unknown error')
@@ -242,32 +253,39 @@ function App() {
       await backend.openDownloads()
     } catch (e) {
       console.error('Error opening downloads:', e)
+      setErrorMessage(`Failed to open downloads folder: ${e.message}`)
     }
   }
 
   // Handle GPX file selection
-  const handleGpxFileSelect = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.name.toLowerCase().endsWith('.gpx')) {
-      useStore.getState().setErrorMessage('Please upload a valid .gpx file.')
-      return
-    }
-
+  const handleGpxFileOpen = async () => {
     try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: 'GPX', extensions: ['gpx'] }],
+        title: 'Select GPX Activity',
+      })
+
+      if (!selected) return
+
       setGeneratingImage(true)
-      const { default: saveFile } = await import('./api/gpxUtils')
-      await saveFile(file)
+      setImageError(false)
+
+      // In Tauri v2, open returns the path as a string (or null)
+      // We need to pass this path to the backend
+      const { default: saveFileFromPath } = await import('./api/gpxUtils')
+      // Assuming gpxUtils can handle a path string
+      await saveFileFromPath(selected)
+
       // Refresh preview after gpx load
       await handleGeneratePreview()
     } catch (err) {
-      console.error('GPX upload failed:', err)
-      useStore.getState().setErrorMessage(`GPX Upload failed: ${err.message}`)
+      console.error('GPX selection failed:', err)
+      useStore
+        .getState()
+        .setErrorMessage(`GPX Selection failed: ${err.message}`)
     } finally {
       setGeneratingImage(false)
-      // Reset input so the same file can be selected again
-      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -276,12 +294,16 @@ function App() {
       <ErrorAlert />
       <RenderProgressOverlay />
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm flex-shrink-0">
+      <header className="relative z-50 border-b border-border bg-card/50 backdrop-blur-sm flex-shrink-0">
         <div className="flex items-center justify-between px-6 py-3">
           {/* Left - Logo & Template */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <img src="/logo192.png" alt="Cyclemetry" className="w-8 h-8 rounded-lg" />
+              <img
+                src="/logo192.png"
+                alt="Cyclemetry"
+                className="w-8 h-8 rounded-lg"
+              />
               <div>
                 <h1 className="font-semibold text-sm">Cyclemetry</h1>
                 <p className="text-xs text-muted-foreground">
@@ -289,41 +311,16 @@ function App() {
                 </p>
               </div>
             </div>
-
-            <div className="h-6 w-px bg-border" />
-
-            <Select
-              value={selectedTemplate}
-              onValueChange={handleTemplateChange}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select template" />
-              </SelectTrigger>
-              <SelectContent>
-                {TEMPLATES.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Right - Actions & Status */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept=".gpx"
-                onChange={handleGpxFileSelect}
-              />
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-2 h-8 px-3 border-zinc-700/50 hover:bg-zinc-800/50 text-muted-foreground hover:text-foreground"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleGpxFileOpen}
               >
                 <Activity className="h-3.5 w-3.5" />
                 <span className="max-w-[100px] truncate">
@@ -334,46 +331,116 @@ function App() {
               </Button>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 h-8 px-3 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5"
-              onClick={() => handleGeneratePreview()}
-              disabled={
-                generatingImage || !config || backendStatus !== 'connected'
+            <SimpleTooltip
+              side="bottom"
+              content={
+                !config
+                  ? 'Load a template or GPX first'
+                  : backendStatus !== 'connected'
+                    ? 'Backend offline'
+                    : !hasUnrenderedChanges
+                      ? 'No changes to render'
+                      : generatingImage
+                        ? 'Generating preview...'
+                        : null
               }
             >
-              {generatingImage ? (
-                <Spinner className="h-3.5 w-3.5" />
-              ) : (
-                <Upload className="h-3.5 w-3.5 text-red-500" />
-              )}
-              <span>Refresh Preview</span>
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`gap-2 h-8 px-3 transition-all duration-300 relative ${
+                  hasUnrenderedChanges
+                    ? 'border-red-500 bg-red-500/10 text-foreground ring-1 ring-red-500/50'
+                    : 'border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5'
+                }`}
+                onClick={() => handleGeneratePreview()}
+                disabled={
+                  generatingImage || !config || backendStatus !== 'connected'
+                }
+              >
+                {generatingImage ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <Upload
+                    className={`h-3.5 w-3.5 ${hasUnrenderedChanges ? 'text-red-400' : 'text-red-500'}`}
+                  />
+                )}
+                <span>Refresh Preview</span>
+                {hasUnrenderedChanges && !generatingImage && (
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  </span>
+                )}
+              </Button>
+            </SimpleTooltip>
 
-            <Button
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 text-white"
-              disabled={
-                !config || renderingVideo || backendStatus !== 'connected'
+            <div className="flex items-center gap-2 mr-1">
+              <Switch
+                id="auto-render"
+                checked={autoRender}
+                onCheckedChange={setAutoRender}
+              />
+              <Label
+                htmlFor="auto-render"
+                className="text-xs text-muted-foreground whitespace-nowrap cursor-pointer"
+              >
+                Auto
+              </Label>
+            </div>
+
+            <SimpleTooltip
+              side="bottom"
+              content={
+                !config
+                  ? 'Load a template first'
+                  : backendStatus !== 'connected'
+                    ? 'Backend offline'
+                    : renderingVideo
+                      ? 'Rendering already in progress'
+                      : null
               }
-              onClick={handleRenderVideo}
             >
-              <Play className="mr-2 h-4 w-4" />
-              {renderingVideo ? 'Rendering...' : 'Render'}
-            </Button>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={
+                  !config || renderingVideo || backendStatus !== 'connected'
+                }
+                onClick={handleRenderVideo}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                {renderingVideo ? 'Rendering...' : 'Render'}
+              </Button>
+            </SimpleTooltip>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 h-8 px-3 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5 text-muted-foreground hover:text-foreground"
-              onClick={handleOpenDownloads}
+            <SimpleTooltip
+              side="bottom"
+              content={backendStatus !== 'connected' ? 'Backend offline' : null}
             >
-              <FolderOpen className="h-3.5 w-3.5" />
-              <span>Downloads</span>
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 h-8 px-3 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5 text-muted-foreground hover:text-foreground"
+                disabled={backendStatus !== 'connected'}
+                onClick={handleOpenDownloads}
+              >
+                <FolderOpen className="h-3.5 w-3.5" />
+                <span>Downloads</span>
+              </Button>
+            </SimpleTooltip>
 
             <div className="h-6 w-px bg-border" />
+
+            {backendStatus === 'connected' && !backendReady && (
+              <Badge
+                variant="secondary"
+                className="gap-1.5 transition-all duration-300"
+              >
+                <Spinner className="h-3 w-3" />
+                <span>Loading Libs...</span>
+              </Badge>
+            )}
 
             <div className="flex items-center gap-2">
               {backendStatus === 'connecting' && <Spinner />}
@@ -417,7 +484,7 @@ function App() {
               <img
                 src={imageFilename}
                 alt="Preview"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border border-zinc-800"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border border-zinc-800 bg-grid-transparent"
                 onError={() => setImageError(true)}
               />
               {config?.scene && (
