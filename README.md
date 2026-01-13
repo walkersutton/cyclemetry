@@ -8,6 +8,13 @@
 
 ![The_Tremola_by Safa_Brian](https://github.com/walkersutton/cyclemetry/assets/25811783/71aa4902-dd29-453f-b4a5-a87ddabd2437)
 
+## ✨ Features
+
+- **Route Tracking**: Real-time position on the map.
+- **Elevation Profiles**: Dynamic grade and altitude visualization.
+- **Rich Metrics**: Speed, Power, Heart Rate, Cadence, Gradient, and Temperature.
+- **Customizable Overlays**: Flexible designer to match your video style.
+
 ## � Installation
 
 Download the latest version for macOS from **[GitHub Releases](https://github.com/walkersutton/cyclemetry/releases)**.
@@ -59,29 +66,12 @@ pnpm buildtest
 - [Garmin VIRB Edit](https://www.garmin.com/en-US/p/573412)
 - [GoPro Telemetry Extractor](https://goprotelemetryextractor.com/) ($150/$300? - fuck that)
 
-## ✨ Features
-
-- **Route Tracking**: Real-time position on the map.
-- **Elevation Profiles**: Dynamic grade and altitude visualization.
-- **Rich Metrics**: Speed, Power, Heart Rate, Cadence, Gradient, and Temperature.
-- **Customizable Overlays**: Flexible designer to match your video style.
-
 ## 📦 Releasing
-
-To create a new release and generate the `.dmg`:
 
 ```bash
 git tag v0.2.0
 git push origin v0.2.0
 ```
-
-This triggers GitHub Actions to build the sidecar, package the Tauri app, and publish to [GitHub Releases](https://github.com/walkersutton/cyclemetry/releases).
-
-## 🛠 Project Structure
-
-- `app/`: React + Vite frontend (Tailwind CSS, Lucide Icons).
-- `backend/`: Python Flask server (waitress, moviepy, pillow) - handled via Unix sockets.
-- `src-tauri/`: Rust layer proxying IPC between frontend and backend.
 
 ## 🤝 Contributing
 
