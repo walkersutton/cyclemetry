@@ -129,7 +129,7 @@ def load_gpx():
         shutil.copy2(path, dest_path)
 
         # Analyze the GPX file
-        from scene import Activity
+        from activity import Activity
 
         activity = Activity(dest_path)
         duration_seconds = len(activity.time) if hasattr(activity, "time") else 0
@@ -162,7 +162,7 @@ def upload():
 
         # Analyze the GPX file to get metadata
         try:
-            from scene import Activity
+            from activity import Activity
             activity = Activity(path)
             duration_seconds = len(activity.time) if hasattr(activity, "time") else 0
 
