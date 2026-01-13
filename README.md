@@ -15,20 +15,20 @@
 - **Rich Metrics**: Speed, Power, Heart Rate, Cadence, Gradient, and Temperature.
 - **Customizable Overlays**: Flexible designer to match your video style.
 
-## � Installation
+## 🚀 Installation
 
 Download the latest version for macOS from **[GitHub Releases](https://github.com/walkersutton/cyclemetry/releases)**.
 
 Currently supported:
 - **macOS** (Apple Silicon & Intel) via `.dmg`
 
-## 🚀 Development
+## 🛠️ Development
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) & [pnpm](https://pnpm.io/)
 - [Python 3.10+](https://www.python.org/) & [uv](https://docs.astral.sh/uv/)
-- [Rust](https://www.rust-lang.org/) (for building the Tauri app)
+- [Rust](https://www.rust-lang.org/)
 
 ### Setup
 
