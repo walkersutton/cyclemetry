@@ -19,7 +19,13 @@
 
 ## 🚀 Installation
 
-Download the latest version for macOS from **[GitHub Releases](https://github.com/walkersutton/cyclemetry/releases)**.
+1. Download the latest version for macOS from **[GitHub Releases](https://github.com/walkersutton/cyclemetry/releases)**.
+2. You'll need to run this command once to open becuase I'm not paying $100/yr for Apple Developer Account
+   
+```sh
+xattr -cr /Applications/Cyclemetry.app
+```
+
 
 Currently supported:
 - **macOS** (Apple Silicon & Intel) via `.dmg`
