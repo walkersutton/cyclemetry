@@ -122,7 +122,7 @@ class Activity:
                     case constant.ATTR_TIME:
                         data[attribute].append(point.time)
                     case constant.ATTR_SPEED:
-                        data[attribute].append(track_segment.get_speed(ii))
+                        data[attribute].append(track_segment.get_speed(ii) or 0.0)
                         # data[attribute].append(point.speed) - for some reason, point.speed isn't interpreted correctly (always None). maybe try other gpx files to see if it works in other cases?
                     case constant.ATTR_GRADIENT:
                         data[attribute].append(gradient(point, previous_point))

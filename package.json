@@ -8,7 +8,7 @@
     "dev:backend": "pkill -f cyclemetry-server || true; cd backend && uv run app.py",
     "dev": "concurrently --kill-others \"pnpm dev:backend\" \"tauri dev\"",
     "build": "tauri build",
-    "build:sidecar": "pkill -f cyclemetry-server || true; cd backend && uv run pyinstaller --onefile --add-data \"fonts:fonts\" --add-data \"demo.gpxinit:.\" --add-binary \"ffmpeg:.\" --name cyclemetry-server-aarch64-apple-darwin app.py && mkdir -p ../src-tauri/binaries && cp dist/cyclemetry-server-aarch64-apple-darwin ../src-tauri/binaries/",
+    "build:sidecar": "pkill -f cyclemetry-server || true; cd backend && uv run pyinstaller --onefile --add-data \"fonts:fonts\" --add-data \"templates:templates\" --add-data \"demo.gpxinit:.\" --add-binary \"ffmpeg:.\" --name cyclemetry-server-aarch64-apple-darwin app.py && mkdir -p ../src-tauri/binaries && cp dist/cyclemetry-server-aarch64-apple-darwin ../src-tauri/binaries/",
     "dev:socket": "tauri dev",
     "buildtest": "pkill -f cyclemetry-server || true; pnpm build:sidecar && pnpm dev:socket",
     "dev:frontend": "cd app && pnpm dev",

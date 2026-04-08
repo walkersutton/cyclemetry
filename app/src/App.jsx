@@ -79,6 +79,8 @@ function App() {
     setLastRenderedConfig,
     autoRender,
     setAutoRender,
+    setLoadedTemplateFilename,
+    setLastSavedConfig,
   } = useStore()
 
   const [backendStatus, setBackendStatus] = useState('connecting')
@@ -277,8 +279,22 @@ function App() {
       // Assuming gpxUtils can handle a path string
       await saveFileFromPath(selected)
 
-      // Refresh preview after gpx load
-      await handleGeneratePreview()
+      // If no template is loaded yet, auto-load the default so something renders
+      const currentConfig = useStore.getState().config
+      if (!currentConfig) {
+        try {
+          const defaultConfig = await backend.getTemplate('default.json')
+          setConfig(defaultConfig)
+          setLoadedTemplateFilename('default.json')
+          setLastSavedConfig(defaultConfig)
+          await handleGeneratePreview(defaultConfig)
+        } catch {
+          // default.json not available, just refresh without config
+          await handleGeneratePreview()
+        }
+      } else {
+        await handleGeneratePreview()
+      }
     } catch (err) {
       console.error('GPX selection failed:', err)
       useStore

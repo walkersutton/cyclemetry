@@ -720,38 +720,50 @@ def render_video():
 
 @app.route("/api/templates", methods=["GET"])
 def list_templates():
-    """List all available templates (bundled and user-saved)."""
+    """List available templates."""
     templates = []
-
-    # 1. List bundled templates
-    bundled_dir = os.path.join(BASE_DIR, "templates")
+    
+    # Debug logging
+    logging.info(f"Listing templates. Frozen: {getattr(sys, 'frozen', False)}")
+    if getattr(sys, "frozen", False):
+        logging.info(f"MEIPASS: {getattr(sys, '_MEIPASS', 'Not Set')}")
+    
+    bundled_dir = constant.BUNDLED_TEMPLATES_DIR()
+    logging.info(f"Checking bundled dir: {bundled_dir}")
     if os.path.exists(bundled_dir):
-        for f in os.listdir(bundled_dir):
+        logging.info(f"Bundled contents: {os.listdir(bundled_dir)}")
+    else:
+        logging.error(f"Bundled dir does not exist: {bundled_dir}")
+
+    user_dir = constant.TEMPLATES_DIR()
+    logging.info(f"Checking user dir: {user_dir}")
+    
+    # helper to add templates from a dir
+    def add_templates_from_dir(directory, type_label):
+        if not os.path.exists(directory):
+            return
+            
+        for f in os.listdir(directory):
             if f.endswith(".json"):
+                # Avoid duplicates (user overrides bundled)
+                if any(t["id"] == f for t in templates):
+                    continue
+                    
                 templates.append(
                     {
                         "id": f,
                         "name": f.replace(".json", "").replace("_", " ").title(),
-                        "type": "built-in",
+                        "type": type_label,
                     }
                 )
 
-    # 2. List user-saved templates
-    user_dir = constant.TEMPLATES_DIR()
-    if os.path.exists(user_dir):
-        for f in os.listdir(user_dir):
-            if f.endswith(".json"):
-                # Skip if already in build-in (user overrides)
-                exists = next((t for t in templates if t["id"] == f), None)
-                if not exists:
-                    templates.append(
-                        {
-                            "id": f,
-                            "name": f.replace(".json", "").replace("_", " ").title(),
-                            "type": "user",
-                        }
-                    )
+    # 1. User templates (override bundled)
+    add_templates_from_dir(constant.TEMPLATES_DIR(), "user")
+    
+    # 2. Bundled templates
+    add_templates_from_dir(constant.BUNDLED_TEMPLATES_DIR(), "built-in")
 
+    logging.info(f"Found {len(templates)} templates")
     return jsonify(templates)
 
 
