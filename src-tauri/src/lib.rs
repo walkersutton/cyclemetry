@@ -1,5 +1,4 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-
 use http_body_util::{BodyExt, Full};
 use hyper::{body::Bytes, Request};
 use hyperlocal::{UnixConnector, Uri};
@@ -107,10 +106,16 @@ async fn backend_upload(file_data: Vec<u8>, filename: String) -> Result<String, 
     // Build multipart boundary
     let boundary = "----TauriUploadBoundary";
     let mut body_bytes = Vec::new();
-    
+
     // Add file part
     body_bytes.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-    body_bytes.extend_from_slice(format!("Content-Disposition: form-data; name=\"file\"; filename=\"{}\"\r\n", filename).as_bytes());
+    body_bytes.extend_from_slice(
+        format!(
+            "Content-Disposition: form-data; name=\"file\"; filename=\"{}\"\r\n",
+            filename
+        )
+        .as_bytes(),
+    );
     body_bytes.extend_from_slice(b"Content-Type: application/octet-stream\r\n\r\n");
     body_bytes.extend_from_slice(&file_data);
     body_bytes.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
@@ -119,7 +124,10 @@ async fn backend_upload(file_data: Vec<u8>, filename: String) -> Result<String, 
     let req = Request::builder()
         .method("POST")
         .uri(uri)
-        .header("Content-Type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "Content-Type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .body(Full::new(Bytes::from(body_bytes)))
         .map_err(|e| e.to_string())?;
 
@@ -157,6 +165,17 @@ async fn backend_cancel() -> Result<String, String> {
 }
 
 #[tauri::command]
+async fn backend_community_templates() -> Result<String, String> {
+    backend_get("/api/community-templates").await
+}
+
+#[tauri::command]
+async fn backend_install_community_template(url: String, id: String) -> Result<String, String> {
+    let body = serde_json::json!({ "url": url, "id": id });
+    backend_post("/api/install-community-template", body.to_string()).await
+}
+
+#[tauri::command]
 fn get_image_url(filename: String) -> String {
     // Return path for serving from the public directory
     format!("http://unix:{}/images/{}", SOCKET_PATH, filename)
@@ -182,9 +201,10 @@ async fn backend_image_data(filename: String) -> Result<String, String> {
         .map_err(|e| e.to_string())?;
 
     let res = client.request(req).await.map_err(|e| e.to_string())?;
-    
+
     // Check content type
-    let content_type = res.headers()
+    let content_type = res
+        .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string())
@@ -192,9 +212,9 @@ async fn backend_image_data(filename: String) -> Result<String, String> {
 
     let body = res.into_body().collect().await.map_err(|e| e.to_string())?;
     let bytes = body.to_bytes();
-    
+
     // Convert to base64 data URL
-    use base64::{Engine as _, engine::general_purpose};
+    use base64::{engine::general_purpose, Engine as _};
     let b64 = general_purpose::STANDARD.encode(bytes);
     Ok(format!("data:{};base64,{}", content_type, b64))
 }
@@ -219,7 +239,9 @@ pub fn run() {
             backend_upload,
             backend_socket_ready,
             get_image_url,
-            backend_image_data
+            backend_image_data,
+            backend_community_templates,
+            backend_install_community_template
         ])
         .setup(|app| {
             // Spawn the python sidecar

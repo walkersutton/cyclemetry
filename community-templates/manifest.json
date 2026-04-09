@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "speed_only.json",
+      "name": "Speed Only",
+      "description": "Minimal single-metric overlay showing speed in the top-left corner.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/community-templates/speed_only.json"
+    },
+    {
+      "id": "power_and_hr.json",
+      "name": "Power & Heart Rate",
+      "description": "Training-focused overlay with power output and heart rate side by side.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/community-templates/power_and_hr.json"
+    },
+    {
+      "id": "full_metrics.json",
+      "name": "Full Metrics",
+      "description": "All key metrics: speed, power, heart rate, elevation, and gradient.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/community-templates/full_metrics.json"
+    }
+  ]
+}

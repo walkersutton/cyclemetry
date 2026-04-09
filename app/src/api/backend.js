@@ -343,3 +343,28 @@ export async function saveTemplate(filename, config) {
 export async function openTemplatesFolder() {
   return apiCall('POST', 'backend_open_templates', {}, '/api/open-templates')
 }
+
+/**
+ * Fetch the community template manifest from GitHub
+ */
+export async function fetchCommunityTemplates() {
+  return apiCall(
+    'GET',
+    'backend_community_templates',
+    {},
+    '/api/community-templates',
+  )
+}
+
+/**
+ * Download and install a community template
+ */
+export async function installCommunityTemplate(url, id) {
+  return apiCall(
+    'POST',
+    'backend_install_community_template',
+    { url, id },
+    '/api/install-community-template',
+    { body: JSON.stringify({ url, id }) },
+  )
+}

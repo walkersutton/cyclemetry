@@ -1,0 +1,45 @@
+{
+    "scene": {
+        "width": 1920,
+        "height": 1080,
+        "font_size": 100,
+        "fps": 30
+    },
+    "labels": [
+        {
+            "text": "POWER",
+            "x": 80,
+            "y": 80,
+            "font_size": 36,
+            "color": "#ffffff",
+            "font": "Arial.ttf"
+        },
+        {
+            "text": "HR",
+            "x": 400,
+            "y": 80,
+            "font_size": 36,
+            "color": "#ff4444",
+            "font": "Arial.ttf"
+        }
+    ],
+    "values": [
+        {
+            "value": "power",
+            "x": 80,
+            "y": 140,
+            "font_size": 100,
+            "color": "#ffffff",
+            "font": "Arial.ttf"
+        },
+        {
+            "value": "heartrate",
+            "x": 400,
+            "y": 140,
+            "font_size": 100,
+            "color": "#ff4444",
+            "font": "Arial.ttf"
+        }
+    ],
+    "plots": []
+}
