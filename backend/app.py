@@ -67,6 +67,16 @@ else:
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_DIR
 
+# Seed user templates dir with bundled templates (don't overwrite existing)
+_bundled_tpl = constant.BUNDLED_TEMPLATES_DIR()
+_user_tpl = constant.TEMPLATES_DIR()
+if _bundled_tpl != _user_tpl and os.path.isdir(_bundled_tpl):
+    for _f in os.listdir(_bundled_tpl):
+        if _f.endswith(".json"):
+            _dst = os.path.join(_user_tpl, _f)
+            if not os.path.exists(_dst):
+                shutil.copy2(os.path.join(_bundled_tpl, _f), _dst)
+
 CORS(
     app,
     origins="*",  # Allow all origins temporarily for debugging
@@ -129,7 +139,7 @@ def load_gpx():
         shutil.copy2(path, dest_path)
 
         # Analyze the GPX file
-        from scene import Activity
+        from activity import Activity
 
         activity = Activity(dest_path)
         duration_seconds = len(activity.time) if hasattr(activity, "time") else 0
@@ -162,7 +172,8 @@ def upload():
 
         # Analyze the GPX file to get metadata
         try:
-            from scene import Activity
+            from activity import Activity
+
             activity = Activity(path)
             duration_seconds = len(activity.time) if hasattr(activity, "time") else 0
 
@@ -720,38 +731,50 @@ def render_video():
 
 @app.route("/api/templates", methods=["GET"])
 def list_templates():
-    """List all available templates (bundled and user-saved)."""
+    """List available templates."""
     templates = []
 
-    # 1. List bundled templates
-    bundled_dir = os.path.join(BASE_DIR, "templates")
+    # Debug logging
+    logging.info(f"Listing templates. Frozen: {getattr(sys, 'frozen', False)}")
+    if getattr(sys, "frozen", False):
+        logging.info(f"MEIPASS: {getattr(sys, '_MEIPASS', 'Not Set')}")
+
+    bundled_dir = constant.BUNDLED_TEMPLATES_DIR()
+    logging.info(f"Checking bundled dir: {bundled_dir}")
     if os.path.exists(bundled_dir):
-        for f in os.listdir(bundled_dir):
+        logging.info(f"Bundled contents: {os.listdir(bundled_dir)}")
+    else:
+        logging.error(f"Bundled dir does not exist: {bundled_dir}")
+
+    user_dir = constant.TEMPLATES_DIR()
+    logging.info(f"Checking user dir: {user_dir}")
+
+    # helper to add templates from a dir
+    def add_templates_from_dir(directory, type_label):
+        if not os.path.exists(directory):
+            return
+
+        for f in os.listdir(directory):
             if f.endswith(".json"):
+                # Avoid duplicates (user overrides bundled)
+                if any(t["id"] == f for t in templates):
+                    continue
+
                 templates.append(
                     {
                         "id": f,
                         "name": f.replace(".json", "").replace("_", " ").title(),
-                        "type": "built-in",
+                        "type": type_label,
                     }
                 )
 
-    # 2. List user-saved templates
-    user_dir = constant.TEMPLATES_DIR()
-    if os.path.exists(user_dir):
-        for f in os.listdir(user_dir):
-            if f.endswith(".json"):
-                # Skip if already in build-in (user overrides)
-                exists = next((t for t in templates if t["id"] == f), None)
-                if not exists:
-                    templates.append(
-                        {
-                            "id": f,
-                            "name": f.replace(".json", "").replace("_", " ").title(),
-                            "type": "user",
-                        }
-                    )
+    # 1. User templates (override bundled)
+    add_templates_from_dir(constant.TEMPLATES_DIR(), "user")
 
+    # 2. Bundled templates
+    add_templates_from_dir(constant.BUNDLED_TEMPLATES_DIR(), "built-in")
+
+    logging.info(f"Found {len(templates)} templates")
     return jsonify(templates)
 
 
@@ -799,6 +822,64 @@ def open_templates():
         return jsonify({"message": "Templates folder opened"})
     except Exception as e:
         logging.error(f"Error opening templates folder: {e}")
+        return make_response(jsonify({"error": str(e)}), 500)
+
+
+COMMUNITY_MANIFEST_URL = "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/community-templates/manifest.json"
+
+
+@app.route("/api/community-templates", methods=["GET"])
+def community_templates():
+    """Fetch the community template manifest from GitHub."""
+    import urllib.request
+    import json
+
+    try:
+        req = urllib.request.Request(
+            COMMUNITY_MANIFEST_URL,
+            headers={"User-Agent": "cyclemetry"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode())
+        return jsonify(data)
+    except Exception as e:
+        logging.error(f"Failed to fetch community templates: {e}")
+        return make_response(jsonify({"error": str(e), "templates": []}), 503)
+
+
+@app.route("/api/install-community-template", methods=["POST"])
+def install_community_template():
+    """Download and save a community template to the user templates directory."""
+    import urllib.request
+    import json
+
+    data = request.json
+    if not data or "url" not in data or "id" not in data:
+        return make_response(jsonify({"error": "Invalid request"}), 400)
+
+    url = data["url"]
+    template_id = data["id"]
+
+    if not url.startswith("https://raw.githubusercontent.com/"):
+        return make_response(jsonify({"error": "Invalid template source URL"}), 400)
+
+    if not template_id.endswith(".json"):
+        template_id += ".json"
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "cyclemetry"})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            template_data = json.loads(response.read().decode())
+
+        path = os.path.join(constant.TEMPLATES_DIR(), template_id)
+        with open(path, "w") as f:
+            json.dump(template_data, f, indent=4)
+
+        return jsonify(
+            {"message": f"Template installed: {template_id}", "filename": template_id}
+        )
+    except Exception as e:
+        logging.error(f"Failed to install community template {template_id}: {e}")
         return make_response(jsonify({"error": str(e)}), 500)
 
 

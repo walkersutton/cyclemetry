@@ -43,7 +43,7 @@ jobs:
       - name: Build Python sidecar
         working-directory: backend
         run: |
-          pyinstaller --onefile --name cyclemetry-server-aarch64-apple-darwin app.py
+          pyinstaller --onefile --add-data "fonts:fonts" --add-data "templates:templates" --add-binary "ffmpeg:." --name cyclemetry-server-aarch64-apple-darwin app.py
           mkdir -p ../src-tauri/binaries
           cp dist/cyclemetry-server-aarch64-apple-darwin ../src-tauri/binaries/
 
@@ -51,13 +51,6 @@ jobs:
         run: pnpm install
 
       - name: Build Tauri app
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: pnpm build
 
       - name: Upload artifacts to release

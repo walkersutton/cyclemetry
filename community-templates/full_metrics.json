@@ -1,0 +1,93 @@
+{
+    "scene": {
+        "width": 1920,
+        "height": 1080,
+        "font_size": 100,
+        "fps": 30
+    },
+    "labels": [
+        {
+            "text": "SPEED",
+            "x": 80,
+            "y": 80,
+            "font_size": 30,
+            "color": "#ffffff",
+            "font": "Arial.ttf"
+        },
+        {
+            "text": "POWER",
+            "x": 380,
+            "y": 80,
+            "font_size": 30,
+            "color": "#ffffff",
+            "font": "Arial.ttf"
+        },
+        {
+            "text": "HR",
+            "x": 680,
+            "y": 80,
+            "font_size": 30,
+            "color": "#ff4444",
+            "font": "Arial.ttf"
+        },
+        {
+            "text": "ELEV",
+            "x": 80,
+            "y": 230,
+            "font_size": 30,
+            "color": "#44aaff",
+            "font": "Arial.ttf"
+        },
+        {
+            "text": "GRAD",
+            "x": 380,
+            "y": 230,
+            "font_size": 30,
+            "color": "#44ff88",
+            "font": "Arial.ttf"
+        }
+    ],
+    "values": [
+        {
+            "value": "speed",
+            "x": 80,
+            "y": 130,
+            "font_size": 80,
+            "color": "#ffffff",
+            "font": "Arial.ttf"
+        },
+        {
+            "value": "power",
+            "x": 380,
+            "y": 130,
+            "font_size": 80,
+            "color": "#ffffff",
+            "font": "Arial.ttf"
+        },
+        {
+            "value": "heartrate",
+            "x": 680,
+            "y": 130,
+            "font_size": 80,
+            "color": "#ff4444",
+            "font": "Arial.ttf"
+        },
+        {
+            "value": "elevation",
+            "x": 80,
+            "y": 280,
+            "font_size": 80,
+            "color": "#44aaff",
+            "font": "Arial.ttf"
+        },
+        {
+            "value": "gradient",
+            "x": 380,
+            "y": 280,
+            "font_size": 80,
+            "color": "#44ff88",
+            "font": "Arial.ttf"
+        }
+    ],
+    "plots": []
+}

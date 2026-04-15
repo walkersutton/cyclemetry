@@ -31,6 +31,10 @@ import {
   Palette,
   Save,
   FolderOpen,
+  Download,
+  Loader2,
+  CheckCircle2,
+  Globe,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import * as backend from '../api/backend'
@@ -134,10 +138,12 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
   const [resMode, setResMode] = useState('1080p')
   const [fpsMode, setFpsMode] = useState('30')
 
-  // Fetch templates once
-  useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
+  // Community templates panel
+  const [showCommunity, setShowCommunity] = useState(false)
+  const [communityTemplates, setCommunityTemplates] = useState([])
+  const [communityLoading, setCommunityLoading] = useState(false)
+  const [communityError, setCommunityError] = useState(null)
+  const [installingId, setInstallingId] = useState(null)
 
   // Update resolution/fps labels when config changes
   useEffect(() => {
@@ -215,6 +221,41 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       console.error('Failed to open folder:', err)
     }
   }
+
+  const handleToggleCommunity = async () => {
+    if (showCommunity) {
+      setShowCommunity(false)
+      return
+    }
+    setShowCommunity(true)
+    setCommunityLoading(true)
+    setCommunityError(null)
+    try {
+      const data = await backend.fetchCommunityTemplates()
+      setCommunityTemplates(data.templates || [])
+    } catch (err) {
+      console.error('[Community Templates] fetch failed:', err)
+      setCommunityError(
+        'Failed to load community templates. Check your internet connection.',
+      )
+    } finally {
+      setCommunityLoading(false)
+    }
+  }
+
+  const handleInstallCommunityTemplate = async (template) => {
+    setInstallingId(template.id)
+    try {
+      await backend.installCommunityTemplate(template.url, template.id)
+      fetchTemplates()
+    } catch (err) {
+      alert('Failed to install template: ' + (err.message || err))
+    } finally {
+      setInstallingId(null)
+    }
+  }
+
+  const isInstalled = (templateId) => templates.some((t) => t.id === templateId)
 
   const updateElement = (element, updates) => {
     const newConfig = { ...config }
@@ -345,8 +386,8 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Element header */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
-            <Icon className="h-5 w-5 text-red-500" />
+          <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+            <Icon className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h3 className="font-semibold">{el.name}</h3>
@@ -361,7 +402,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
         {/* Position */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Move className="h-4 w-4 text-red-500" />
+            <Move className="h-4 w-4 text-primary" />
             <h4 className="font-medium text-sm">Position</h4>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -373,6 +414,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                 onChange={(e) =>
                   updateElement(el, { x: parseInt(e.target.value) || 0 })
                 }
+                className="font-mono tabular-nums"
               />
             </div>
             <div>
@@ -383,6 +425,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                 onChange={(e) =>
                   updateElement(el, { y: parseInt(e.target.value) || 0 })
                 }
+                className="font-mono tabular-nums"
               />
             </div>
           </div>
@@ -419,7 +462,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
           <>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Type className="h-4 w-4 text-red-500" />
+                <Type className="h-4 w-4 text-primary" />
                 <h4 className="font-medium text-sm">Typography</h4>
               </div>
 
@@ -475,7 +518,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
           <>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4 text-red-500" />
+                <Palette className="h-4 w-4 text-primary" />
                 <h4 className="font-medium text-sm">Style</h4>
               </div>
 
@@ -537,7 +580,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Apply button */}
         <Button
-          className="w-full bg-red-600 hover:bg-red-700"
+          className="w-full bg-primary hover:bg-primary/90"
           onClick={onApply}
         >
           Apply Changes
@@ -553,7 +596,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-red-500" />
+            <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="font-semibold text-sm">Template</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -577,7 +620,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-red-500 hover:bg-red-500/10"
+                className="h-6 w-6 text-primary hover:bg-primary/10"
                 onClick={handleSaveTemplate}
               >
                 <Save className="h-3.5 w-3.5" />
@@ -590,6 +633,15 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
               onClick={handleOpenFolder}
             >
               <FolderOpen className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-6 w-6 hover:bg-zinc-800 ${showCommunity ? 'text-primary' : 'text-muted-foreground'}`}
+              onClick={handleToggleCommunity}
+              title="Browse community templates"
+            >
+              <Globe className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -610,6 +662,61 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
             ))}
           </SelectContent>
         </Select>
+
+        {showCommunity && (
+          <div className="border border-zinc-800 rounded-lg p-3 space-y-2 bg-zinc-900/50">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Community Templates
+            </p>
+            {communityLoading && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Loading...
+              </div>
+            )}
+            {communityError && (
+              <p className="text-xs text-primary/70">{communityError}</p>
+            )}
+            {!communityLoading &&
+              communityTemplates.map((t) => {
+                const installed = isInstalled(t.id)
+                const installing = installingId === t.id
+                return (
+                  <div
+                    key={t.id}
+                    className="flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{t.name}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {t.description}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={installed ? 'outline' : 'default'}
+                      className="shrink-0 h-7 text-xs"
+                      disabled={installed || installing}
+                      onClick={() => handleInstallCommunityTemplate(t)}
+                    >
+                      {installing ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : installed ? (
+                        <CheckCircle2 className="h-3 w-3" />
+                      ) : (
+                        <Download className="h-3 w-3" />
+                      )}
+                      {installing
+                        ? 'Installing'
+                        : installed
+                          ? 'Installed'
+                          : 'Install'}
+                    </Button>
+                  </div>
+                )
+              })}
+          </div>
+        )}
       </div>
 
       <Separator />
@@ -617,7 +724,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       {/* Video Settings */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Video className="h-4 w-4 text-red-500" />
+          <Video className="h-4 w-4 text-primary" />
           <h3 className="font-semibold">Video Settings</h3>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -676,7 +783,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Custom Resolution Inputs */}
         {resMode === 'custom' && (
-          <div className="grid grid-cols-2 gap-2 border-l-2 border-red-500/20 pl-3 pt-1">
+          <div className="grid grid-cols-2 gap-2 border-l-2 border-primary/20 pl-3 pt-1">
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase font-bold mb-1 block">
                 Custom Width
@@ -685,7 +792,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                 type="number"
                 value={scene?.width ?? ''}
                 onChange={(e) => updateScene('width', e.target.value)}
-                className="h-8 text-xs"
+                className="h-8 text-xs font-mono tabular-nums"
               />
             </div>
             <div>
@@ -704,7 +811,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
 
         {/* Custom FPS Input */}
         {fpsMode === 'custom' && (
-          <div className="border-l-2 border-red-500/20 pl-3 pt-1">
+          <div className="border-l-2 border-primary/20 pl-3 pt-1">
             <Label className="text-[10px] text-muted-foreground uppercase font-bold mb-1 block">
               Custom FPS
             </Label>
@@ -751,7 +858,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       {/* Global Style */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Settings2 className="h-4 w-4 text-red-500" />
+          <Settings2 className="h-4 w-4 text-primary" />
           <h3 className="font-semibold">Global Style</h3>
         </div>
         <div>
@@ -796,7 +903,7 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
       {/* Add Elements */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-red-400" />
+          <Sparkles className="h-4 w-4 text-primary/70" />
           <h3 className="font-semibold">Add Overlay</h3>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -855,15 +962,15 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
               return (
                 <Card
                   key={el.id}
-                  className="p-3 cursor-pointer transition-all hover:border-red-500 hover:bg-red-500/10 group overflow-hidden relative"
+                  className="p-3 cursor-pointer transition-all hover:border-primary hover:bg-primary/10 group overflow-hidden relative"
                   onClick={() => setSelectedElementId(el.id)}
                 >
                   <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-3">
-                      <Icon className="h-4 w-4 text-red-500" />
+                      <Icon className="h-4 w-4 text-primary" />
                       <div>
                         <span className="text-sm font-medium">{el.name}</span>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[10px] text-muted-foreground font-mono tabular-nums">
                           x:{el.data.x ?? 0} y:{el.data.y ?? 0}
                         </p>
                       </div>

@@ -55,9 +55,9 @@ export default function RenderProgressOverlay() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md animate-in fade-in duration-300">
       <div className="w-full max-w-md p-8 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl space-y-6 relative">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center relative">
-            <Loader2 className="h-10 w-10 text-red-500 animate-spin absolute" />
-            <Film className="h-5 w-5 text-red-500/50" />
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center relative">
+            <Loader2 className="h-10 w-10 text-primary animate-spin absolute" />
+            <Film className="h-5 w-5 text-primary/50" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">
@@ -69,7 +69,7 @@ export default function RenderProgressOverlay() {
 
         <div className="space-y-3">
           <div className="flex justify-between text-xs font-medium">
-            <span className="text-red-500">{percent}% Complete</span>
+            <span className="text-primary">{percent}% Complete</span>
             <span className="text-muted-foreground">
               {current.toLocaleString()} / {total.toLocaleString()} frames
             </span>
@@ -99,7 +99,7 @@ export default function RenderProgressOverlay() {
         >
           <button
             type="button"
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all h-8 px-4 py-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 cursor-pointer pointer-events-auto active:scale-95"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all h-8 px-4 py-2 text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer pointer-events-auto active:scale-95"
             onClick={(e) => {
               e.stopPropagation()
               handleCancel()

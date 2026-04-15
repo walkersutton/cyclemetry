@@ -79,6 +79,9 @@ function App() {
     setLastRenderedConfig,
     autoRender,
     setAutoRender,
+    setLoadedTemplateFilename,
+    setLastSavedConfig,
+    fetchTemplates,
   } = useStore()
 
   const [backendStatus, setBackendStatus] = useState('connecting')
@@ -135,6 +138,13 @@ function App() {
     checkHealth()
     return () => clearInterval(interval)
   }, [backendStatus])
+
+  // Fetch templates once backend is connected
+  useEffect(() => {
+    if (backendStatus === 'connected') {
+      fetchTemplates()
+    }
+  }, [backendStatus, fetchTemplates])
 
   // Generate preview
   const handleGeneratePreview = useCallback(
@@ -277,8 +287,22 @@ function App() {
       // Assuming gpxUtils can handle a path string
       await saveFileFromPath(selected)
 
-      // Refresh preview after gpx load
-      await handleGeneratePreview()
+      // If no template is loaded yet, auto-load the default so something renders
+      const currentConfig = useStore.getState().config
+      if (!currentConfig) {
+        try {
+          const defaultConfig = await backend.getTemplate('default.json')
+          setConfig(defaultConfig)
+          setLoadedTemplateFilename('default.json')
+          setLastSavedConfig(defaultConfig)
+          await handleGeneratePreview(defaultConfig)
+        } catch {
+          // default.json not available, just refresh without config
+          await handleGeneratePreview()
+        }
+      } else {
+        await handleGeneratePreview()
+      }
     } catch (err) {
       console.error('GPX selection failed:', err)
       useStore
@@ -350,8 +374,8 @@ function App() {
                 size="sm"
                 className={`gap-2 h-8 px-3 transition-all duration-300 relative ${
                   hasUnrenderedChanges
-                    ? 'border-red-500 bg-red-500/10 text-foreground ring-1 ring-red-500/50'
-                    : 'border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5'
+                    ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/50'
+                    : 'border-primary/30 hover:border-primary/50 hover:bg-primary/5'
                 }`}
                 onClick={() => handleGeneratePreview()}
                 disabled={
@@ -362,14 +386,14 @@ function App() {
                   <Spinner className="h-3.5 w-3.5" />
                 ) : (
                   <Upload
-                    className={`h-3.5 w-3.5 ${hasUnrenderedChanges ? 'text-red-400' : 'text-red-500'}`}
+                    className={`h-3.5 w-3.5 ${hasUnrenderedChanges ? 'text-primary/70' : 'text-primary'}`}
                   />
                 )}
                 <span>Refresh Preview</span>
                 {hasUnrenderedChanges && !generatingImage && (
                   <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
                   </span>
                 )}
               </Button>
@@ -403,7 +427,7 @@ function App() {
             >
               <Button
                 size="sm"
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 disabled={
                   !config || renderingVideo || backendStatus !== 'connected'
                 }
@@ -421,7 +445,7 @@ function App() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 h-8 px-3 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5 text-muted-foreground hover:text-foreground"
+                className="gap-2 h-8 px-3 border-primary/30 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground"
                 disabled={backendStatus !== 'connected'}
                 onClick={handleOpenDownloads}
               >
@@ -546,7 +570,7 @@ function App() {
                         setBackendStatus('connecting')
                         strikesRef.current = 0
                       }}
-                      className="border-red-500/30 hover:bg-red-500/10"
+                      className="border-primary/30 hover:bg-primary/10"
                     >
                       Retry Connection
                     </Button>

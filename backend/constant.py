@@ -43,6 +43,14 @@ def TEMPLATES_DIR():
     return templates
 
 
+def BUNDLED_TEMPLATES_DIR():
+    """Get the bundled templates directory (read-only)."""
+    if getattr(sys, "frozen", False):
+        return os.path.join(sys._MEIPASS, "templates")
+    else:
+        return "./templates"
+
+
 def FONTS_DIR():
     """Get the fonts directory - uses bundled fonts when frozen."""
     if getattr(sys, "frozen", False):

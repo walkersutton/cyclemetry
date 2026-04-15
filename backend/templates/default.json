@@ -1,0 +1,17 @@
+{
+    "scene": {
+        "width": 1920,
+        "height": 1080,
+        "font_size": 100,
+        "fps": 30
+    },
+    "labels": [],
+    "values": [
+        {
+            "value": "speed",
+            "x": 100,
+            "y": 100
+        }
+    ],
+    "plots": []
+}

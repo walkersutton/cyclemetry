@@ -20,3 +20,4 @@ app/public/preview*.png
 tauri_build.log
 /tmp/cyclemetry.sock
 
+/gitignore
