@@ -21,6 +21,27 @@
       "description": "All key metrics: speed, power, heart rate, elevation, and gradient.",
       "author": "cyclemetry",
       "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/community-templates/full_metrics.json"
+    },
+    {
+      "id": "safa_brian_a_1280_720.json",
+      "name": "Safa Brian 720p",
+      "description": "Safa Brian 720p",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/TO_BE_REFACTORED/safa_brian_a_1280_720.json"
+    },
+    {
+      "id": "safa_brian_a_2k.json",
+      "name": "Safa Brian 2k",
+      "description": "Safa Brian 2k",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/TO_BE_REFACTORED/safa_brian_a_2k.json"
+    },
+    {
+      "id": "safa_brian_a_4k.json",
+      "name": "Safa Brian4k",
+      "description": "Safa Brian 4k",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/TO_BE_REFACTORED/safa_brian_a_4k.json"
     }
   ]
 }
