@@ -40,12 +40,11 @@ jobs:
           pip install .
           pip install pyinstaller
 
-      - name: Setup FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
-
-      - name: Copy FFmpeg for PyInstaller
+      - name: Setup FFmpeg via Homebrew
         working-directory: backend
-        run: cp $(which ffmpeg) ./ffmpeg
+        run: |
+          brew install ffmpeg || true
+          cp $(which ffmpeg) ./ffmpeg
 
       - name: Build Python sidecar
         working-directory: backend
