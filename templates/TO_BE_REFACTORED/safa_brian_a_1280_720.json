@@ -48,6 +48,17 @@
   "values": [
     {
       "value": "speed",
+      "unit": "imperial",
+      "x": 10,
+      "y": 235,
+      "font_size": 50,
+      "color": "#ffffff96",
+      "font": "Evogria.otf",
+      "suffix": ""
+    },
+    {
+      "value": "speed",
+      "unit": "metric",
       "x": 10,
       "y": 330,
       "font_size": 50,
