@@ -513,7 +513,9 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                 <div>
                   <Label className="text-xs mb-1 block">Decimal Places</Label>
                   <Select
-                    value={String(el.data.decimal_rounding ?? scene?.decimal_rounding ?? 2)}
+                    value={String(
+                      el.data.decimal_rounding ?? scene?.decimal_rounding ?? 2,
+                    )}
                     onValueChange={(v) =>
                       updateElement(el, { decimal_rounding: parseInt(v) })
                     }
@@ -714,26 +716,40 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                         {t.description}
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={installed ? 'outline' : 'default'}
-                      className="shrink-0 h-7 text-xs"
-                      disabled={installed || installing}
-                      onClick={() => handleInstallCommunityTemplate(t)}
-                    >
-                      {installing ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : installed ? (
-                        <CheckCircle2 className="h-3 w-3" />
-                      ) : (
-                        <Download className="h-3 w-3" />
-                      )}
-                      {installing
-                        ? 'Installing'
-                        : installed
-                          ? 'Installed'
-                          : 'Install'}
-                    </Button>
+                    {installed ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          disabled={installing}
+                          onClick={() => handleInstallCommunityTemplate(t)}
+                        >
+                          {installing ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
+                          {installing ? 'Updating…' : 'Update'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="shrink-0 h-7 text-xs"
+                        disabled={installing}
+                        onClick={() => handleInstallCommunityTemplate(t)}
+                      >
+                        {installing ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                        {installing ? 'Installing…' : 'Install'}
+                      </Button>
+                    )}
                   </div>
                 )
               })}
