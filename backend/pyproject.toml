@@ -64,6 +64,10 @@ dependencies = [
     "waitress>=2.1.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["fonts*", "templates*", "public*", "tmp*"]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
