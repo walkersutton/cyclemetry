@@ -1,0 +1,143 @@
+{
+  "cadence": {
+    "hide": true
+  },
+  "course": {
+    "dpi": 150,
+    "x": 200,
+    "y": -50,
+    "hide": false,
+    "line_width": 1.75,
+    "point_weight": 80,
+    "width": 300,
+    "height": 700,
+    "color": "#f4f4f4",
+    "margin": 0.1,
+    "sub_point": {
+      "point_weight": 345,
+      "opacity": 0.52
+    },
+    "rotation": 150
+  },
+  "elevation": {
+    "hide": false,
+    "profile": {
+      "color": "#f4f4f4",
+      "dpi": 150,
+      "line_width": 2,
+      "hide": false,
+      "x": -120,
+      "y": 447,
+      "width": 800,
+      "height": 300,
+      "fill_opacity": 0.65,
+      "rotation": 0,
+      "point_weight": 14,
+      "point_label": {
+        "color": "#ffffffc8",
+        "font": "Furore.otf",
+        "round": 0,
+        "x_offset": 20,
+        "y_offset": 20,
+        "font_size": 12.5,
+        "units": ["metric", "imperial"]
+      }
+    }
+  },
+  "gradient": {
+    "color": "#ffffff96",
+    "x": 10,
+    "y": 528,
+    "hide": false,
+    "font_size": 50,
+    "suffix": ""
+  },
+  "heartrate": {
+    "hide": true
+  },
+  "power": {
+    "color": "#ffffff96",
+    "x": 10,
+    "y": 434,
+    "font_size": 50,
+    "hide": false,
+    "suffix": ""
+  },
+  "speed": {
+    "hide": false,
+    "opacity": 0.3,
+    "imperial": {
+      "color": "#ffffff96",
+      "opacity": 0.3,
+      "x": 10,
+      "y": 235,
+      "font_size": 50,
+      "hide": false,
+      "suffix": ""
+    },
+    "metric": {
+      "color": "#ffffff96",
+      "x": 10,
+      "y": 330,
+      "font_size": 50,
+      "hide": false,
+      "suffix": ""
+    }
+  },
+  "time": {
+    "hide": true
+  },
+  "temperature": {
+    "hide": true
+  },
+  "global": {
+    "font_size": 30,
+    "font": "Evogria.otf",
+    "color": "#ffffff",
+    "round": 0,
+    "opacity": 0.5
+  },
+  "scene": {
+    "start": 5,
+    "end": 500,
+    "fps": 1,
+    "height": 720,
+    "width": 1280
+  },
+  "labels": [
+    {
+      "color": "#ffffff96",
+      "text": "MPH",
+      "x": 10,
+      "y": 193,
+      "hide": false,
+      "font_size": 40
+    },
+    {
+      "color": "#ffffff96",
+      "text": "KMH",
+      "x": 10,
+      "y": 160,
+      "hide": false,
+      "font_size": 40
+    },
+    {
+      "color": "#ffffff96",
+      "text": "PWR",
+      "x": 10,
+      "y": 392,
+      "hide": false,
+      "font_size": 40,
+      "opacity": 0.5
+    },
+    {
+      "color": "#ffffff96",
+      "text": "Grad.",
+      "x": 10,
+      "y": 489,
+      "hide": false,
+      "font_size": 40,
+      "opacity": 0.5
+    }
+  ]
+}
