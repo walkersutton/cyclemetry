@@ -84,7 +84,7 @@ def build_figure(config, x, y):
     line_width = get_line_width(config)
 
     fig = plt.figure()
-    if "width" and "height" in config.keys():
+    if "width" in config.keys() and "height" in config.keys():
         padding = 200
         fig = plt.figure(
             figsize=(
@@ -200,7 +200,7 @@ def draw_labels(
                 fontsize=config["point_label"]["font_size"],
                 color=config["point_label"]["color"],
                 font=Path(
-                    f"{constant.FONTS_DIR}{config['point_label']['font']}"
+                    f"{constant.FONTS_DIR()}{config['point_label']['font']}"
                 ),  # TODO - support system fonts? not sure how pyplot deals with this
             )
         )

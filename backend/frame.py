@@ -33,6 +33,10 @@ class Frame:
         def hex_color_with_alpha(color, opacity):
             if opacity is None:
                 return color
+            # If the color already has an embedded alpha (8-char hex like #rrggbbaa),
+            # don't append another alpha byte — that would produce an invalid 10-char value.
+            if color.startswith("#") and len(color) == 9:
+                return color
             int_value = round(opacity * 255)
             hex_string = f"{int_value:02x}"
             return color + hex_string
