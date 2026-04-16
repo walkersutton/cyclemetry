@@ -6,7 +6,8 @@
     "height": 720,
     "width": 1280,
     "font_size": 30,
-    "font": "Evogria.otf"
+    "font": "Evogria.otf",
+    "decimal_rounding": 0
   },
   "labels": [
     {
@@ -52,8 +53,7 @@
       "font_size": 50,
       "color": "#ffffff96",
       "font": "Evogria.otf",
-      "suffix": "",
-      "decimal_rounding": 0
+      "suffix": ""
     },
     {
       "value": "power",
@@ -62,8 +62,7 @@
       "font_size": 50,
       "color": "#ffffff96",
       "font": "Evogria.otf",
-      "suffix": "",
-      "decimal_rounding": 0
+      "suffix": ""
     },
     {
       "value": "gradient",
@@ -72,8 +71,7 @@
       "font_size": 50,
       "color": "#ffffff96",
       "font": "Evogria.otf",
-      "suffix": "",
-      "decimal_rounding": 0
+      "suffix": ""
     }
   ],
   "plots": [
@@ -107,7 +105,6 @@
       "point_label": {
         "color": "#ffffffc8",
         "font": "Furore.otf",
-        "decimal_rounding": 0,
         "x_offset": 20,
         "y_offset": 20,
         "font_size": 12.5,

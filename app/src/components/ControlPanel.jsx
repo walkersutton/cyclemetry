@@ -508,6 +508,28 @@ export default function ControlPanel({ config, onConfigChange, onApply }) {
                   </Select>
                 </div>
               )}
+
+              {el.category === 'values' && (
+                <div>
+                  <Label className="text-xs mb-1 block">Decimal Places</Label>
+                  <Select
+                    value={String(el.data.decimal_rounding ?? scene?.decimal_rounding ?? 2)}
+                    onValueChange={(v) =>
+                      updateElement(el, { decimal_rounding: parseInt(v) })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0 — Integer (e.g. 25)</SelectItem>
+                      <SelectItem value="1">1 — (e.g. 25.4)</SelectItem>
+                      <SelectItem value="2">2 — (e.g. 25.43)</SelectItem>
+                      <SelectItem value="3">3 — (e.g. 25.431)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <Separator />
           </>
