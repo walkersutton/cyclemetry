@@ -53,7 +53,7 @@
       "color": "#ffffff96",
       "font": "Evogria.otf",
       "suffix": "",
-      "round": 0
+      "decimal_rounding": 0
     },
     {
       "value": "power",
@@ -63,7 +63,7 @@
       "color": "#ffffff96",
       "font": "Evogria.otf",
       "suffix": "",
-      "round": 0
+      "decimal_rounding": 0
     },
     {
       "value": "gradient",
@@ -73,7 +73,7 @@
       "color": "#ffffff96",
       "font": "Evogria.otf",
       "suffix": "",
-      "round": 0
+      "decimal_rounding": 0
     }
   ],
   "plots": [
@@ -107,7 +107,7 @@
       "point_label": {
         "color": "#ffffffc8",
         "font": "Furore.otf",
-        "round": 0,
+        "decimal_rounding": 0,
         "x_offset": 20,
         "y_offset": 20,
         "font_size": 12.5,
