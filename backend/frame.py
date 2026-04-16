@@ -46,14 +46,18 @@ class Frame:
         if decimal_rounding is None and scene_config:
             decimal_rounding = scene_config.get("decimal_rounding")
 
-        if type(value) in (int, float):
+        try:
+            val_float = float(value)
+            is_number = True
+        except (ValueError, TypeError):
+            is_number = False
+
+        if is_number:
             if decimal_rounding is not None:
                 if decimal_rounding == 0:
-                    value = int(value)
+                    value = int(val_float)
                 else:
-                    value = round(
-                        float(value), decimal_rounding
-                    )  # TODO - should pad right side with 0s so less jumpy suffix
+                    value = round(val_float, decimal_rounding)
         value = str(value)
         if "suffix" in config.keys():
             value += config["suffix"]
@@ -96,7 +100,7 @@ class Frame:
             x = self.second * fps + self.frame_number
             y = self.elevation
             text = (
-                self.profile_label_text(config["point_label"])
+                self.profile_label_text(config["point_label"], parent_config=config)
                 if "point_label" in config
                 else ""
             )
@@ -198,15 +202,20 @@ class Frame:
                     )
         return img
 
-    def profile_label_text(self, config):
+    def profile_label_text(self, config, parent_config=None):
         text = ""
         for unit in config["units"]:
             value = self.elevation * constant.ELEVATION_CONVERSION_MAP[unit]
-            if "decimal_rounding" in config.keys():
-                if config["decimal_rounding"] == 0:
+
+            decimal_rounding = config.get("decimal_rounding")
+            if decimal_rounding is None and parent_config:
+                decimal_rounding = parent_config.get("decimal_rounding")
+
+            if decimal_rounding is not None:
+                if decimal_rounding == 0:
                     value = int(value)
                 else:
-                    value = round(float(value), config["decimal_rounding"])
+                    value = round(float(value), decimal_rounding)
             text += (
                 f"{value}{constant.DEFAULT_SUFFIX_MAP[constant.ATTR_ELEVATION][unit]}\n"
             )

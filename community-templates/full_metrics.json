@@ -3,7 +3,8 @@
         "width": 1920,
         "height": 1080,
         "font_size": 100,
-        "fps": 30
+        "fps": 30,
+        "decimal_rounding": 0
     },
     "labels": [
         {

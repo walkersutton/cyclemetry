@@ -154,7 +154,6 @@ function App() {
 
       try {
         setGeneratingImage(true)
-        setImageError(false)
         const data = await backend.generateDemo(
           currentConfig,
           gpxFilename || 'demo.gpxinit',
@@ -162,13 +161,25 @@ function App() {
         )
 
         if (data.error) {
-          setErrorMessage(`Preview failed: ${data.error}`)
-          setImageError(true)
+          if (data.error_code === 'BUSY' || data.busy) {
+            // Do not hide the image or show a permanent error for simple busy state, it's just queued/rejected
+            console.warn('Backend is busy rendering another frame.')
+          } else {
+            setErrorMessage(`Preview failed: ${data.error}`)
+            setImageError(true)
+          }
         } else {
           const imageUrl = await backend.getImageUrl(data.filename)
           setImageFilename(imageUrl)
-          setHasUnrenderedChanges(false)
+          setImageError(false)
           setLastRenderedConfig(currentConfig)
+
+          // Re-evaluate unrendered changes against the LIVE store config
+          // (it might have been mutated while we were waiting for the backend!)
+          const latestConfig = useStore.getState().config
+          const stillHasChanges =
+            JSON.stringify(latestConfig) !== JSON.stringify(currentConfig)
+          setHasUnrenderedChanges(stillHasChanges)
         }
       } catch (err) {
         console.error('Error generating preview:', err)
