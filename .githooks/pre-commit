@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+# Add common node version manager paths so hooks work outside a login shell
+export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -1)/bin:$HOME/.volta/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+fail() {
+  echo ""
+  echo "pre-commit: $1"
+  echo "Run 'pnpm format' and 'pnpm lint' to fix, then re-stage."
+  exit 1
+}
+
+echo "pre-commit: checking JS (ESLint)..."
+(cd "$REPO_ROOT/app" && pnpm lint) || fail "ESLint failed"
+
+echo "pre-commit: checking JS (Prettier)..."
+(cd "$REPO_ROOT/app" && pnpm exec prettier --check .) || fail "Prettier check failed — run 'pnpm format:frontend'"
+
+echo "pre-commit: checking Rust (cargo fmt)..."
+(cd "$REPO_ROOT/src-tauri" && cargo fmt --check) || fail "cargo fmt check failed — run 'cargo fmt' in src-tauri/"
+
+echo "pre-commit: checking Rust (cargo clippy)..."
+(cd "$REPO_ROOT/src-tauri" && cargo clippy -- -D warnings) || fail "cargo clippy failed — fix warnings before committing"
+
+echo "pre-commit: all checks passed."

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "speed_only.json",
+      "name": "Speed Only",
+      "description": "Minimal single-metric overlay showing speed in the top-left corner.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/speed_only.json"
+    },
+    {
+      "id": "power_and_hr.json",
+      "name": "Power & Heart Rate",
+      "description": "Training-focused overlay with power output and heart rate side by side.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/power_and_hr.json"
+    },
+    {
+      "id": "full_metrics.json",
+      "name": "Full Metrics",
+      "description": "All key metrics: speed, power, heart rate, elevation, and gradient.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/full_metrics.json"
+    },
+    {
+      "id": "walker_crit_a/4k.json",
+      "name": "Walker Crit A",
+      "width": 3840,
+      "height": 2160,
+      "description": "Speed, power, cadence, and heart rate with course map. 4K.",
+      "author": "walkersutton",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/walker_crit_a/4k.json"
+    },
+    {
+      "id": "walker_crit_a/1080p.json",
+      "name": "Walker Crit A",
+      "width": 1920,
+      "height": 1080,
+      "description": "Speed, power, cadence, and heart rate with course map. 1080p.",
+      "author": "walkersutton",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/walker_crit_a/1080p.json"
+    },
+    {
+      "id": "safa_brian_a/4k.json",
+      "name": "Safa Brian A",
+      "width": 3840,
+      "height": 2160,
+      "description": "MPH/KMH, gradient, course map, and elevation. 4K.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/safa_brian_a/4k.json"
+    },
+    {
+      "id": "safa_brian_a/1080p.json",
+      "name": "Safa Brian A",
+      "width": 1920,
+      "height": 1080,
+      "description": "MPH/KMH, gradient, course map, and elevation. 1080p.",
+      "author": "cyclemetry",
+      "url": "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates/safa_brian_a/1080p.json"
+    }
+  ]
+}

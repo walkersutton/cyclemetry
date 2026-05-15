@@ -7,9 +7,9 @@ build/
 dist/
 target/
 src-tauri/binaries/
-backend/dist/
-backend/build/
-backend/.venv/
+
+# FFmpeg binary (downloaded in CI — not committed)
+resources/ffmpeg
 
 # App specifics
 next/
@@ -21,3 +21,4 @@ tauri_build.log
 /tmp/cyclemetry.sock
 
 /gitignore
+.gstack/

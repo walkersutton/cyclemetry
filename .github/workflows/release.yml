@@ -10,7 +10,7 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,42 +28,50 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python dependencies
-        working-directory: backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install .
-          pip install pyinstaller
-
-      - name: Setup FFmpeg via Homebrew
-        working-directory: backend
+      - name: Setup FFmpeg
         run: |
           brew install ffmpeg || true
-          cp $(which ffmpeg) ./ffmpeg
-
-      - name: Build Python sidecar
-        working-directory: backend
-        run: |
-          pyinstaller --onefile --add-data "fonts:fonts" --add-data "templates:templates" --add-binary "ffmpeg:." --name cyclemetry-server-aarch64-apple-darwin app.py
-          mkdir -p ../src-tauri/binaries
-          cp dist/cyclemetry-server-aarch64-apple-darwin ../src-tauri/binaries/
+          cp $(which ffmpeg) resources/ffmpeg
 
       - name: Install frontend dependencies
         run: pnpm install
 
       - name: Build Tauri app
         run: pnpm build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Generate update manifest
+        run: |
+          VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          SIG=$(cat "src-tauri/target/release/bundle/macos/Cyclemetry.app.tar.gz.sig")
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg sig "$SIG" \
+            --arg url "https://github.com/walkersutton/cyclemetry/releases/download/v${VERSION}/Cyclemetry.app.tar.gz" \
+            --arg pub_date "$PUB_DATE" \
+            '{
+              version: $version,
+              notes: "See the release page for details.",
+              pub_date: $pub_date,
+              platforms: {
+                "darwin-aarch64": {
+                  signature: $sig,
+                  url: $url
+                }
+              }
+            }' > latest.json
 
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/Cyclemetry.app.tar.gz
+            latest.json
           draft: false
           prerelease: false
         env:

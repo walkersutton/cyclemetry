@@ -1,6 +1,6 @@
 [package]
-name = "cyclemetry_backend"
-version = "0.1.1"
+name = "cyclemetry"
+version = "0.1.2"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -23,12 +23,20 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.9.5", features = [] }
 tauri-plugin-log = "2"
-tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 tokio = { version = "1", features = ["full"] }
-hyper = { version = "1.4", features = ["client", "http1"] }
-hyper-util = { version = "0.1", features = ["client-legacy", "tokio"] }
-hyperlocal = "0.9"
-http-body-util = "0.1"
-bytes = "1"
 base64 = "0.22"
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
+skia-safe = { version = "0", features = ["textlayout"] }
+rayon = "1"
+crossbeam-channel = "0.5"
+libc = "0.2"
+quick-xml = "0.37"
+chrono = { version = "0.4", features = ["serde"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.3"
+objc2-app-kit = { version = "0.3.2", features = ["NSApplication", "NSImage"] }
+objc2-foundation = { version = "0.3.2", features = ["NSData"] }

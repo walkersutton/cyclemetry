@@ -7,28 +7,8 @@
   ],
   "permissions": [
     "core:default",
-    {
-      "identifier": "shell:allow-spawn",
-      "allow": [
-        {
-          "name": "binaries/cyclemetry-server",
-          "sidecar": true,
-          "args": []
-        }
-      ]
-    },
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "binaries/cyclemetry-server",
-          "sidecar": true,
-          "args": []
-        }
-      ]
-    },
-    "shell:allow-kill",
-    "shell:default",
-    "dialog:default"
+    "dialog:default",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

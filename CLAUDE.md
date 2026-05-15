@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Cyclemetry is a desktop app for creating video overlays with cycling telemetry data (speed, power, heart rate, elevation, etc.) from GPX files. Built with Tauri 2 (Rust shell) wrapping a React frontend and Python/Flask backend.
+Cyclemetry is a desktop app for creating video overlays with cycling telemetry data (speed, power, heart rate, elevation, etc.) from GPX files. Built with Tauri 2 (Rust shell) wrapping a Svelte 5 frontend. All rendering is native Rust (no Python backend).
 
 ## Commands
 
@@ -12,72 +12,67 @@ All commands run from the repo root via pnpm.
 
 ```bash
 # Development
-pnpm dev              # Run frontend + backend concurrently (TCP mode)
-pnpm dev:backend      # Flask backend only: cd backend && uv run app.py
-pnpm dev:frontend     # React frontend only
+pnpm dev              # Run Tauri app in dev mode (hot-reload frontend, no sidecar)
 
-# Build
-pnpm build            # Full Tauri distribution build
-pnpm build:sidecar    # Compile Python backend with PyInstaller (macOS aarch64)
-pnpm buildtest        # Build sidecar + run in Unix socket mode
+# Build & release
+pnpm build            # Full Tauri distribution build (DMG + signed update artifact)
+pnpm release          # Sync versions, commit, tag, and push — triggers CI release build
+                      # Bump version in src-tauri/Cargo.toml first (single source of truth)
 
 # Code quality
-pnpm lint             # ESLint (frontend) + Ruff (backend)
-pnpm format           # Prettier (frontend) + Ruff format (backend)
+pnpm lint             # ESLint (frontend)
+pnpm format           # Prettier (frontend)
 ```
 
-Backend uses `uv` as the Python package manager. Frontend uses `pnpm` with ESLint + Prettier.
+Frontend uses `pnpm` with ESLint + Prettier.
 
 ## Architecture
 
-Three-tier desktop app with two IPC modes:
+Two-tier desktop app:
 
 ```
-React Frontend (Vite/app/)
+Svelte Frontend (Vite/app/)
         │
-        │ Tauri IPC commands
+        │ Tauri IPC commands (invoke)
         ↓
 Tauri Runtime (src-tauri/ — Rust)
-        │
-        │ TCP (dev) or Unix socket /tmp/cyclemetry.sock (production)
-        ↓
-Flask Backend (backend/ — Python)
+  ├── Template loading, GPX parsing, activity data
+  ├── Native Rust render pipeline (src-tauri/src/render/)
+  └── FFmpeg for final video encoding
 ```
 
-**Development mode (TCP):** Vite dev server on port 5173, Flask on localhost. Tauri proxies frontend requests to the Flask server.
-
-**Production mode (Unix socket):** Flask runs as a PyInstaller-compiled binary sidecar bundled inside the Tauri app. Communication over `/tmp/cyclemetry.sock` (no port conflicts).
+Vite dev server runs on port 5173. All logic lives in Rust — no sidecar process.
 
 ## Key Files
 
-- `src-tauri/src/lib.rs` — All Tauri command handlers (`backend_render`, `backend_demo`, `backend_load_gpx`, `backend_upload`, etc.)
-- `backend/app.py` — Flask routes, render orchestration, progress tracking
-- `backend/scene.py` — Frame-by-frame video scene composition
-- `backend/activity.py` — GPX parsing and telemetry data extraction
-- `backend/constant.py` — All configurable paths (`WRITE_DIR`, `FRAMES_DIR`, `DOWNLOADS_DIR`, etc.)
-- `app/src/store/useStore.js` — Zustand store with all frontend state and localStorage persistence
-- `app/src/api/backend.js` — Frontend API client (calls Tauri commands)
-- `app/src/components/ControlPanel.jsx` — Primary editor UI
+- `src-tauri/src/lib.rs` — All Tauri command handlers and app setup (menu, updater, recent GPX)
+- `src-tauri/src/render/` — Native Rust rendering pipeline (activity, scene, frame, chart, template)
+- `app/src/app.svelte` — Root component; menu event listeners, GPX loading, render trigger
+- `app/src/state/appState.svelte.js` — All frontend state (Svelte 5 runes + localStorage persistence)
+- `app/src/api/backend.js` — Frontend API client (calls Tauri invoke commands)
 
 ## Template System
 
-Overlay configuration is JSON-based. Two locations:
-- **Bundled templates**: `backend/templates/` (shipped with app)
-- **User templates**: `{WRITE_DIR}/templates/` (user-created, persisted locally)
+Overlay configuration is JSON-based. Templates are stored at their authored resolution (4K) and scaled uniformly to the chosen output resolution at render time.
+
+Two locations:
+- **Bundled templates**: `templates/` (repo root, shipped with app)
+- **User templates**: `/tmp/cyclemetry/templates/` (user-created, persisted locally)
 
 Templates define scene timing, metric label positions/styles, and visual properties.
 
 ## Path Resolution
 
-`backend/constant.py` controls all output paths. When running from source (`__file__` is a `.py`), paths resolve relative to the repo. When bundled (PyInstaller), paths use `sys._MEIPASS` for read-only assets and `/tmp/cyclemetry/` for writable output. Final videos land in `~/Downloads/Cyclemetry/`.
+- **Dev**: Rust resolves fonts from `resources/fonts/`, ffmpeg from `resources/ffmpeg`, templates from `templates/`
+- **Production**: bundled into `Contents/Resources/` inside the `.app`; user templates and render output go to `/tmp/cyclemetry/`
+
+Final videos land in `~/Movies/Cyclemetry/`.
 
 ## Notes
 
 - macOS only (aarch64 + x86_64 via universal dmg)
-- FFmpeg binary is bundled in `backend/ffmpeg` — not a system dependency
-- Backend does lazy imports of numpy/scipy/matplotlib to reduce startup time
-- Render progress is tracked via global state dict in `app.py`; poll with `backend_progress` Tauri command
-- Frontend uses `isUpdatingFromConfig` flag to prevent circular Zustand state updates when syncing timeline slider with config editor
+- FFmpeg binary is in `resources/ffmpeg` (gitignored; fetched in CI via Homebrew) — not a system dependency
+- Render progress is polled via `native_progress` Tauri command
 
 ## Design System
 Always read DESIGN.md before making any visual or UI decisions.

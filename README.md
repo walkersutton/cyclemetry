@@ -35,30 +35,18 @@ Currently supported:
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) & [pnpm](https://pnpm.io/)
-- [Python 3.10+](https://www.python.org/) & [uv](https://docs.astral.sh/uv/)
 - [Rust](https://www.rust-lang.org/)
 
 ### Setup
 
 ```bash
-# Install dependencies
 pnpm install
 ```
 
 ### Running Locally
 
 ```bash
-# Run both frontend & backend concurrently (Development Mode - TCP)
 pnpm dev
-```
-
-### Testing Production (Unix Socket Mode)
-
-To verify the port-less Unix domain socket communication locally:
-
-```bash
-# Build sidecar and run in socket mode
-pnpm buildtest
 ```
 
 ## Videos Made With Cyclemetry
@@ -76,10 +64,14 @@ pnpm buildtest
 
 ## 📦 Releasing
 
+1. Bump `version` in `src-tauri/Cargo.toml`
+2. Run:
+
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+pnpm release
 ```
+
+This syncs the version to `package.json`, commits, tags, and pushes — which triggers the CI release build.
 
 ## 🤝 Contributing
 

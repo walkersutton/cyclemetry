@@ -1,13 +1,12 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "cyclemetry",
-  "version": "0.1.1",
-  "identifier": "com.cyclemetry.desktop",
+  "productName": "Cyclemetry",
+  "identifier": "com.cyclemetry",
   "build": {
     "frontendDist": "../app/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "pnpm dev:frontend",
-    "beforeBuildCommand": "pnpm build:frontend"
+    "beforeDevCommand": "cd app && pnpm dev",
+    "beforeBuildCommand": "cd app && pnpm build"
   },
   "app": {
     "withGlobalTauri": true,
@@ -25,12 +24,26 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZBM0NFOThBM0YxMEM3MTYKUldRV3h4QS9pdWs4YWtwMFdRN1B0TXFIRzJpUHErb0lTMkYvZDFleVAveG94dFdRZVBYejJ2b3MK",
+      "endpoints": [
+        "https://github.com/walkersutton/cyclemetry/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",
-    "externalBin": [
-      "binaries/cyclemetry-server"
-    ],
+    "resources": {
+      "../resources/ffmpeg": ".",
+      "../resources/fonts/Arial.ttf": "fonts/Arial.ttf",
+      "../resources/fonts/Evogria.otf": "fonts/Evogria.otf",
+      "../resources/fonts/Furore.otf": "fonts/Furore.otf",
+      "../templates/default.json": "templates/default.json",
+      "../templates/crit.json": "templates/crit.json",
+      "../templates/safa_brian.json": "templates/safa_brian.json"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/64x64.png",
