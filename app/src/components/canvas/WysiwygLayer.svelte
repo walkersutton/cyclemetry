@@ -96,11 +96,13 @@
 >
   <!-- Deselect background — FIRST so handles paint on top -->
   <rect
+    role="presentation"
     x={0} y={0}
     width={sceneWidth} height={sceneHeight}
     fill="transparent"
     style="pointer-events:all; cursor:default"
     onclick={() => app.selectedElementId = null}
+    onkeydown={(e) => { if (e.key === 'Escape') app.selectedElementId = null }}
   />
 
   {#each elements as el (el.id)}

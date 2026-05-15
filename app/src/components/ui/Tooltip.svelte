@@ -11,6 +11,7 @@
 </script>
 
 <span
+  role="group"
   class={cn('relative inline-flex', className)}
   onmouseenter={() => visible = true}
   onmouseleave={() => visible = false}
