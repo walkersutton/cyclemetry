@@ -65,7 +65,7 @@
     pending.add(frameIdx)
     try {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Preview timed out — backend not responding')), 8000)
+        setTimeout(() => reject(new Error('Preview timed out. Try reloading, or check that your GPX file is valid.')), 8000)
       )
       let data = await Promise.race([backend.nativeGenerateDemo(config, gpx, frameIdx, fps), timeout])
       if (data?.image) {
@@ -122,12 +122,7 @@
       const s = Math.max(start, untrack(() => app.selectedSecond))
       const frameIdx = secToFrameIdx(s, _fps, start)
       untrack(() => fetchFrame(frameIdx))
-      stallTimer = setTimeout(() => {
-        if (!currentFrameData) {
-          fetchError = 'Preview failed to load — check console for errors, or reload'
-        }
-        stallTimer = null
-      }, 5000)
+      stallTimer = setTimeout(() => { stallTimer = null }, 5000)
     }
   })
 

@@ -1,21 +1,10 @@
 /**
  * Backend API — all calls go through Tauri invoke() to native Rust commands.
  */
-
-// Cache the Tauri invoke function after the first successful import.
-let _invoke = null
-async function getInvoke() {
-  if (_invoke) return _invoke
-  if (typeof window.__TAURI__ === 'undefined') return null
-  const { invoke } = await import('@tauri-apps/api/core')
-  _invoke = invoke
-  return _invoke
-}
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 
 async function invoke(cmd, args = {}) {
-  const fn = await getInvoke()
-  if (!fn) throw new Error(`Tauri not available — cannot call ${cmd}`)
-  const result = await fn(cmd, args)
+  const result = await tauriInvoke(cmd, args)
   // Commands that return JSON strings need parsing; typed returns pass through as-is.
   if (typeof result === 'string') {
     try {

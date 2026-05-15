@@ -51,6 +51,12 @@ pub fn render_video(
     fonts_dir: &str,
     progress: &RenderProgress,
 ) -> Result<(), String> {
+    // Clear any stale cancel flag from a previous render that may have raced
+    // with this call between NativeRenderState::new() and spawn_blocking starting.
+    progress
+        .cancelled
+        .store(false, std::sync::atomic::Ordering::SeqCst);
+
     // --- Load and prepare activity data ---
     let mut activity = Activity::from_gpx(gpx_path)?;
     activity.interpolate(template.scene.fps);
@@ -98,11 +104,11 @@ pub fn render_video(
             "-i",
             "-",
             "-c:v",
-            "prores_ks",
+            "prores_videotoolbox",
+            "-profile:v",
+            "4444",
             "-pix_fmt",
-            "yuva444p10le",
-            "-threads",
-            "0",
+            "ayuv64le",
             "-y",
             output_path,
         ])
@@ -290,10 +296,18 @@ pub fn render_video(
         Err(e) => {
             let _ = ffmpeg.kill();
             let _ = ffmpeg.wait();
+            // Collect FFmpeg stderr now — it explains why the scope failed (e.g. startup crash).
+            let stderr_lines = stderr_drainer
+                .and_then(|t| t.join().ok())
+                .unwrap_or_default();
             if std::path::Path::new(output_path).exists() {
                 let _ = std::fs::remove_file(output_path);
             }
-            return Err(e);
+            return if stderr_lines.is_empty() {
+                Err(e)
+            } else {
+                Err(format!("{e}\nFFmpeg: {}", stderr_lines.join("\n")))
+            };
         }
     };
 
@@ -357,11 +371,25 @@ pub fn render_video(
 
     if !status.success() {
         let ffmpeg_stderr = ffmpeg_stderr_lines.join("\n");
+        if std::path::Path::new(output_path).exists() {
+            let _ = std::fs::remove_file(output_path);
+        }
         return Err(if ffmpeg_stderr.is_empty() {
             format!("FFmpeg failed ({})", status)
         } else {
             format!("FFmpeg failed ({}): {ffmpeg_stderr}", status)
         });
+    }
+
+    let frames_written = progress.frames_rendered.load(Ordering::Relaxed);
+    if frames_written == 0 {
+        if std::path::Path::new(output_path).exists() {
+            let _ = std::fs::remove_file(output_path);
+        }
+        return Err(format!(
+            "Render produced no output ({total_frames} frames expected). \
+             FFmpeg may be missing — install it via Homebrew: brew install ffmpeg"
+        ));
     }
 
     Ok(())
@@ -371,25 +399,57 @@ pub fn render_video(
 
 fn resolve_ffmpeg() -> String {
     if let Ok(exe) = std::env::current_exe() {
-        // Dev: repo resources/ffmpeg (skip zero-byte build stub)
+        // Dev: {repo}/resources/ffmpeg (skip zero-byte build stub)
         if let Some(root) = exe.ancestors().find(|p| p.join("resources").exists()) {
             let dev = root.join("resources").join("ffmpeg");
             if std::fs::metadata(&dev)
                 .map(|m| m.len() > 0)
                 .unwrap_or(false)
             {
+                ensure_executable(&dev);
                 return dev.to_string_lossy().to_string();
             }
         }
-        // Production: ffmpeg bundled next to the executable inside the app bundle.
-        let bundled = exe
-            .parent()
-            .unwrap_or(std::path::Path::new("."))
-            .join("ffmpeg");
-        if bundled.exists() {
-            return bundled.to_string_lossy().to_string();
+        // Production macOS .app: exe is Contents/MacOS/cyclemetry,
+        // Tauri resources land at Contents/Resources/
+        if let Some(contents) = exe.parent().and_then(|p| p.parent()) {
+            let bundled = contents.join("Resources").join("ffmpeg");
+            if std::fs::metadata(&bundled)
+                .map(|m| m.len() > 0)
+                .unwrap_or(false)
+            {
+                ensure_executable(&bundled);
+                return bundled.to_string_lossy().to_string();
+            }
         }
     }
-    // Last resort: system ffmpeg on PATH.
+    // Homebrew on macOS doesn't modify the system PATH visible to .app bundles.
+    // Check known install locations before falling back to PATH lookup.
+    for candidate in &[
+        "/opt/homebrew/bin/ffmpeg", // Apple Silicon Homebrew
+        "/usr/local/bin/ffmpeg",    // Intel Homebrew
+    ] {
+        let p = std::path::Path::new(candidate);
+        if std::fs::metadata(p).map(|m| m.len() > 0).unwrap_or(false) {
+            log::info!("resolve_ffmpeg: using Homebrew ffmpeg at {candidate}");
+            return candidate.to_string();
+        }
+    }
+
+    log::warn!("resolve_ffmpeg: no ffmpeg found — falling back to PATH lookup");
     "ffmpeg".to_string()
+}
+
+fn ensure_executable(path: &std::path::Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(meta) = std::fs::metadata(path) {
+            let mut perms = meta.permissions();
+            if perms.mode() & 0o111 == 0 {
+                perms.set_mode(perms.mode() | 0o755);
+                let _ = std::fs::set_permissions(path, perms);
+            }
+        }
+    }
 }

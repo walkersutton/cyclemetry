@@ -25,11 +25,11 @@
 
   let rendering = $state(false)
   let showSettings = $state(false)
-  let buildInfo = $state('')   // comment out this line + the onMount call below to hide watermark
+  let buildInfo = $state('')
 
   onMount(() => {
     app.fetchTemplates()
-    backend.appBuildInfo().then(s => { buildInfo = s }).catch(() => {})
+    if (import.meta.env.DEV) backend.appBuildInfo().then(s => { buildInfo = s }).catch(() => {})
 
     if (typeof window.__TAURI__ !== 'undefined') {
       const unlisteners = [

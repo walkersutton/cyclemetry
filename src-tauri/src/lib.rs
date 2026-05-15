@@ -202,13 +202,19 @@ fn resolve_fonts_dir() -> String {
 }
 
 fn resolve_output_path(template_json: &serde_json::Value, output_dir: Option<&str>) -> String {
-    let filename = template_json
+    let stem = template_json
         .pointer("/scene/overlay_filename")
         .and_then(|v| v.as_str())
-        .unwrap_or("overlay.mov");
-    if Path::new(filename).is_absolute() {
-        return filename.to_string();
-    }
+        .unwrap_or("overlay")
+        .trim_end_matches(".mov");
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let (y, mo, d, h, mi) = unix_to_ymdhm(now);
+    let filename = format!("{stem}_{y}{mo:02}{d:02}_{h:02}{mi:02}.mov");
+
     let dir = match output_dir {
         Some(d) if !d.is_empty() => {
             let p = PathBuf::from(d);
@@ -220,17 +226,10 @@ fn resolve_output_path(template_json: &serde_json::Value, output_dir: Option<&st
     format!("{}/{}", dir.to_string_lossy(), filename)
 }
 
-// ─── Build info ───────────────────────────────────────────────────────────────
-
-#[tauri::command]
-fn app_build_info() -> String {
-    let ts: u64 = env!("CYCLEMETRY_BUILD_TIME").parse().unwrap_or(0);
-    // Format as "YYYY-MM-DD HH:MM UTC" for display
-    let secs = ts;
-    let minutes = (secs / 60) % 60;
-    let hours = (secs / 3600) % 24;
+fn unix_to_ymdhm(secs: u64) -> (u64, u64, u64, u64, u64) {
+    let mi = (secs / 60) % 60;
+    let h = (secs / 3600) % 24;
     let days = secs / 86400;
-    // Days since Unix epoch → calendar date (Gregorian, good through 2100)
     let z = days + 719468;
     let era = z / 146097;
     let doe = z - era * 146097;
@@ -239,9 +238,18 @@ fn app_build_info() -> String {
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
     let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    let y = if m <= 2 { y + 1 } else { y };
-    format!("build {y}-{m:02}-{d:02} {hours:02}:{minutes:02} UTC")
+    let mo = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if mo <= 2 { y + 1 } else { y };
+    (y, mo, d, h, mi)
+}
+
+// ─── Build info ───────────────────────────────────────────────────────────────
+
+#[tauri::command]
+fn app_build_info() -> String {
+    let ts: u64 = env!("CYCLEMETRY_BUILD_TIME").parse().unwrap_or(0);
+    let (y, mo, d, h, mi) = unix_to_ymdhm(ts);
+    format!("build {y}-{mo:02}-{d:02} {h:02}:{mi:02} UTC")
 }
 
 // ─── Template commands ────────────────────────────────────────────────────────
@@ -434,6 +442,7 @@ async fn backend_community_templates() -> Result<String, String> {
     community_templates_from_github().await
 }
 
+#[cfg(debug_assertions)]
 fn community_templates_from_disk() -> Result<String, String> {
     let dir = templates_bundled_dir();
     let mut templates: Vec<serde_json::Value> = Vec::new();
@@ -608,14 +617,10 @@ async fn native_render(
     let fonts_dir = resolve_fonts_dir();
     let (gpx_path, _) = resolve_gpx_path(&gpx_filename)?;
 
-    {
+    let progress_clone = {
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         *s = NativeRenderState::new();
         s.is_running = true;
-    }
-
-    let progress_clone = {
-        let s = state.lock().unwrap_or_else(|e| e.into_inner());
         render::scene::RenderProgress {
             frames_rendered: s.progress.frames_rendered.clone(),
             total_frames: s.progress.total_frames.clone(),
@@ -1118,6 +1123,7 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::new()
                         .level(log::LevelFilter::Info)
+                        .level_for("tauri_plugin_updater", log::LevelFilter::Warn)
                         .targets([tauri_plugin_log::Target::new(
                             tauri_plugin_log::TargetKind::LogDir {
                                 file_name: Some("cyclemetry".into()),
