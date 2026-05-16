@@ -170,6 +170,20 @@
   let aspectRatio = $derived(sceneH / sceneW)
   let sceneInvalid = $derived(sceneEnd <= sceneStart)
 
+  // Preview zoom (trackpad pinch / Ctrl+wheel). Center-anchored CSS scale;
+  // safe for WYSIWYG editing since drag math reads svg.getScreenCTM(), which
+  // already accounts for ancestor transforms. Double-click resets.
+  let zoom = $state(1)
+  function onCanvasWheel(e) {
+    if (!e.ctrlKey) return // macOS trackpad pinch arrives as ctrl+wheel
+    e.preventDefault()
+    const next = zoom * Math.exp(-e.deltaY * 0.01)
+    zoom = Math.min(6, Math.max(1, next))
+  }
+  function resetZoom() {
+    zoom = 1
+  }
+
   // Clamp playhead when scene start/end changes.
   // Skip when the range is invalid — clamping to a negative sceneEnd would corrupt selectedSecond
   // and cause fetchFrame to silently bail out (frameIdx < 0 guard) even after the user fixes values.
@@ -184,12 +198,17 @@
 
 <main class="flex-1 flex flex-col overflow-hidden bg-[#09090b]">
   <!-- Canvas area (flexible height) -->
-  <div class="flex-1 flex items-center justify-center p-6 overflow-hidden">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="flex-1 flex items-center justify-center p-6 overflow-hidden"
+    onwheel={onCanvasWheel}
+    ondblclick={resetZoom}
+  >
     {#if app.config}
       <!-- Aspect-ratio wrapper — always shown when a template is loaded -->
       <div
         class="relative shadow-2xl"
-        style={`width: min(100%, calc((100vh - 180px) / ${aspectRatio})); aspect-ratio: ${sceneW} / ${sceneH};`}
+        style={`width: min(100%, calc((100vh - 180px) / ${aspectRatio})); aspect-ratio: ${sceneW} / ${sceneH}; transform: scale(${zoom}); transition: transform 60ms linear;`}
       >
         <!-- Background -->
         <div
@@ -245,8 +264,17 @@
         <WysiwygLayer measuredElements={currentFrameData?.elements ?? []} />
 
         <!-- Resolution badge -->
-        <div class="absolute top-2 right-2 pointer-events-none">
-          <span class="text-[10px] font-mono text-zinc-600 bg-zinc-950/70 rounded px-1.5 py-0.5">
+        <div class="absolute top-2 right-2 flex items-center gap-1.5">
+          {#if zoom !== 1}
+            <button
+              onclick={resetZoom}
+              class="text-[10px] font-mono text-zinc-300 bg-zinc-950/70 rounded px-1.5 py-0.5 hover:text-primary transition-colors"
+              title="Reset zoom (or double-click the canvas)"
+            >
+              {Math.round(zoom * 100)}% · reset
+            </button>
+          {/if}
+          <span class="text-[10px] font-mono text-zinc-600 bg-zinc-950/70 rounded px-1.5 py-0.5 pointer-events-none">
             {sceneW}×{sceneH}
           </span>
         </div>
