@@ -114,6 +114,10 @@
     const s = selected()
     return s?.item[obj]?.[field] ?? fallback
   }
+
+  // Progressive disclosure: most overlays reuse the same colors/fonts/line
+  // weights, so detailed/structural controls hide behind "Advanced".
+  let showAdvanced = $state(false)
 </script>
 
 <div class="h-full overflow-y-auto px-4 py-3">
@@ -128,7 +132,17 @@
       {type === 'label' ? 'Text Label' : type === 'value' ? 'Metric Value' : item.value === 'course' ? 'Map' : 'Chart'} Properties
     </p>
 
+    <!-- Advanced disclosure: hides position/size and rarely-changed detail -->
+    <button
+      onclick={() => (showAdvanced = !showAdvanced)}
+      class="mb-4 flex w-full items-center gap-1.5 text-[10px] uppercase tracking-wider text-zinc-600 hover:text-zinc-400 transition-colors duration-150"
+    >
+      <span class="inline-block transition-transform duration-150 {showAdvanced ? 'rotate-90' : ''}">▸</span>
+      {showAdvanced ? 'Hide' : 'Show'} advanced options
+    </button>
+
     <!-- Position -->
+    {#if showAdvanced}
     <section class="mb-4 space-y-2">
       <p class="text-[10px] uppercase tracking-wider text-zinc-600">Position</p>
       <div class="grid grid-cols-2 gap-2">
@@ -158,6 +172,7 @@
           </label>
         </div>
       </section>
+    {/if}
     {/if}
 
     <!-- Text content (label) -->
@@ -212,6 +227,7 @@
         </label>
       </section>
 
+      {#if showAdvanced}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Fill</p>
         <label class="space-y-1 block">
@@ -229,6 +245,7 @@
             oninput={(e) => updateNested('fill', 'opacity', e.target.value)} />
         </label>
       </section>
+      {/if}
 
       <!-- Tracking point — points[0] -->
       {@const pt = item.points?.[0] ?? {}}
@@ -266,6 +283,7 @@
       </section>
 
       <!-- Point Label — value text next to the marker -->
+      {#if showAdvanced}
       {@const pl = item.point_label}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Point Label</p>
@@ -331,6 +349,7 @@
           </label>
         {/if}
       </section>
+      {/if}
     {/if}
 
     <!-- Typography (label + value) -->
@@ -367,14 +386,16 @@
           <Input value={item.color ?? '#ffffff'} oninput={(e) => update('color', e.target.value)} class="flex-1 font-mono text-xs" />
         </div>
       </label>
+      {#if showAdvanced}
       <label class="space-y-1 block">
         <span class="text-xs text-zinc-500">Opacity (0–1)</span>
         <Input type="number" value={item.opacity ?? 1} min={0} max={1} step={0.05} oninput={(e) => update('opacity', e.target.value)} />
       </label>
+      {/if}
     </section>
 
     <!-- Value-specific -->
-    {#if type === 'value'}
+    {#if type === 'value' && showAdvanced}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Formatting</p>
         <label class="space-y-1 block">
