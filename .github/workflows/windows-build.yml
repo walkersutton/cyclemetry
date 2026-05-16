@@ -1,0 +1,53 @@
+name: Windows Build (exploratory)
+
+# Build-only signal for the Windows port. This proves whether the app
+# COMPILES and BUNDLES on Windows — it does NOT exercise rendering, so
+# runtime gaps (e.g. prores_videotoolbox is macOS-only, ffmpeg resolution,
+# path layout) will not surface here; those need an actual render run.
+# Standalone and non-blocking: a failing run is the breakage signal.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # No ffmpeg fetch: build.rs writes a zero-byte resources/ffmpeg stub so
+      # Tauri's bundle-resource validation passes. resolve_ffmpeg() would fall
+      # back to PATH at runtime — irrelevant for a build-only job.
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Build Tauri app (no signing, no release)
+        run: pnpm build
+
+      - name: Upload installer artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclemetry-windows
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: warn
