@@ -63,25 +63,25 @@
         <div class="flex items-center gap-1.5">
           <input
             type="number"
-            value={app.config.scene.width}
+            value={app.outputWidth}
             min={1}
-            oninput={(e) => { const v = parseInt(e.target.value); if (v > 0) app.updateScene({ width: v }) }}
+            oninput={(e) => { const v = parseInt(e.target.value); if (v > 0) app.outputWidth = v }}
             class="h-7 w-full rounded-[6px] border border-zinc-700 bg-zinc-800/60 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring font-mono"
           />
           <span class="text-zinc-600 text-xs shrink-0">×</span>
           <input
             type="number"
-            value={app.config.scene.height}
+            value={app.outputHeight}
             min={1}
-            oninput={(e) => { const v = parseInt(e.target.value); if (v > 0) app.updateScene({ height: v }) }}
+            oninput={(e) => { const v = parseInt(e.target.value); if (v > 0) app.outputHeight = v }}
             class="h-7 w-full rounded-[6px] border border-zinc-700 bg-zinc-800/60 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring font-mono"
           />
         </div>
         <div class="flex flex-wrap gap-1">
           {#each RES_PRESETS as p (p.label)}
-            {@const active = app.config.scene.width === p.w && app.config.scene.height === p.h}
+            {@const active = app.outputWidth === p.w && app.outputHeight === p.h}
             <button
-              onclick={() => app.updateScene({ width: p.w, height: p.h })}
+              onclick={() => { app.outputWidth = p.w; app.outputHeight = p.h }}
               class="rounded px-1.5 py-0.5 text-[10px] border transition-colors duration-[150ms]
                 {active
                   ? 'border-zinc-500 text-zinc-300 bg-zinc-800'
