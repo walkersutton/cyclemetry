@@ -95,8 +95,10 @@ pub fn render_video(
             "warning",
             "-f",
             "rawvideo",
+            // Skia renders BGRA8888 natively; feeding bgra means FFmpeg does
+            // zero per-frame swscale conversion before the encoder.
             "-pix_fmt",
-            "rgba",
+            "bgra",
             "-s",
             &format!("{w}x{h}"),
             "-r",
@@ -107,8 +109,9 @@ pub fn render_video(
             "prores_videotoolbox",
             "-profile:v",
             "4444",
-            "-pix_fmt",
-            "ayuv64le",
+            // No forced output pix_fmt: videotoolbox negotiates ProRes 4444's
+            // internal format from bgra on the encoder (HW), keeping alpha,
+            // instead of an 8→16-bit CPU upconvert that gained no quality.
             "-y",
             output_path,
         ])

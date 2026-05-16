@@ -279,7 +279,7 @@ fn render_chart_background(
     } = *bounds;
     let info = ImageInfo::new(
         ISize::new(surf_w, surf_h),
-        skia_safe::ColorType::RGBA8888,
+        skia_safe::ColorType::BGRA8888,
         skia_safe::AlphaType::Premul,
         None,
     );

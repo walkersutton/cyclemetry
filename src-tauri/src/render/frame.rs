@@ -167,7 +167,7 @@ pub fn render_frame(
 
     let info = ImageInfo::new(
         ISize::new(w, h),
-        skia_safe::ColorType::RGBA8888,
+        skia_safe::ColorType::BGRA8888,
         skia_safe::AlphaType::Premul,
         None,
     );
@@ -212,7 +212,7 @@ fn render_base_frame(
 ) -> Result<skia_safe::Image, String> {
     let info = ImageInfo::new(
         ISize::new(w as i32, h as i32),
-        skia_safe::ColorType::RGBA8888,
+        skia_safe::ColorType::BGRA8888,
         skia_safe::AlphaType::Premul,
         None,
     );

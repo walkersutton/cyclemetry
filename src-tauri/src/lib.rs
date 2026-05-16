@@ -799,10 +799,13 @@ async fn native_demo(
     .to_string())
 }
 
+// Pixel buffers from render_frame are BGRA8888 (Skia's native raster format,
+// fed to FFmpeg as -pix_fmt bgra with zero conversion). The ColorType here must
+// match so the preview PNG doesn't swap red/blue.
 fn rgba_to_png(rgba: &[u8], (w, h): (u32, u32)) -> Vec<u8> {
     let info = skia_safe::ImageInfo::new(
         skia_safe::ISize::new(w as i32, h as i32),
-        skia_safe::ColorType::RGBA8888,
+        skia_safe::ColorType::BGRA8888,
         skia_safe::AlphaType::Premul,
         None,
     );
