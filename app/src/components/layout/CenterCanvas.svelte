@@ -170,18 +170,57 @@
   let aspectRatio = $derived(sceneH / sceneW)
   let sceneInvalid = $derived(sceneEnd <= sceneStart)
 
-  // Preview zoom (trackpad pinch / Ctrl+wheel). Center-anchored CSS scale;
-  // safe for WYSIWYG editing since drag math reads svg.getScreenCTM(), which
-  // already accounts for ancestor transforms. Double-click resets.
+  // Preview zoom/pan. Pinch or Ctrl+wheel zooms toward the cursor; two-finger
+  // scroll pans while zoomed (trackpad-native, no conflict with the element-
+  // drag pointer layer). transform-origin is 0 0 so the focal math is a clean
+  // closed form. Safe for WYSIWYG editing — drag reads svg.getScreenCTM(),
+  // which already accounts for ancestor transforms. Double-click resets.
   let zoom = $state(1)
-  function onCanvasWheel(e) {
-    if (!e.ctrlKey) return // macOS trackpad pinch arrives as ctrl+wheel
-    e.preventDefault()
-    const next = zoom * Math.exp(-e.deltaY * 0.01)
-    zoom = Math.min(6, Math.max(1, next))
+  let panX = $state(0)
+  let panY = $state(0)
+  let stageEl
+
+  // Keep the scaled content overlapping the viewport so it can't be lost.
+  function clampPan() {
+    if (zoom <= 1) {
+      panX = 0
+      panY = 0
+      return
+    }
+    const w = stageEl?.offsetWidth ?? 0
+    const h = stageEl?.offsetHeight ?? 0
+    const maxX = (zoom - 1) * w
+    const maxY = (zoom - 1) * h
+    panX = Math.min(0, Math.max(-maxX, panX))
+    panY = Math.min(0, Math.max(-maxY, panY))
   }
+
+  function onCanvasWheel(e) {
+    if (!stageEl) return
+    if (e.ctrlKey) {
+      // Pinch / Ctrl+wheel → zoom toward the cursor.
+      e.preventDefault()
+      const next = Math.min(6, Math.max(1, zoom * Math.exp(-e.deltaY * 0.01)))
+      if (next === zoom) return
+      const rect = stageEl.getBoundingClientRect()
+      const ratio = 1 - next / zoom
+      panX += (e.clientX - rect.left) * ratio
+      panY += (e.clientY - rect.top) * ratio
+      zoom = next
+      clampPan()
+    } else if (zoom > 1) {
+      // Two-finger scroll → pan the zoomed view.
+      e.preventDefault()
+      panX -= e.deltaX
+      panY -= e.deltaY
+      clampPan()
+    }
+  }
+
   function resetZoom() {
     zoom = 1
+    panX = 0
+    panY = 0
   }
 
   // Clamp playhead when scene start/end changes.
@@ -207,8 +246,9 @@
     {#if app.config}
       <!-- Aspect-ratio wrapper — always shown when a template is loaded -->
       <div
+        bind:this={stageEl}
         class="relative shadow-2xl"
-        style={`width: min(100%, calc((100vh - 180px) / ${aspectRatio})); aspect-ratio: ${sceneW} / ${sceneH}; transform: scale(${zoom}); transition: transform 60ms linear;`}
+        style={`width: min(100%, calc((100vh - 180px) / ${aspectRatio})); aspect-ratio: ${sceneW} / ${sceneH}; transform-origin: 0 0; transform: translate(${panX}px, ${panY}px) scale(${zoom});`}
       >
         <!-- Background -->
         <div
