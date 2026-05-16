@@ -58,6 +58,53 @@
     app.updateElement(s.category, s.idx, { points: [{ ...current, [field]: value }] })
   }
 
+  // Point label (value text next to the chart marker, e.g. "960 M").
+  const POINT_LABEL_DEFAULT = {
+    font: 'Furore.otf',
+    font_size: 64,
+    color: '#ffffffc8',
+    x_offset: 30,
+    y_offset: 30,
+    units: ['metric', 'imperial'],
+    decimal_rounding: 0,
+  }
+
+  function togglePointLabel(enabled) {
+    const s = selected()
+    if (!s) return
+    app.updateElement(s.category, s.idx, {
+      point_label: enabled ? { ...POINT_LABEL_DEFAULT } : undefined,
+    })
+  }
+
+  function updatePL(field, raw) {
+    const s = selected()
+    if (!s) return
+    const numFields = ['font_size', 'x_offset', 'y_offset', 'decimal_rounding']
+    const value = numFields.includes(field)
+      ? raw === ''
+        ? undefined
+        : Number(raw)
+      : raw
+    const current = s.item.point_label ?? {}
+    app.updateElement(s.category, s.idx, {
+      point_label: { ...current, [field]: value },
+    })
+  }
+
+  // units is an ordered array; keep metric before imperial.
+  function toggleUnit(unit, on) {
+    const s = selected()
+    if (!s) return
+    const cur = s.item.point_label?.units ?? []
+    const next = on ? [...cur, unit] : cur.filter((u) => u !== unit)
+    const units = ['metric', 'imperial'].filter((u) => next.includes(u))
+    const current = s.item.point_label ?? {}
+    app.updateElement(s.category, s.idx, {
+      point_label: { ...current, units },
+    })
+  }
+
   function numVal(item, field) {
     return item[field] ?? ''
   }
@@ -216,6 +263,73 @@
             class="accent-primary" />
           <span class="text-xs text-zinc-400">Remove edge</span>
         </label>
+      </section>
+
+      <!-- Point Label — value text next to the marker -->
+      {@const pl = item.point_label}
+      <section class="mb-4 space-y-2">
+        <p class="text-[10px] uppercase tracking-wider text-zinc-600">Point Label</p>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={pl != null}
+            onchange={(e) => togglePointLabel(e.target.checked)}
+            class="accent-primary" />
+          <span class="text-xs text-zinc-400">Show current value at the marker</span>
+        </label>
+        {#if pl != null}
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={(pl.units ?? []).includes('metric')}
+                onchange={(e) => toggleUnit('metric', e.target.checked)}
+                class="accent-primary" />
+              <span class="text-xs text-zinc-400">Metric</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={(pl.units ?? []).includes('imperial')}
+                onchange={(e) => toggleUnit('imperial', e.target.checked)}
+                class="accent-primary" />
+              <span class="text-xs text-zinc-400">Imperial</span>
+            </label>
+          </div>
+          <label class="space-y-1 block">
+            <span class="text-xs text-zinc-500">Font</span>
+            <Select
+              value={pl.font ?? 'Furore.otf'}
+              options={FONTS.map((f) => ({ value: f, label: f.replace(/\.(ttf|otf)$/, '') }))}
+              onchange={(v) => updatePL('font', v)}
+            />
+          </label>
+          <label class="space-y-1 block">
+            <span class="text-xs text-zinc-500">Size</span>
+            <Input type="number" value={pl.font_size ?? 64} min={1}
+              oninput={(e) => updatePL('font_size', e.target.value)} />
+          </label>
+          <label class="space-y-1 block">
+            <span class="text-xs text-zinc-500">Color</span>
+            <div class="flex gap-2 items-center">
+              <input type="color" value={(pl.color ?? '#ffffff').slice(0, 7)}
+                oninput={(e) => updatePL('color', e.target.value)}
+                class="h-7 w-10 rounded border border-zinc-700 bg-zinc-800 cursor-pointer p-0.5" />
+              <Input value={pl.color ?? '#ffffffc8'} oninput={(e) => updatePL('color', e.target.value)} class="flex-1 font-mono text-xs" />
+            </div>
+          </label>
+          <div class="flex gap-2">
+            <label class="space-y-1 block flex-1">
+              <span class="text-xs text-zinc-500">X offset</span>
+              <Input type="number" value={pl.x_offset ?? 0}
+                oninput={(e) => updatePL('x_offset', e.target.value)} />
+            </label>
+            <label class="space-y-1 block flex-1">
+              <span class="text-xs text-zinc-500">Y offset</span>
+              <Input type="number" value={pl.y_offset ?? 0}
+                oninput={(e) => updatePL('y_offset', e.target.value)} />
+            </label>
+          </div>
+          <label class="space-y-1 block">
+            <span class="text-xs text-zinc-500">Decimal places</span>
+            <Input type="number" value={pl.decimal_rounding ?? 0} min={0} step={1}
+              oninput={(e) => updatePL('decimal_rounding', e.target.value)} />
+          </label>
+        {/if}
       </section>
     {/if}
 
