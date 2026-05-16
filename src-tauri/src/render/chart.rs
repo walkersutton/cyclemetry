@@ -3,10 +3,15 @@
 /// Pre-renders an entire chart to a cached Image once at scene init.
 /// Per-frame cost is then: one image blit + one circle draw.
 /// This replaces matplotlib's plt.savefig() which was 50–200ms per frame.
-use skia_safe::{Canvas, Color, ISize, ImageInfo, Paint, PaintStyle, PathBuilder, Point};
+use skia_safe::{
+    Canvas, Color, Font, ISize, ImageInfo, Paint, PaintStyle, PathBuilder, Point, Typeface,
+};
 
+use crate::render::activity::{
+    ATTR_ELEVATION, ATTR_SPEED, ATTR_TEMPERATURE, FT_CONVERSION, KMH_CONVERSION, MPH_CONVERSION,
+};
 use crate::render::color::to_skia_color;
-use crate::render::template::PlotConfig;
+use crate::render::template::{PlotConfig, PointLabelConfig};
 
 /// Pixel bounds of the data area inside a chart surface (excluding margins).
 #[derive(Debug, Clone)]
@@ -93,10 +98,21 @@ pub struct ChartCache {
     pub point_configs: Vec<crate::render::template::PointConfig>,
     /// Geographic mapping for course plots (None for non-GPS charts).
     pub geo: Option<GeoMapping>,
+    /// The plotted attribute (e.g. "elevation") — drives point-label units.
+    pub value_attr: String,
+    /// Optional value label drawn next to the live marker.
+    pub point_label: Option<PointLabelConfig>,
+    /// Typeface for the point label, loaded once (None if no label).
+    pub label_typeface: Option<Typeface>,
 }
 
 impl ChartCache {
-    pub fn build(config: &PlotConfig, x_data: Vec<f64>, y_data: Vec<f64>) -> Option<Self> {
+    pub fn build(
+        config: &PlotConfig,
+        x_data: Vec<f64>,
+        y_data: Vec<f64>,
+        fonts_dir: &str,
+    ) -> Option<Self> {
         if x_data.is_empty() || y_data.is_empty() {
             return None;
         }
@@ -166,6 +182,13 @@ impl ChartCache {
             geo.as_ref(),
         );
 
+        // Load the point-label typeface once (None when no label configured).
+        let point_label = config.point_label.clone();
+        let label_typeface = point_label.as_ref().and_then(|pl| {
+            let font = pl.font.as_deref().unwrap_or("Arial.ttf");
+            crate::render::frame::load_typeface(font, fonts_dir)
+        });
+
         Some(ChartCache {
             background,
             x_data,
@@ -179,6 +202,9 @@ impl ChartCache {
             plot_bounds,
             point_configs: config.points.clone().unwrap_or_default(),
             geo,
+            value_attr: config.value.clone(),
+            point_label,
+            label_typeface,
         })
     }
 
@@ -247,7 +273,82 @@ impl ChartCache {
                     canvas.draw_circle(abs_pt, radius, &ep);
                 }
             }
+
+            // 3. Optional value label next to the marker (e.g. "960 M" /
+            //    "3150 FT"), one line per unit, metric first.
+            if let (Some(pl), Some(tf)) = (&self.point_label, &self.label_typeface) {
+                let raw = self.y_data.get(frame_idx).copied().unwrap_or(0.0);
+                let size = pl.font_size.unwrap_or(32.0);
+                let font = Font::new(tf.clone(), size);
+                let color = pl
+                    .color
+                    .as_deref()
+                    .map(|c| to_skia_color(c, None))
+                    .unwrap_or(Color::WHITE);
+                let mut paint = Paint::default();
+                paint.set_anti_alias(true);
+                paint.set_color(color);
+
+                let xo = pl.x_offset.unwrap_or(0.0);
+                let yo = pl.y_offset.unwrap_or(0.0);
+                let dec = pl.decimal_rounding.unwrap_or(0);
+                let units = pl
+                    .units
+                    .clone()
+                    .unwrap_or_else(|| vec!["metric".to_string()]);
+                let (line_h, _) = font.metrics();
+                let n = units.len() as f32;
+
+                // Stack the block above the marker: last line sits `yo` above
+                // the dot, earlier lines higher; `xo` shifts right.
+                for (i, unit) in units.iter().enumerate() {
+                    let text = format_point_label(raw, &self.value_attr, unit, dec);
+                    let baseline_y = abs_pt.y - yo - (n - 1.0 - i as f32) * line_h;
+                    canvas.draw_str(&text, (abs_pt.x + xo, baseline_y), &font, &paint);
+                }
+            }
         }
+    }
+}
+
+/// Format a plotted value for a point label in the requested unit system,
+/// producing "<number> <SUFFIX>" (e.g. "960 M", "3150 FT"). `raw` is the
+/// attribute's native unit (elevation: metres, speed: m/s, temp: °C).
+fn format_point_label(raw: f64, attr: &str, unit: &str, decimals: i32) -> String {
+    let imperial = unit.eq_ignore_ascii_case("imperial");
+    let (value, suffix) = match attr {
+        ATTR_ELEVATION => {
+            if imperial {
+                (raw * FT_CONVERSION, "FT")
+            } else {
+                (raw, "M")
+            }
+        }
+        ATTR_SPEED => {
+            if imperial {
+                (raw * MPH_CONVERSION, "MPH")
+            } else {
+                (raw * KMH_CONVERSION, "KM/H")
+            }
+        }
+        ATTR_TEMPERATURE => {
+            if imperial {
+                (raw * 1.8 + 32.0, "F")
+            } else {
+                (raw, "C")
+            }
+        }
+        // Unknown attribute: no conversion, echo the unit token uppercased.
+        _ => return format!("{} {}", round_str(raw, decimals), unit.to_uppercase()),
+    };
+    format!("{} {}", round_str(value, decimals), suffix)
+}
+
+fn round_str(v: f64, decimals: i32) -> String {
+    if decimals > 0 {
+        format!("{:.*}", decimals as usize, v)
+    } else {
+        format!("{}", v.round() as i64)
     }
 }
 
@@ -352,4 +453,38 @@ fn render_chart_background(
     canvas.draw_path(&line_path, &line_paint);
 
     surface.image_snapshot()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_point_label;
+
+    #[test]
+    fn elevation_metric_and_imperial_match_screenshot_format() {
+        // 960 m -> "960 M"; 960 * 3.28084 = 3149.6 -> "3150 FT"
+        assert_eq!(format_point_label(960.0, "elevation", "metric", 0), "960 M");
+        assert_eq!(
+            format_point_label(960.0, "elevation", "imperial", 0),
+            "3150 FT"
+        );
+    }
+
+    #[test]
+    fn speed_temperature_and_decimals() {
+        assert_eq!(format_point_label(10.0, "speed", "metric", 0), "36 KM/H");
+        assert_eq!(format_point_label(10.0, "speed", "imperial", 0), "22 MPH");
+        assert_eq!(
+            format_point_label(0.0, "temperature", "imperial", 0),
+            "32 F"
+        );
+        assert_eq!(
+            format_point_label(959.74, "elevation", "metric", 1),
+            "959.7 M"
+        );
+    }
+
+    #[test]
+    fn unknown_attribute_echoes_unit_uppercased() {
+        assert_eq!(format_point_label(5.0, "power", "watts", 0), "5 WATTS");
+    }
 }

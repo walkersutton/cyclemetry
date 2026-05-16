@@ -136,7 +136,7 @@ impl SceneCache {
                 continue; // static plots handled in base frame
             }
             let (x_data, y_data) = activity.plot_data(&plot_cfg.value);
-            if let Some(cache) = ChartCache::build(plot_cfg, x_data, y_data) {
+            if let Some(cache) = ChartCache::build(plot_cfg, x_data, y_data, fonts_dir) {
                 charts.insert(plot_cfg.value.clone(), cache);
             }
         }
@@ -369,7 +369,9 @@ fn render_base_frame(
             continue; // dynamic charts handled per-frame
         }
         let (x_data, y_data) = activity.plot_data(&plot_cfg.value);
-        if let Some(chart) = crate::render::chart::ChartCache::build(plot_cfg, x_data, y_data) {
+        if let Some(chart) =
+            crate::render::chart::ChartCache::build(plot_cfg, x_data, y_data, fonts_dir)
+        {
             canvas.draw_image(
                 &chart.background,
                 skia_safe::Point::new(chart.x_offset as f32, chart.y_offset as f32),
@@ -429,7 +431,7 @@ fn draw_label(canvas: &Canvas, label: &LabelConfig, template: &Template, fonts_d
     }
 }
 
-fn load_typeface(font_name: &str, fonts_dir: &str) -> Option<Typeface> {
+pub(crate) fn load_typeface(font_name: &str, fonts_dir: &str) -> Option<Typeface> {
     let mgr = FontMgr::default();
     let path = format!("{fonts_dir}/{font_name}");
     if let Ok(bytes) = std::fs::read(&path) {
