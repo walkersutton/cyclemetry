@@ -191,39 +191,49 @@ pub fn render_frame(
         skia_safe::AlphaType::Premul,
         None,
     );
-    let mut surface = skia_safe::surfaces::raster(&info, None, None).expect("Skia surface");
-    let canvas = surface.canvas();
-
-    // Shift the world so the crop window maps to (0,0); all draw calls below
-    // keep using absolute overlay coordinates unchanged.
-    if ox != 0 || oy != 0 {
-        canvas.translate((-ox as f32, -oy as f32));
-    }
-
-    // 1. Blit pre-rendered base frame (static labels + static charts).
-    //    Drawing an Image reference — no extra allocation or byte copy.
-    canvas.draw_image(&cache.base_image, (0, 0), None);
-
-    // 2. Composite dynamic charts (cached background + position marker).
-    for chart in cache.charts.values() {
-        chart.draw_on_canvas(canvas, frame_idx);
-    }
-
-    // 3. Draw dynamic value text (speed, HR, elevation, etc.).
-    for val_cfg in &template.values {
-        let attr = &val_cfg.value;
-        if !activity.valid_attributes.contains(attr) {
-            continue;
-        }
-        let raw = activity.get_scalar(attr, frame_idx);
-        let display = format_value(raw, val_cfg);
-        draw_text_on_canvas(canvas, &display, val_cfg, template, &cache.typefaces);
-    }
-
-    // 4. Extract raw BGRA bytes.
-    let mut pixels = vec![0u8; (w * h * 4) as usize];
     let row_bytes = (w * 4) as usize;
-    surface.read_pixels(&info, &mut pixels, row_bytes, skia_safe::IPoint::new(0, 0));
+
+    // Composite straight into the output buffer: wrap a raster surface around
+    // `pixels` so Skia draws in place. This drops both the surface's separate
+    // backing-store allocation and the full-frame read_pixels copy the old
+    // raster()+read_pixels path paid every frame. Render is fully hidden behind
+    // encode, so this is a memory-traffic / allocator-churn win, not a speedup.
+    // A fresh vec is zeroed = transparent BGRA; the base image covers the whole
+    // crop window, so no explicit clear is needed.
+    let mut pixels = vec![0u8; (h as usize) * row_bytes];
+    {
+        let mut surface =
+            skia_safe::surfaces::wrap_pixels(&info, &mut pixels, Some(row_bytes), None)
+                .expect("Skia surface");
+        let canvas = surface.canvas();
+
+        // Shift the world so the crop window maps to (0,0); all draw calls
+        // below keep using absolute overlay coordinates unchanged.
+        if ox != 0 || oy != 0 {
+            canvas.translate((-ox as f32, -oy as f32));
+        }
+
+        // 1. Blit pre-rendered base frame (static labels + static charts).
+        //    Drawing an Image reference — no extra allocation or byte copy.
+        canvas.draw_image(&cache.base_image, (0, 0), None);
+
+        // 2. Composite dynamic charts (cached background + position marker).
+        for chart in cache.charts.values() {
+            chart.draw_on_canvas(canvas, frame_idx);
+        }
+
+        // 3. Draw dynamic value text (speed, HR, elevation, etc.).
+        for val_cfg in &template.values {
+            let attr = &val_cfg.value;
+            if !activity.valid_attributes.contains(attr) {
+                continue;
+            }
+            let raw = activity.get_scalar(attr, frame_idx);
+            let display = format_value(raw, val_cfg);
+            draw_text_on_canvas(canvas, &display, val_cfg, template, &cache.typefaces);
+        }
+    } // surface dropped here → releases the &mut pixels borrow
+
     pixels
 }
 
@@ -534,5 +544,39 @@ mod tests {
         // Actually smaller than the full frame (the whole point).
         let frac = (crop.w as f64 * crop.h as f64) / (fw as f64 * fh as f64);
         assert!(frac < 0.95, "crop not a meaningful subregion: {frac:.2}");
+    }
+
+    /// Exercises the wrap_pixels path end-to-end: Skia must composite into the
+    /// caller-owned buffer (not a detached surface). A correctly drawn frame
+    /// from a template with visible elements is the right size and not blank.
+    #[test]
+    fn render_frame_composites_into_the_returned_buffer() {
+        let manifest = env!("CARGO_MANIFEST_DIR");
+        let tmpl_path = format!("{manifest}/../templates/safa_brian.json");
+        let fonts_dir = format!("{manifest}/../resources/fonts");
+
+        let raw: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&tmpl_path).unwrap()).unwrap();
+        let template = Template::from_value(raw).unwrap();
+
+        let mut activity = Activity::parse_gpx(&synthetic_gpx()).unwrap();
+        activity.interpolate(template.scene.fps);
+
+        let cache = SceneCache::build(&activity, &template, &fonts_dir).unwrap();
+        let crop = compute_crop_rect(&activity, &template, &fonts_dir).unwrap();
+
+        let buf = render_frame(0, &cache, &activity, &template, Some(&crop));
+
+        assert_eq!(
+            buf.len(),
+            crop.w as usize * crop.h as usize * 4,
+            "buffer size must match the crop window"
+        );
+        // wrap_pixels drew into *this* buffer: a template with a course plot +
+        // labels must leave some non-transparent (non-zero) pixels.
+        assert!(
+            buf.iter().any(|&b| b != 0),
+            "frame is entirely blank — Skia did not composite into the buffer"
+        );
     }
 }
