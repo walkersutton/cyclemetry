@@ -37,7 +37,10 @@ jobs:
         run: pnpm install
 
       - name: Build Tauri app
-        run: pnpm build
+        # createUpdaterArtifacts is enabled here (CI only) — not in
+        # tauri.conf.json — so local `pnpm build` doesn't require the
+        # signing key. CI has it via the secrets below.
+        run: pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":true}}'
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
