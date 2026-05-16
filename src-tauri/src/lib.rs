@@ -771,11 +771,13 @@ async fn native_demo(
         // frame_index is relative to trimmed+interpolated activity start (0-based).
         let frame_idx = (frame_index as usize).min(cached.activity.data_len().saturating_sub(1));
 
+        // Preview renders the full frame (placement context); no crop.
         let rgba = render::frame::render_frame(
             frame_idx,
             &cached.scene_cache,
             &cached.activity,
             &cached.template,
+            None,
         );
         let elements = render::frame::measure_elements(
             frame_idx,

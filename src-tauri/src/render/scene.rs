@@ -82,9 +82,32 @@ pub fn render_video(
     let cache = SceneCache::build(&activity, template, fonts_dir)
         .map_err(|e| format!("Cache build failed: {e}"))?;
 
-    // Ensure even dimensions (codec requirement)
-    let w = (cache.width + 1) & !1;
-    let h = (cache.height + 1) & !1;
+    // --- Crop to the union of all visible elements ---
+    // The overlay is mostly transparent; rasterising + piping + encoding the
+    // full 4K frame is overhead. compute_crop_rect returns None when cropping
+    // wouldn't pay off, in which case we keep the full-frame path.
+    let crop = crate::render::frame::compute_crop_rect(&activity, template, fonts_dir);
+    let (w, h) = match &crop {
+        Some(c) => {
+            log::info!(
+                "render_video: cropping to {}x{} at offset ({},{}) — {:.0}% of {}x{} frame",
+                c.w,
+                c.h,
+                c.x,
+                c.y,
+                100.0 * (c.w as f32 * c.h as f32) / (cache.width as f32 * cache.height as f32),
+                cache.width,
+                cache.height
+            );
+            (c.w, c.h)
+        }
+        // Ensure even dimensions (codec requirement)
+        None => ((cache.width + 1) & !1, (cache.height + 1) & !1),
+    };
+
+    // Snapshot the full canvas before `cache` is moved into the producer
+    // closure; needed for the placement sidecar after the render scope.
+    let (full_w, full_h) = (cache.width, cache.height);
 
     // --- Spawn FFmpeg ---
     let ffmpeg_bin = resolve_ffmpeg();
@@ -180,7 +203,7 @@ pub fn render_video(
                 let t0 = Instant::now();
                 let frames: Vec<Vec<u8>> = (sent..chunk_end)
                     .into_par_iter()
-                    .map(|i| render_frame(i, &cache, &activity, template))
+                    .map(|i| render_frame(i, &cache, &activity, template, crop.as_ref()))
                     .collect();
                 let render_elapsed = t0.elapsed();
                 total_render += render_elapsed;
@@ -200,27 +223,29 @@ pub fn render_video(
 
         // Consumer thread: drain frames from the channel and write to FFmpeg stdin.
         // stdin is moved in so the pipe closes (EOF) when this thread exits.
-        // O_NONBLOCK is set on the fd so write() returns WouldBlock instead of
-        // blocking indefinitely when the pipe buffer is full (disk I/O bottleneck).
-        // This lets us check the cancel flag on every 1ms retry, guaranteeing
-        // cancel latency ≤ ~2ms regardless of disk speed.
+        //
+        // Blocking write_all: the kernel wakes the writer the instant pipe
+        // space frees, so feed throughput tracks FFmpeg's encode rate exactly.
+        // (The previous O_NONBLOCK + 1ms-sleep poll fed at best one pipe buffer
+        // per scheduler quantum — an order-of-magnitude throughput tax that
+        // dominated wall time once the frames themselves were cheap.)
+        // Cancellation stays prompt: the watchdog below kills FFmpeg on cancel,
+        // which breaks the pipe so write_all returns EPIPE immediately; we also
+        // check the cancel flag once per frame (≤ one frame of latency).
         let cancelled_consumer = Arc::clone(&progress.cancelled);
         let frames_counter = Arc::clone(&progress.frames_rendered);
         let consumer = s.spawn(move || -> (Option<String>, Duration) {
             use std::io::Write as _;
-            use std::os::unix::io::AsRawFd;
-            unsafe {
-                let fd = stdin.as_raw_fd();
-                let flags = libc::fcntl(fd, libc::F_GETFL, 0);
-                libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK);
-            }
 
             let drain_start = Instant::now();
             let mut frame_idx = 0usize;
             let mut consumer_err: Option<String> = None;
             let mut last_write_log = Instant::now();
 
-            'outer: while let Ok(data) = rx.recv() {
+            while let Ok(data) = rx.recv() {
+                if cancelled_consumer.load(Ordering::Relaxed) {
+                    break;
+                }
                 if last_write_log.elapsed() >= Duration::from_secs(5) {
                     log::info!(
                         "consumer: writing frame {frame_idx}/{total_frames} \
@@ -229,30 +254,14 @@ pub fn render_video(
                     );
                     last_write_log = Instant::now();
                 }
-                let mut offset = 0usize;
-                loop {
-                    if cancelled_consumer.load(Ordering::Relaxed) {
-                        break 'outer;
+                if let Err(e) = stdin.write_all(&data) {
+                    // EPIPE = FFmpeg exited (cancel watchdog kill, or an encode
+                    // error surfaced via stderr); silent for the cancel case.
+                    let msg = e.to_string();
+                    if !msg.contains("Broken pipe") && !msg.contains("os error 32") {
+                        consumer_err = Some(format!("FFmpeg pipe error at frame {frame_idx}: {e}"));
                     }
-                    if offset >= data.len() {
-                        break;
-                    }
-                    match stdin.write(&data[offset..]) {
-                        Ok(0) => break,
-                        Ok(n) => offset += n,
-                        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                            std::thread::sleep(Duration::from_millis(1));
-                        }
-                        Err(e) => {
-                            // EPIPE = FFmpeg killed by cancel watchdog; silent exit.
-                            let msg = e.to_string();
-                            if !msg.contains("Broken pipe") && !msg.contains("os error 32") {
-                                consumer_err =
-                                    Some(format!("FFmpeg pipe error at frame {frame_idx}: {e}"));
-                            }
-                            break 'outer;
-                        }
-                    }
+                    break;
                 }
                 frame_idx += 1;
                 frames_counter.store(frame_idx as u64, Ordering::Relaxed);
@@ -395,10 +404,64 @@ pub fn render_video(
         ));
     }
 
+    // Cropped output is smaller than the footage canvas — record exactly where
+    // it must be positioned so it isn't guessed-at in the editor later.
+    if let Some(c) = crop {
+        write_placement_sidecar(output_path, c, full_w, full_h);
+    }
+
     Ok(())
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+/// Write a human-readable placement file next to the cropped `.mov`. The crop
+/// trims the transparent margin, so the video is smaller than the footage
+/// canvas and must be offset when composited. The file travels with the video
+/// (it's keyed off the output path) so the offset is available whenever the
+/// editor project is opened.
+fn write_placement_sidecar(
+    output_path: &str,
+    crop: crate::render::frame::CropRect,
+    full_w: u32,
+    full_h: u32,
+) {
+    let (x, y, w, h) = (crop.x, crop.y, crop.w as i32, crop.h as i32);
+    // Final Cut "Transform → Position" is measured from the project centre,
+    // +X right and +Y up. Screen Y grows downward, hence the inversion.
+    let fcp_x = (x + w / 2) - (full_w as i32 / 2);
+    let fcp_y = (full_h as i32 / 2) - (y + h / 2);
+
+    let name = std::path::Path::new(output_path)
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
+    let body = format!(
+        "Cyclemetry overlay placement\n\
+         ============================\n\
+         Overlay video : {name}\n\
+         Overlay size  : {w} x {h} px\n\
+         Full canvas   : {full_w} x {full_h} px  (match your footage resolution)\n\
+         \n\
+         The overlay was cropped to the region that actually contains pixels,\n\
+         so it is smaller than the canvas. Position it over your footage as:\n\
+         \n\
+         Top-left placement (unambiguous):\n\
+         \tx = {x} px , y = {y} px   from the top-left of the {full_w} x {full_h} canvas\n\
+         \n\
+         Final Cut Pro — select the overlay clip, open Transform, set Position\n\
+         (assumes the FCP project/timeline is {full_w} x {full_h}):\n\
+         \tX = {fcp_x}\n\
+         \tY = {fcp_y}\n",
+    );
+
+    let sidecar = format!("{output_path}.placement.txt");
+    match std::fs::write(&sidecar, body) {
+        Ok(()) => log::info!("render_video: wrote placement info to {sidecar}"),
+        Err(e) => log::warn!("failed to write placement sidecar {sidecar}: {e}"),
+    }
+}
 
 fn resolve_ffmpeg() -> String {
     if let Ok(exe) = std::env::current_exe() {

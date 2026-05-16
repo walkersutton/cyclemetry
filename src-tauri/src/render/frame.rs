@@ -155,15 +155,35 @@ impl SceneCache {
     }
 }
 
-/// Render a single video frame and return raw RGBA bytes.
+/// Rectangular sub-region of the full overlay frame, in overlay pixel coords.
+/// When a render is cropped to the union of all visible elements, only this
+/// window is rasterised + piped + encoded — the rest is fully transparent and
+/// pure overhead. `x`/`y` is the placement offset the compositor needs.
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct CropRect {
+    pub x: i32,
+    pub y: i32,
+    pub w: u32,
+    pub h: u32,
+}
+
+/// Render a single video frame and return raw BGRA bytes.
+///
+/// `crop`: when `Some`, the surface is sized to the crop window and the canvas
+/// is translated so all absolute-coordinate draws (base image, charts, text)
+/// land correctly while only the window is captured. `None` = full frame
+/// (preview path).
 pub fn render_frame(
     frame_idx: usize,
     cache: &SceneCache,
     activity: &Activity,
     template: &Template,
+    crop: Option<&CropRect>,
 ) -> Vec<u8> {
-    let w = cache.width as i32;
-    let h = cache.height as i32;
+    let (w, h, ox, oy) = match crop {
+        Some(c) => (c.w as i32, c.h as i32, c.x, c.y),
+        None => (cache.width as i32, cache.height as i32, 0, 0),
+    };
 
     let info = ImageInfo::new(
         ISize::new(w, h),
@@ -173,6 +193,12 @@ pub fn render_frame(
     );
     let mut surface = skia_safe::surfaces::raster(&info, None, None).expect("Skia surface");
     let canvas = surface.canvas();
+
+    // Shift the world so the crop window maps to (0,0); all draw calls below
+    // keep using absolute overlay coordinates unchanged.
+    if ox != 0 || oy != 0 {
+        canvas.translate((-ox as f32, -oy as f32));
+    }
 
     // 1. Blit pre-rendered base frame (static labels + static charts).
     //    Drawing an Image reference — no extra allocation or byte copy.
@@ -194,11 +220,112 @@ pub fn render_frame(
         draw_text_on_canvas(canvas, &display, val_cfg, template, &cache.typefaces);
     }
 
-    // 4. Extract raw RGBA bytes.
+    // 4. Extract raw BGRA bytes.
     let mut pixels = vec![0u8; (w * h * 4) as usize];
     let row_bytes = (w * 4) as usize;
     surface.read_pixels(&info, &mut pixels, row_bytes, skia_safe::IPoint::new(0, 0));
     pixels
+}
+
+/// Union bounding box of every element that is ever drawn, across all frames.
+///
+/// Plots/labels are static; value text changes width frame-to-frame, so values
+/// are measured at every frame (cheap: one cached `Font` per config). The box
+/// is padded, clamped to the frame, and rounded to even dimensions. Returns
+/// `None` when the box covers ≥95% of the frame (cropping wouldn't pay off) or
+/// there is nothing to draw — callers fall back to the full-frame path.
+pub fn compute_crop_rect(
+    activity: &Activity,
+    template: &Template,
+    fonts_dir: &str,
+) -> Option<CropRect> {
+    let fw = template.scene.width as f32;
+    let fh = template.scene.height as f32;
+
+    let (mut min_x, mut min_y) = (f32::INFINITY, f32::INFINITY);
+    let (mut max_x, mut max_y) = (f32::NEG_INFINITY, f32::NEG_INFINITY);
+    let mut acc = |x0: f32, y0: f32, x1: f32, y1: f32| {
+        min_x = min_x.min(x0);
+        min_y = min_y.min(y0);
+        max_x = max_x.max(x1);
+        max_y = max_y.max(y1);
+    };
+
+    // Plots: fixed rect (may extend off-frame; clamped later).
+    for p in &template.plots {
+        acc(
+            p.x as f32,
+            p.y as f32,
+            (p.x as f32) + p.width as f32,
+            (p.y as f32) + p.height as f32,
+        );
+    }
+
+    // Static labels.
+    for label in &template.labels {
+        let name = label
+            .font
+            .as_deref()
+            .or(template.scene.font.as_deref())
+            .unwrap_or("Arial.ttf");
+        let size = label.font_size.or(template.scene.font_size).unwrap_or(32.0);
+        if let Some(font) = load_font(name, size, fonts_dir) {
+            let (_, r) = font.measure_str(&label.text, None);
+            acc(
+                label.x + r.left,
+                label.y + r.top,
+                label.x + r.right,
+                label.y + r.bottom,
+            );
+        }
+    }
+
+    // Dynamic values: build the Font once per config, measure every frame.
+    let n = activity.data_len();
+    for vc in &template.values {
+        if !activity.valid_attributes.contains(&vc.value) {
+            continue;
+        }
+        let name = vc
+            .font
+            .as_deref()
+            .or(template.scene.font.as_deref())
+            .unwrap_or("Arial.ttf");
+        let size = vc.font_size.or(template.scene.font_size).unwrap_or(32.0);
+        let Some(font) = load_font(name, size, fonts_dir) else {
+            continue;
+        };
+        for i in 0..n {
+            let text = format_value(activity.get_scalar(&vc.value, i), vc);
+            let (_, r) = font.measure_str(&text, None);
+            acc(vc.x + r.left, vc.y + r.top, vc.x + r.right, vc.y + r.bottom);
+        }
+    }
+
+    if !min_x.is_finite() || !max_x.is_finite() || max_x <= min_x || max_y <= min_y {
+        return None;
+    }
+
+    // Pad, clamp to frame, round origin down / extent up to even dimensions.
+    const PAD: f32 = 16.0;
+    let x0 = (min_x - PAD).floor().max(0.0);
+    let y0 = (min_y - PAD).floor().max(0.0);
+    let x1 = (max_x + PAD).ceil().min(fw);
+    let y1 = (max_y + PAD).ceil().min(fh);
+
+    let x = x0 as i32 & !1;
+    let y = y0 as i32 & !1;
+    let w = (((x1 as i32) - x).max(2) as u32 + 1) & !1;
+    let h = (((y1 as i32) - y).max(2) as u32 + 1) & !1;
+    let w = w.min(template.scene.width - x as u32);
+    let h = h.min(template.scene.height - y as u32);
+
+    // Not worth the contract change if the box is essentially the whole frame.
+    if (w as f32 * h as f32) >= 0.95 * fw * fh {
+        return None;
+    }
+
+    Some(CropRect { x, y, w, h })
 }
 
 // ─── Base frame pre-renderer ───────────────────────────────────────────────
@@ -349,5 +476,63 @@ fn format_value(raw: f64, cfg: &ValueConfig) -> String {
     match &cfg.suffix {
         Some(s) => format!("{text}{s}"),
         None => text,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::render::activity::Activity;
+    use crate::render::template::Template;
+
+    /// Minimal synthetic GPX: a short track with moving position + varying
+    /// elevation so course/elevation plots and values all have real extents.
+    fn synthetic_gpx() -> String {
+        let mut s = String::from(r#"<?xml version="1.0"?><gpx><trk><trkseg>"#);
+        for i in 0..40 {
+            let lat = 37.0 + i as f64 * 0.001;
+            let lon = -122.0 + i as f64 * 0.0012;
+            let ele = 100.0 + (i as f64 * 7.0);
+            let t = format!("2026-01-01T00:{:02}:{:02}Z", i / 60, i % 60);
+            s.push_str(&format!(
+                "<trkpt lat=\"{lat}\" lon=\"{lon}\"><ele>{ele}</ele><time>{t}</time>\
+                 <extensions><TrackPointExtension><hr>{}</hr><cad>{}</cad>\
+                 </TrackPointExtension></extensions></trkpt>",
+                120 + i,
+                80 + (i % 10)
+            ));
+        }
+        s.push_str("</trkseg></trk></gpx>");
+        s
+    }
+
+    #[test]
+    fn crop_rect_is_a_valid_subregion_of_localized_template() {
+        let manifest = env!("CARGO_MANIFEST_DIR");
+        let tmpl_path = format!("{manifest}/../templates/safa_brian.json");
+        let fonts_dir = format!("{manifest}/../resources/fonts");
+
+        let raw: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&tmpl_path).unwrap()).unwrap();
+        let template = Template::from_value(raw).unwrap();
+
+        let mut activity = Activity::parse_gpx(&synthetic_gpx()).unwrap();
+        activity.interpolate(template.scene.fps);
+
+        let crop = compute_crop_rect(&activity, &template, &fonts_dir)
+            .expect("localized template should yield a crop");
+
+        let (fw, fh) = (template.scene.width, template.scene.height);
+        // Inside the frame.
+        assert!(crop.x >= 0 && crop.y >= 0, "origin negative: {crop:?}");
+        assert!(
+            crop.x as u32 + crop.w <= fw && crop.y as u32 + crop.h <= fh,
+            "crop {crop:?} exceeds {fw}x{fh}"
+        );
+        // Even dimensions (codec requirement).
+        assert!(crop.w % 2 == 0 && crop.h % 2 == 0, "odd dims: {crop:?}");
+        // Actually smaller than the full frame (the whole point).
+        let frac = (crop.w as f64 * crop.h as f64) / (fw as f64 * fh as f64);
+        assert!(frac < 0.95, "crop not a meaningful subregion: {frac:.2}");
     }
 }
