@@ -39,7 +39,7 @@
         <div>
           <h2 class="text-lg font-semibold">{finalizing ? 'Finalizing Video' : 'Generating Video'}</h2>
           <p class="text-xs text-zinc-500 mt-0.5">
-            {finalizing ? 'Encoding output file…' : `${p.current.toLocaleString()} / ${p.total.toLocaleString()} frames`}
+            {finalizing ? 'Encoding output file…' : `${formatTime(p.overlaySecondsRendered)} / ${formatTime(p.overlayTotalSeconds)} of overlay rendered`}
           </p>
         </div>
       </div>

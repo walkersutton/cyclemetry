@@ -37,6 +37,8 @@ export function createAppState() {
     percent: 0,
     status: 'idle',
     estimatedSecondsRemaining: null,
+    overlaySecondsRendered: 0,
+    overlayTotalSeconds: 0,
   })
 
   // ── Persistence effects ───────────────────────────────────────────────────

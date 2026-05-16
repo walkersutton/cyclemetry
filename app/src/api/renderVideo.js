@@ -11,6 +11,8 @@ export default async function renderVideo(state) {
       `Timeline start (${start}s) must be less than end (${end}s) — fix the timeline range before rendering`,
     )
 
+  const fps = config.scene.fps ?? 30
+
   state.renderingVideo = true
 
   try {
@@ -44,6 +46,11 @@ export default async function renderVideo(state) {
             percent: pct,
             status: 'rendering',
             estimatedSecondsRemaining: remaining,
+            // Overlay timeline position (NOT wall-clock): how much of the
+            // overlay's own duration has been rendered, so the user can sanity
+            // -check the render length while it runs.
+            overlaySecondsRendered: p.frames_rendered / fps,
+            overlayTotalSeconds: p.total_frames / fps,
           }
           if (!p.is_running) {
             clearInterval(iv)
