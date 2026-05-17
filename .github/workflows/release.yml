@@ -66,6 +66,13 @@ jobs:
             done < <(otool -L "$dylib" | grep '/opt/homebrew' | awk '{print $1}')
           done
 
+          # Re-sign everything with ad-hoc signature — install_name_tool invalidates
+          # the existing signature; on Apple Silicon unsigned binaries are SIGKILL'd
+          codesign --force --sign - resources/ffmpeg
+          for dylib in resources/ffmpeg-libs/*.dylib; do
+            codesign --force --sign - "$dylib"
+          done
+
       - name: Install frontend dependencies
         run: pnpm install
 
