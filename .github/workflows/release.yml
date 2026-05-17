@@ -33,45 +33,27 @@ jobs:
 
       - name: Setup FFmpeg
         run: |
-          brew install ffmpeg
-          cp $(which ffmpeg) resources/ffmpeg
+          # Statically-linked ffmpeg: one self-contained binary, no Homebrew
+          # dylibs, no install_name_tool (which corrupts the signature and gets
+          # the process SIGKILL'd by AMFI on Apple Silicon).
+          curl -L --fail -o ffmpeg.zip https://evermeet.cx/ffmpeg/getrelease/zip
+          unzip -o ffmpeg.zip
+          mv ffmpeg resources/ffmpeg
           chmod +x resources/ffmpeg
-          mkdir -p resources/ffmpeg-libs
 
-          # Recursively collect all Homebrew dylibs ffmpeg depends on
-          changed=1
-          while [ $changed -eq 1 ]; do
-            changed=0
-            for src in resources/ffmpeg resources/ffmpeg-libs/*.dylib; do
-              [ -f "$src" ] || continue
-              while IFS= read -r lib; do
-                name=$(basename "$lib")
-                if [ ! -f "resources/ffmpeg-libs/$name" ]; then
-                  cp "$lib" "resources/ffmpeg-libs/$name"
-                  changed=1
-                fi
-              done < <(otool -L "$src" | grep '/opt/homebrew' | awk '{print $1}')
-            done
-          done
+          # Hard-fail the build if it isn't a self-contained arm64 binary
+          lipo -archs resources/ffmpeg
+          lipo -archs resources/ffmpeg | grep -q arm64 \
+            || { echo "ffmpeg missing arm64 slice"; exit 1; }
+          otool -L resources/ffmpeg
+          if otool -L resources/ffmpeg | tail -n +2 | grep -vqE '/usr/lib/|/System/'; then
+            echo "ffmpeg has non-system dynamic dependencies — not static"; exit 1
+          fi
 
-          # In the ffmpeg binary: rewrite to @loader_path/ffmpeg-libs/libXXX.dylib
-          while IFS= read -r lib; do
-            install_name_tool -change "$lib" "@loader_path/ffmpeg-libs/$(basename $lib)" resources/ffmpeg
-          done < <(otool -L resources/ffmpeg | grep '/opt/homebrew' | awk '{print $1}')
-
-          # In each dylib: rewrite to @loader_path/libXXX.dylib (same directory)
-          for dylib in resources/ffmpeg-libs/*.dylib; do
-            while IFS= read -r dep; do
-              install_name_tool -change "$dep" "@loader_path/$(basename $dep)" "$dylib"
-            done < <(otool -L "$dylib" | grep '/opt/homebrew' | awk '{print $1}')
-          done
-
-          # Re-sign everything with ad-hoc signature — install_name_tool invalidates
-          # the existing signature; on Apple Silicon unsigned binaries are SIGKILL'd
-          codesign --force --sign - resources/ffmpeg
-          for dylib in resources/ffmpeg-libs/*.dylib; do
-            codesign --force --sign - "$dylib"
-          done
+          # evermeet builds ship Developer-ID-signed + notarized. Keep that
+          # signature if valid; only ad-hoc re-sign as a fallback.
+          codesign --verify -vv resources/ffmpeg || codesign --force --sign - resources/ffmpeg
+          codesign -dv resources/ffmpeg 2>&1 | head -5
 
       - name: Install frontend dependencies
         run: pnpm install
