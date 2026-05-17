@@ -33,11 +33,38 @@ jobs:
 
       - name: Setup FFmpeg
         run: |
-          brew install ffmpeg dylibbundler
+          brew install ffmpeg
           cp $(which ffmpeg) resources/ffmpeg
           chmod +x resources/ffmpeg
           mkdir -p resources/ffmpeg-libs
-          dylibbundler -od -b -x resources/ffmpeg -d resources/ffmpeg-libs/ -p '@loader_path/ffmpeg-libs/'
+
+          # Recursively collect all Homebrew dylibs ffmpeg depends on
+          changed=1
+          while [ $changed -eq 1 ]; do
+            changed=0
+            for src in resources/ffmpeg resources/ffmpeg-libs/*.dylib; do
+              [ -f "$src" ] || continue
+              while IFS= read -r lib; do
+                name=$(basename "$lib")
+                if [ ! -f "resources/ffmpeg-libs/$name" ]; then
+                  cp "$lib" "resources/ffmpeg-libs/$name"
+                  changed=1
+                fi
+              done < <(otool -L "$src" | grep '/opt/homebrew' | awk '{print $1}')
+            done
+          done
+
+          # In the ffmpeg binary: rewrite to @loader_path/ffmpeg-libs/libXXX.dylib
+          while IFS= read -r lib; do
+            install_name_tool -change "$lib" "@loader_path/ffmpeg-libs/$(basename $lib)" resources/ffmpeg
+          done < <(otool -L resources/ffmpeg | grep '/opt/homebrew' | awk '{print $1}')
+
+          # In each dylib: rewrite to @loader_path/libXXX.dylib (same directory)
+          for dylib in resources/ffmpeg-libs/*.dylib; do
+            while IFS= read -r dep; do
+              install_name_tool -change "$dep" "@loader_path/$(basename $dep)" "$dylib"
+            done < <(otool -L "$dylib" | grep '/opt/homebrew' | awk '{print $1}')
+          done
 
       - name: Install frontend dependencies
         run: pnpm install
