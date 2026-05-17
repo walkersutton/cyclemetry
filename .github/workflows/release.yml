@@ -8,6 +8,9 @@ on:
 jobs:
   build-macos:
     runs-on: macos-latest
+    # Signing secrets live in the "cyclemetry" GitHub Environment; a job only
+    # receives environment-scoped secrets if it declares the environment.
+    environment: cyclemetry
     permissions:
       contents: write
 
