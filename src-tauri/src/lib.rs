@@ -292,10 +292,18 @@ fn backend_list_templates() -> Result<String, String> {
                     } else {
                         "built-in"
                     };
+                    let base = fname.trim_end_matches(".json");
+                    let preview_url = match type_label {
+                        "user" => serde_json::Value::Null,
+                        _ => {
+                            serde_json::Value::String(format!("{GITHUB_RAW_TEMPLATES}/{base}.jpg"))
+                        }
+                    };
                     templates.push(serde_json::json!({
                         "id": fname,
                         "name": display,
-                        "type": type_label
+                        "type": type_label,
+                        "preview_url": preview_url
                     }));
                 }
             }
@@ -444,7 +452,7 @@ fn gpx_metadata_response(filename: &str, path: &str) -> Result<String, String> {
 #[cfg(not(debug_assertions))]
 const GITHUB_API_TEMPLATES: &str =
     "https://api.github.com/repos/walkersutton/cyclemetry/contents/templates";
-#[cfg(not(debug_assertions))]
+// Available in both dev and release for constructing preview URLs.
 const GITHUB_RAW_TEMPLATES: &str =
     "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates";
 
@@ -476,8 +484,14 @@ fn community_templates_from_disk() -> Result<String, String> {
         if ftype.is_file() && name.ends_with(".json") {
             let fname = name.to_string();
             if seen.insert(fname.clone()) {
-                let display = template_display_name(fname.trim_end_matches(".json"));
-                templates.push(serde_json::json!({ "id": fname, "name": display }));
+                let base = fname.trim_end_matches(".json");
+                let display = template_display_name(base);
+                let preview_url = format!("{GITHUB_RAW_TEMPLATES}/{base}.jpg");
+                templates.push(serde_json::json!({
+                    "id": fname,
+                    "name": display,
+                    "preview_url": preview_url
+                }));
             }
         }
     }
@@ -501,20 +515,39 @@ async fn community_templates_from_github() -> Result<String, String> {
         .map_err(|e| format!("Parse error: {e}"))?;
 
     let entries = root.as_array().ok_or("Expected array from GitHub API")?;
-    let mut templates: Vec<serde_json::Value> = Vec::new();
 
+    // Build preview map: template basename → image raw URL
+    let mut preview_urls: std::collections::HashMap<String, String> =
+        std::collections::HashMap::new();
     for entry in entries {
         let name = entry["name"].as_str().unwrap_or("");
-        match entry["type"].as_str().unwrap_or("") {
-            "file" if name.ends_with(".json") => {
-                let display = template_display_name(name.trim_end_matches(".json"));
-                templates.push(serde_json::json!({
-                    "id": name,
-                    "name": display,
-                    "download_url": format!("{GITHUB_RAW_TEMPLATES}/{name}")
-                }));
+        if entry["type"] == "file" {
+            if let Some(base) = name
+                .strip_suffix(".jpg")
+                .or_else(|| name.strip_suffix(".png"))
+            {
+                if let Some(url) = entry["download_url"].as_str() {
+                    preview_urls.insert(base.to_string(), url.to_string());
+                }
             }
-            _ => {}
+        }
+    }
+
+    let mut templates: Vec<serde_json::Value> = Vec::new();
+    for entry in entries {
+        let name = entry["name"].as_str().unwrap_or("");
+        if entry["type"] == "file" && name.ends_with(".json") {
+            let base = name.trim_end_matches(".json");
+            let display = template_display_name(base);
+            let preview_url = preview_urls
+                .get(base)
+                .cloned()
+                .unwrap_or_else(|| format!("{GITHUB_RAW_TEMPLATES}/{base}.jpg"));
+            templates.push(serde_json::json!({
+                "id": name,
+                "name": display,
+                "preview_url": preview_url
+            }));
         }
     }
 

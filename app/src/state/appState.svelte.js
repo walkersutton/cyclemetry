@@ -30,6 +30,7 @@ export function createAppState() {
   let successMessage = $state(null)
   let successTimer = null
   let templates = $state([])
+  let showTemplatePicker = $state(false)
   let selectedElementId = $state(null)
   let renderProgress = $state({
     current: 0,
@@ -255,6 +256,12 @@ export function createAppState() {
     },
     set templates(v) {
       templates = v
+    },
+    get showTemplatePicker() {
+      return showTemplatePicker
+    },
+    set showTemplatePicker(v) {
+      showTemplatePicker = v
     },
     get selectedElementId() {
       return selectedElementId

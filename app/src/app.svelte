@@ -14,7 +14,7 @@
   import ErrorToast from './components/overlays/ErrorToast.svelte'
   import UpdateBanner from './components/overlays/UpdateBanner.svelte'
   import Settings from './components/overlays/Settings.svelte'
-  import CommunityTemplatesModal from './components/overlays/CommunityTemplatesModal.svelte'
+  import TemplatePickerModal from './components/overlays/TemplatePickerModal.svelte'
   import Button from './components/ui/Button.svelte'
   import Tooltip from './components/ui/Tooltip.svelte'
 
@@ -26,7 +26,6 @@
 
   let rendering = $state(false)
   let showSettings = $state(false)
-  let showCommunityTemplates = $state(false)
   let buildInfo = $state('')
 
   onMount(() => {
@@ -43,7 +42,7 @@
         listen('menu_show_downloads',   () => handleOpenDownloads()),
         listen('menu_show_templates',   () => backend.openTemplatesFolder().catch(() => {})),
         listen('menu_settings',         () => { showSettings = true }),
-        listen('menu_browse_community_templates', () => { showCommunityTemplates = true }),
+        listen('menu_browse_community_templates', () => { app.showTemplatePicker = true }),
       ]
       return () => unlisteners.forEach(p => p.then(fn => fn()))
     }
@@ -135,8 +134,8 @@
   {#if showSettings}
     <Settings onclose={() => { showSettings = false }} />
   {/if}
-  {#if showCommunityTemplates}
-    <CommunityTemplatesModal onclose={() => { showCommunityTemplates = false }} />
+  {#if app.showTemplatePicker}
+    <TemplatePickerModal onclose={() => { app.showTemplatePicker = false }} />
   {/if}
 
   <!-- ── Header ─────────────────────────────────────────────────────────────── -->
