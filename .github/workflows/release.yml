@@ -33,8 +33,11 @@ jobs:
 
       - name: Setup FFmpeg
         run: |
-          brew install ffmpeg || true
+          brew install ffmpeg dylibbundler
           cp $(which ffmpeg) resources/ffmpeg
+          chmod +x resources/ffmpeg
+          mkdir -p resources/ffmpeg-libs
+          dylibbundler -od -b -x resources/ffmpeg -d resources/ffmpeg-libs/ -p '@loader_path/ffmpeg-libs/'
 
       - name: Install frontend dependencies
         run: pnpm install

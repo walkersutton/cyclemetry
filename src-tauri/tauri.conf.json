@@ -38,6 +38,7 @@
     "targets": "all",
     "resources": {
       "../resources/ffmpeg": ".",
+      "../resources/ffmpeg-libs": "ffmpeg-libs",
       "../resources/fonts/Arial.ttf": "fonts/Arial.ttf",
       "../resources/fonts/Evogria.otf": "fonts/Evogria.otf",
       "../resources/fonts/Furore.otf": "fonts/Furore.otf",
