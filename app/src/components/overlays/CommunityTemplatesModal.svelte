@@ -13,7 +13,7 @@
 
   onMount(async () => {
     try {
-      communityList = await backend.communityTemplates()
+      communityList = await backend.fetchCommunityTemplates()
     } catch (e) {
       fetchError = e?.message ?? 'Failed to load community templates'
     } finally {
