@@ -36,7 +36,10 @@ jobs:
           # Statically-linked ffmpeg: one self-contained binary, no Homebrew
           # dylibs, no install_name_tool (which corrupts the signature and gets
           # the process SIGKILL'd by AMFI on Apple Silicon).
-          curl -L --fail -o ffmpeg.zip https://evermeet.cx/ffmpeg/getrelease/zip
+          # evermeet.cx is x86_64-only; this app is native arm64. Martin Riedl's
+          # build service has a stable "latest" redirect for native arm64 macOS.
+          curl -L --fail -o ffmpeg.zip \
+            https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffmpeg.zip
           unzip -o ffmpeg.zip
           mv ffmpeg resources/ffmpeg
           chmod +x resources/ffmpeg
