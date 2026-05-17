@@ -9,8 +9,19 @@
 
   let saving = $state(false)
 
+  const TYPE_GROUP = {
+    community: 'Community',
+    'community-modified': 'Community · Modified',
+    user: 'My Templates',
+  }
+
   let templateOptions = $derived(
-    (app.templates ?? []).map((t) => ({ value: t.id, label: t.name ?? t.id }))
+    (app.templates ?? []).map((t) => {
+      const group = TYPE_GROUP[t.type]
+      return group
+        ? { value: t.id, label: t.name ?? t.id, group }
+        : { value: t.id, label: t.name ?? t.id }
+    })
   )
 
   async function handleTemplateChange(id) {

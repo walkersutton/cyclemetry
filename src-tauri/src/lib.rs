@@ -261,7 +261,7 @@ fn backend_list_templates() -> Result<String, String> {
     let user_dir = templates_user_dir();
     let bundled_dir = templates_bundled_dir();
 
-    for (dir, type_label) in &[(&user_dir, "user"), (&bundled_dir, "built-in")] {
+    for (dir, is_user) in &[(&user_dir, true), (&bundled_dir, false)] {
         let Ok(entries) = std::fs::read_dir(dir) else {
             continue;
         };
@@ -275,6 +275,23 @@ fn backend_list_templates() -> Result<String, String> {
                 let fname = name.to_string();
                 if seen.insert(fname.clone()) {
                     let display = template_display_name(fname.trim_end_matches(".json"));
+                    let type_label = if *is_user {
+                        let sidecar = dir.join(format!("{fname}.remote"));
+                        if sidecar.exists() {
+                            let current =
+                                std::fs::read_to_string(dir.join(&fname)).unwrap_or_default();
+                            let reference = std::fs::read_to_string(&sidecar).unwrap_or_default();
+                            if current.trim() == reference.trim() {
+                                "community"
+                            } else {
+                                "community-modified"
+                            }
+                        } else {
+                            "user"
+                        }
+                    } else {
+                        "built-in"
+                    };
                     templates.push(serde_json::json!({
                         "id": fname,
                         "name": display,
@@ -521,6 +538,10 @@ async fn install_community_template_impl(
 ) -> Result<String, String> {
     let src = templates_bundled_dir().join(rel);
     std::fs::copy(&src, dest).map_err(|e| format!("Failed to copy template: {e}"))?;
+    let content =
+        std::fs::read_to_string(dest).map_err(|e| format!("Failed to read template: {e}"))?;
+    std::fs::write(dest.with_extension("json.remote"), &content)
+        .map_err(|e| format!("Failed to write sidecar: {e}"))?;
     Ok(serde_json::json!({ "message": format!("Installed {rel}"), "filename": rel }).to_string())
 }
 
@@ -545,7 +566,9 @@ async fn install_community_template_impl(
         serde_json::from_str(&body).map_err(|e| format!("Invalid template JSON: {e}"))?;
     let pretty =
         serde_json::to_string_pretty(&parsed).map_err(|e| format!("Serialize error: {e}"))?;
-    std::fs::write(dest, pretty).map_err(|e| format!("Failed to write template: {e}"))?;
+    std::fs::write(dest, &pretty).map_err(|e| format!("Failed to write template: {e}"))?;
+    std::fs::write(dest.with_extension("json.remote"), &pretty)
+        .map_err(|e| format!("Failed to write sidecar: {e}"))?;
     Ok(serde_json::json!({ "message": format!("Installed {rel}"), "filename": rel }).to_string())
 }
 
@@ -1047,9 +1070,26 @@ pub fn run() {
                 let help_submenu =
                     Submenu::with_items(app, "Help", true, &[&help_docs, &help_issues])?;
 
+                // ── Templates menu ────────────────────────────────────────
+                let browse_community = MenuItem::with_id(
+                    app,
+                    "browse_community_templates",
+                    "Browse Community Templates…",
+                    true,
+                    None::<&str>,
+                )?;
+                let templates_submenu =
+                    Submenu::with_items(app, "Templates", true, &[&browse_community])?;
+
                 app.set_menu(Menu::with_items(
                     app,
-                    &[&app_submenu, &file_submenu, &edit_submenu, &help_submenu],
+                    &[
+                        &app_submenu,
+                        &file_submenu,
+                        &templates_submenu,
+                        &edit_submenu,
+                        &help_submenu,
+                    ],
                 )?)?;
 
                 app.on_menu_event(|app_handle, event| {
@@ -1073,6 +1113,9 @@ pub fn run() {
                         }
                         "new_template" => {
                             app_handle.emit("menu_new_template", ()).ok();
+                        }
+                        "browse_community_templates" => {
+                            app_handle.emit("menu_browse_community_templates", ()).ok();
                         }
                         "show_downloads" => {
                             app_handle.emit("menu_show_downloads", ()).ok();
