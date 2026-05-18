@@ -1,20 +1,50 @@
 <script>
   import { getContext } from 'svelte'
-  import { Trash2, Type, Hash, BarChart2, Map } from 'lucide-svelte'
+  import {
+    ArrowDown,
+    ArrowUp,
+    BarChart2,
+    Hash,
+    Map,
+    Trash2,
+    Type,
+  } from 'lucide-svelte'
 
   const app = getContext('app')
 
   // Flat list of all elements with category + index
   let elements = $derived(() => {
     if (!app.config) return []
-    const out = []
+    const byId = {}
     for (const [i, l] of (app.config.labels ?? []).entries())
-      out.push({ id: `label-${i}`, category: 'labels', idx: i, type: 'label', name: l.text ?? 'Label' })
+      byId[`label-${i}`] = {
+        id: `label-${i}`,
+        category: 'labels',
+        idx: i,
+        type: 'label',
+        name: l.text ?? 'Label',
+      }
     for (const [i, v] of (app.config.values ?? []).entries())
-      out.push({ id: `value-${i}`, category: 'values', idx: i, type: 'value', name: v.value ?? 'value', unit: v.unit ?? null })
+      byId[`value-${i}`] = {
+        id: `value-${i}`,
+        category: 'values',
+        idx: i,
+        type: 'value',
+        name: v.value ?? 'value',
+        unit: v.unit ?? null,
+      }
     for (const [i, p] of (app.config.plots ?? []).entries())
-      out.push({ id: `plot-${i}`, category: 'plots', idx: i, type: p.value === 'course' ? 'map' : 'plot', name: p.value === 'course' ? 'map' : `${p.value} chart` })
-    return out
+      byId[`plot-${i}`] = {
+        id: `plot-${i}`,
+        category: 'plots',
+        idx: i,
+        type: p.value === 'course' ? 'map' : 'plot',
+        name: p.value === 'course' ? 'map' : `${p.value} chart`,
+      }
+    return [...(app.elementLayerOrder ?? [])]
+      .reverse()
+      .map((id) => byId[id])
+      .filter(Boolean)
   })
 
   function addLabel() {
@@ -86,7 +116,7 @@
         <li class="relative group">
           <button
             onclick={() => app.selectedElementId = selected ? null : el.id}
-            class={`w-full flex items-center gap-2 px-2.5 py-2 pr-7 rounded-[6px] text-left text-sm transition-colors
+            class={`w-full flex items-center gap-2 px-2.5 py-2 pr-20 rounded-[6px] text-left text-sm transition-colors
               ${selected
                 ? 'bg-primary/10 text-primary border border-primary/30'
                 : 'text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100'}`}
@@ -105,14 +135,32 @@
               <span class="shrink-0 text-[9px] font-medium px-1 py-0.5 rounded bg-zinc-700/60 text-zinc-400 uppercase tracking-wide">{el.unit === 'imperial' ? 'imp' : el.unit}</span>
             {/if}
           </button>
-          <button
-            onclick={(e) => { e.stopPropagation(); app.removeElement(el.category, el.idx) }}
-            class="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded text-zinc-600 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-            title="Remove"
-            tabindex="-1"
-          >
-            <Trash2 size={11} />
-          </button>
+          <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onclick={(e) => { e.stopPropagation(); app.moveElementLayer(el.id, 1) }}
+              class="p-1 rounded text-zinc-600 hover:text-zinc-200 transition-colors"
+              title="Bring forward"
+              tabindex="-1"
+            >
+              <ArrowUp size={11} />
+            </button>
+            <button
+              onclick={(e) => { e.stopPropagation(); app.moveElementLayer(el.id, -1) }}
+              class="p-1 rounded text-zinc-600 hover:text-zinc-200 transition-colors"
+              title="Send backward"
+              tabindex="-1"
+            >
+              <ArrowDown size={11} />
+            </button>
+            <button
+              onclick={(e) => { e.stopPropagation(); app.removeElement(el.category, el.idx) }}
+              class="p-1 rounded text-zinc-600 hover:text-destructive transition-colors"
+              title="Remove"
+              tabindex="-1"
+            >
+              <Trash2 size={11} />
+            </button>
+          </div>
         </li>
       {/each}
     </ul>

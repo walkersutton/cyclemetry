@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "resources": {
+      "../resources/ffmpeg.exe": ".",
+      "../resources/fonts/Arial.ttf": "fonts/Arial.ttf",
+      "../resources/fonts/Evogria.otf": "fonts/Evogria.otf",
+      "../resources/fonts/Furore.otf": "fonts/Furore.otf"
+    }
+  }
+}

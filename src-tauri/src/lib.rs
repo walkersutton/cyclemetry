@@ -312,6 +312,54 @@ fn backend_save_template(config: serde_json::Value, filename: String) -> Result<
     )
 }
 
+#[tauri::command]
+fn backend_rename_template(from: String, to: String) -> Result<String, String> {
+    let from_rel = validate_template_path(&from)?;
+    let to_rel = validate_template_path(&to)?;
+    if from_rel == to_rel {
+        return Ok(
+            serde_json::json!({ "message": "Template name unchanged", "filename": to_rel })
+                .to_string(),
+        );
+    }
+
+    let user_dir = templates_user_dir();
+    let from_path = user_dir.join(&from_rel);
+    let to_path = user_dir.join(&to_rel);
+    if !from_path.exists() {
+        return Err(format!("Template not found: {from}"));
+    }
+    if to_path.exists() {
+        return Err(format!("A template named {to} already exists"));
+    }
+    if let Some(parent) = to_path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {e}"))?;
+    }
+
+    std::fs::rename(&from_path, &to_path).map_err(|e| format!("Failed to rename template: {e}"))?;
+
+    let from_base = from_rel.trim_end_matches(".json");
+    let to_base = to_rel.trim_end_matches(".json");
+    let sidecars = [
+        (
+            user_dir.join(format!("{from_base}.jpg")),
+            user_dir.join(format!("{to_base}.jpg")),
+        ),
+        (
+            user_dir.join(format!("{from_base}.json.remote")),
+            user_dir.join(format!("{to_base}.json.remote")),
+        ),
+    ];
+    for (old_path, new_path) in sidecars {
+        if old_path.exists() && !new_path.exists() {
+            std::fs::rename(old_path, new_path).ok();
+        }
+    }
+
+    Ok(serde_json::json!({ "message": format!("Renamed {from_rel} to {to_rel}"), "filename": to_rel })
+        .to_string())
+}
+
 /// Validate a template path: at most `folder/file.json`, no `..`, must end with `.json`.
 fn validate_template_path(filename: &str) -> Result<String, String> {
     let parts: Vec<&str> = filename.splitn(3, '/').collect();
@@ -1023,6 +1071,7 @@ pub fn run() {
             backend_list_templates,
             backend_get_template,
             backend_save_template,
+            backend_rename_template,
             backend_open_templates,
             backend_list_fonts,
             backend_import_font,
@@ -1206,6 +1255,13 @@ pub fn run() {
                     true,
                     Some("CmdOrCtrl+Shift+S"),
                 )?;
+                let rename_tpl = MenuItem::with_id(
+                    app,
+                    "rename_template",
+                    "Rename Template...",
+                    true,
+                    None::<&str>,
+                )?;
                 let tpl_sep1 = PredefinedMenuItem::separator(app)?;
                 let show_tpl_dir = MenuItem::with_id(
                     app,
@@ -1230,6 +1286,7 @@ pub fn run() {
                         &new_tpl,
                         &save_tpl,
                         &save_tpl_as,
+                        &rename_tpl,
                         &tpl_sep1,
                         &show_tpl_dir,
                         &tpl_sep2,
@@ -1270,6 +1327,9 @@ pub fn run() {
                         }
                         "save_template_as" => {
                             app_handle.emit("menu_save_template_as", ()).ok();
+                        }
+                        "rename_template" => {
+                            app_handle.emit("menu_rename_template", ()).ok();
                         }
                         "new_template" => {
                             app_handle.emit("menu_new_template", ()).ok();

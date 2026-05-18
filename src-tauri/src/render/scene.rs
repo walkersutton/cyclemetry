@@ -129,12 +129,9 @@ pub fn render_video(
             "-i",
             "-",
             "-c:v",
-            "prores_videotoolbox",
+            ffmpeg_codec(),
             "-profile:v",
             "4444",
-            // No forced output pix_fmt: videotoolbox negotiates ProRes 4444's
-            // internal format from bgra on the encoder (HW), keeping alpha,
-            // instead of an 8→16-bit CPU upconvert that gained no quality.
             "-y",
             output_path,
         ])
@@ -464,10 +461,17 @@ fn write_placement_sidecar(
 }
 
 fn resolve_ffmpeg() -> String {
+    // On Windows the binary is ffmpeg.exe; on Unix it's ffmpeg.
+    let bin_name = if cfg!(windows) {
+        "ffmpeg.exe"
+    } else {
+        "ffmpeg"
+    };
+
     if let Ok(exe) = std::env::current_exe() {
-        // Dev: {repo}/resources/ffmpeg (skip zero-byte build stub)
+        // Dev: {repo}/resources/ffmpeg[.exe] (skip zero-byte build stub)
         if let Some(root) = exe.ancestors().find(|p| p.join("resources").exists()) {
-            let dev = root.join("resources").join("ffmpeg");
+            let dev = root.join("resources").join(bin_name);
             if std::fs::metadata(&dev)
                 .map(|m| m.len() > 0)
                 .unwrap_or(false)
@@ -479,13 +483,25 @@ fn resolve_ffmpeg() -> String {
         // Production macOS .app: exe is Contents/MacOS/cyclemetry,
         // Tauri resources land at Contents/Resources/
         if let Some(contents) = exe.parent().and_then(|p| p.parent()) {
-            let bundled = contents.join("Resources").join("ffmpeg");
+            let bundled = contents.join("Resources").join(bin_name);
             if std::fs::metadata(&bundled)
                 .map(|m| m.len() > 0)
                 .unwrap_or(false)
             {
                 ensure_executable(&bundled);
                 return bundled.to_string_lossy().to_string();
+            }
+        }
+        // Production Windows: Tauri bundles resources next to the exe
+        if cfg!(windows) {
+            if let Some(exe_dir) = exe.parent() {
+                let bundled = exe_dir.join(bin_name);
+                if std::fs::metadata(&bundled)
+                    .map(|m| m.len() > 0)
+                    .unwrap_or(false)
+                {
+                    return bundled.to_string_lossy().to_string();
+                }
             }
         }
     }
@@ -503,7 +519,19 @@ fn resolve_ffmpeg() -> String {
     }
 
     log::warn!("resolve_ffmpeg: no ffmpeg found — falling back to PATH lookup");
+    // On Windows, just "ffmpeg" works if it's on PATH (cmd resolves .exe automatically)
     "ffmpeg".to_string()
+}
+
+/// Select a ProRes encoder appropriate for the current platform.
+/// - macOS: prores_videotoolbox — hardware-accelerated via Apple VideoToolbox
+/// - Windows/Linux: prores_ks — CPU software ProRes, widely available in ffmpeg builds
+fn ffmpeg_codec() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "prores_videotoolbox"
+    } else {
+        "prores_ks"
+    }
 }
 
 fn ensure_executable(path: &std::path::Path) {

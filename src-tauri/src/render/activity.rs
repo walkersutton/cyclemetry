@@ -78,6 +78,7 @@ impl Activity {
         let mut current: Option<TrackPoint> = None;
         let mut in_extensions = false;
         let mut in_tpx = false; // inside TrackPointExtension container
+        let mut current_point_tag = String::new(); // "trkpt" or "wpt"
         let mut current_text = String::new();
         let mut buf = Vec::new();
 
@@ -88,7 +89,7 @@ impl Activity {
                     let local = local_name(ename.as_ref());
 
                     match local {
-                        "trkpt" => {
+                        "trkpt" | "wpt" => {
                             let lat = attr_f64(e, b"lat").unwrap_or(0.0);
                             let lon = attr_f64(e, b"lon").unwrap_or(0.0);
                             current = Some(TrackPoint {
@@ -96,6 +97,7 @@ impl Activity {
                                 lon,
                                 ..Default::default()
                             });
+                            current_point_tag = local.to_string();
                             in_extensions = false;
                             in_tpx = false;
                         }
@@ -145,10 +147,11 @@ impl Activity {
                             "extensions" => {
                                 in_extensions = false;
                             }
-                            "trkpt" => {
+                            tag if !current_point_tag.is_empty() && tag == current_point_tag => {
                                 if let Some(pt) = current.take() {
                                     points.push(pt);
                                 }
+                                current_point_tag.clear();
                             }
                             _ => {}
                         }

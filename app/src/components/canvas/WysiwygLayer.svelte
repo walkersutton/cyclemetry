@@ -34,44 +34,46 @@
     // Config-derived fallback bounds are in authored coords; the rendered
     // image (and measured bounds) are in output coords — scale to match.
     const fb = (o) => ({ id: o.id, x: o.x * s, y: o.y * s, w: o.w * s, h: o.h * s })
-    const out = []
+    const byId = {}
 
     for (const [i, l] of (app.config.labels ?? []).entries()) {
       const id = `label-${i}`
       const m = measured.get(id)
       const fs = l.font_size ?? 32
       const text = l.text ?? 'LABEL'
-      out.push(m ?? fb({
+      byId[id] = m ?? fb({
         id,
         x: l.x ?? 100,
         y: (l.y ?? 100) - fs * 0.8,           // baseline → visual top
         w: Math.max(text.length * fs * 0.58, fs),
         h: fs,
-      }))
+      })
     }
     for (const [i, v] of (app.config.values ?? []).entries()) {
       const id = `value-${i}`
       const m = measured.get(id)
       const fs = v.font_size ?? 48
-      out.push(m ?? fb({
+      byId[id] = m ?? fb({
         id,
         x: v.x ?? 100,
         y: (v.y ?? 200) - fs * 0.8,
         w: fs * 3.5,
         h: fs,
-      }))
+      })
     }
     for (const [i, p] of (app.config.plots ?? []).entries()) {
       const id = `plot-${i}`
       const m = measured.get(id)
-      out.push(m ?? fb({
+      byId[id] = m ?? fb({
         id,
         x: p.x ?? 50, y: p.y ?? 400,
         w: p.width ?? 400,
         h: p.height ?? 150,
-      }))
+      })
     }
-    return out
+    return [...(app.elementLayerOrder ?? [])]
+      .map((id) => byId[id])
+      .filter(Boolean)
   })
 
   function parseId(id) {

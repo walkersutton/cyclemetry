@@ -1,0 +1,109 @@
+{
+  "labels": [
+    {
+      "color": "#ffffff",
+      "font_size": 100,
+      "opacity": 1,
+      "text": "| ———— | ———— | ———— | ———— |",
+      "x": 1115,
+      "y": 1919
+    }
+  ],
+  "plots": [
+    {
+      "color": "#f4f4f4",
+      "height": 1000,
+      "line": {
+        "width": 6
+      },
+      "margin": 0.1,
+      "points": [
+        {
+          "opacity": 1,
+          "weight": 1000
+        }
+      ],
+      "rotation": 0,
+      "value": "course",
+      "width": 600,
+      "x": 3204,
+      "y": 41
+    },
+    {
+      "fill": {
+        "opacity": 0.5
+      },
+      "height": 300,
+      "line": {
+        "color": "#ffffff",
+        "width": 5
+      },
+      "opacity": 1,
+      "points": [
+        {
+          "color": "#ffffff",
+          "edge_color": "#ffffff",
+          "weight": 1000
+        }
+      ],
+      "value": "elevation",
+      "width": 1000,
+      "x": 38,
+      "y": 1842
+    }
+  ],
+  "scene": {
+    "color": "#ffffff",
+    "decimal_rounding": 0,
+    "end": 2520,
+    "font": "Arial.ttf",
+    "font_size": 30,
+    "fps": 30,
+    "height": 2160,
+    "layers": [
+      "plot-0",
+      "plot-1",
+      "value-0",
+      "value-1",
+      "value-2",
+      "value-3",
+      "label-0"
+    ],
+    "opacity": 0.5,
+    "start": 1380,
+    "width": 3840
+  },
+  "values": [
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " mph",
+      "value": "speed",
+      "x": 3104,
+      "y": 1987
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " bpm",
+      "value": "heartrate",
+      "x": 3070,
+      "y": 2096
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " m to go",
+      "value": "speed",
+      "x": 3415,
+      "y": 2096
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "value": "power",
+      "x": 2017,
+      "y": 1795
+    }
+  ]
+}

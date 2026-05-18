@@ -10,6 +10,7 @@ src-tauri/binaries/
 
 # FFmpeg binary (downloaded in CI — not committed)
 resources/ffmpeg
+resources/ffmpeg.exe
 
 # App specifics
 next/

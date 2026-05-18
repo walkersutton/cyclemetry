@@ -30,6 +30,9 @@ export const getTemplate = (filename) =>
 export const saveTemplate = (filename, config) =>
   invoke('backend_save_template', { filename, config })
 
+export const renameTemplate = (from, to) =>
+  invoke('backend_rename_template', { from, to })
+
 export const openTemplatesFolder = () => invoke('backend_open_templates')
 
 // ─── Fonts ────────────────────────────────────────────────────────────────────

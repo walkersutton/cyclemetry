@@ -19,7 +19,7 @@
   import Button from './components/ui/Button.svelte'
   import Tooltip from './components/ui/Tooltip.svelte'
 
-  import { Activity, Play, FolderOpen, Undo2 } from 'lucide-svelte'
+  import { Activity, Play } from 'lucide-svelte'
 
   // ── State ──────────────────────────────────────────────────────────────────
   const app = createAppState()
@@ -65,6 +65,7 @@
         listen('menu_open_recent_gpx',  (e) => handleOpenRecentGpx(e.payload)),
         listen('menu_save_template',    () => app.saveTemplate().catch(e => { app.errorMessage = e.message })),
         listen('menu_save_template_as', () => app.saveTemplateAs().catch(e => { app.errorMessage = e.message })),
+        listen('menu_rename_template',  () => app.renameTemplate().catch(e => { app.errorMessage = e.message })),
         listen('menu_new_template',     () => app.confirmIfModified(() => app.newTemplate().catch(e => { app.errorMessage = e.message }))),
         listen('menu_show_downloads',   () => handleOpenDownloads()),
         listen('menu_show_activities',  () => backend.openActivitiesFolder().catch(() => {})),
@@ -206,16 +207,6 @@
       </Button>
     </Tooltip>
 
-    <Button
-      variant="ghost"
-      size="icon"
-      onclick={() => app.undo()}
-      disabled={!app.canUndo}
-      title="Undo (⌘Z)"
-    >
-      <Undo2 size={14} />
-    </Button>
-
     <div class="flex-1"></div>
 
     <!-- Render button -->
@@ -233,11 +224,6 @@
         {app.renderingVideo ? 'Rendering…' : 'Render'}
       </Button>
     </Tooltip>
-
-    <!-- Downloads -->
-    <Button variant="ghost" size="icon" onclick={handleOpenDownloads} title="Open downloads folder">
-      <FolderOpen size={14} />
-    </Button>
 
   </header>
 

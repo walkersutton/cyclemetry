@@ -1,5 +1,9 @@
 import * as backend from './backend.js'
 
+const ETA_REANCHOR_MS = 30_000
+const ETA_MIN_SAMPLE_SECONDS = 5
+const ETA_MAX_UPWARD_ADJUST_SECONDS = 15
+
 export default async function renderVideo(state) {
   const { config, gpxFilename, outputDir, outputWidth, outputHeight } = state
   if (!config?.scene) throw new Error('No valid config available')
@@ -13,6 +17,15 @@ export default async function renderVideo(state) {
 
   const fps = config.scene.fps ?? 30
 
+  state.renderProgress = {
+    current: 0,
+    total: 0,
+    percent: 0,
+    status: 'starting',
+    estimatedSecondsRemaining: null,
+    overlaySecondsRendered: 0,
+    overlayTotalSeconds: 0,
+  }
   state.renderingVideo = true
 
   try {
@@ -27,15 +40,55 @@ export default async function renderVideo(state) {
 
     await new Promise((resolve, reject) => {
       const t0 = Date.now()
+      let etaAnchorRemaining = null
+      let etaAnchorAt = null
+      let etaLastReanchorAt = 0
+
+      function currentEta(now) {
+        if (etaAnchorRemaining == null || etaAnchorAt == null) return null
+        return Math.max(
+          0,
+          Math.round(etaAnchorRemaining - (now - etaAnchorAt) / 1000),
+        )
+      }
+
+      function reanchorEta(rawRemaining, now) {
+        const shown = currentEta(now)
+        let next = rawRemaining
+
+        if (shown != null) {
+          if (rawRemaining > shown) {
+            next = Math.min(
+              shown + ETA_MAX_UPWARD_ADJUST_SECONDS,
+              Math.round(shown * 0.8 + rawRemaining * 0.2),
+            )
+          } else {
+            next = Math.round(shown * 0.35 + rawRemaining * 0.65)
+          }
+        }
+
+        etaAnchorRemaining = next
+        etaAnchorAt = now
+        etaLastReanchorAt = now
+      }
+
       const iv = setInterval(async () => {
         try {
+          const now = Date.now()
           const p = await backend.nativeGetProgress()
-          const elapsed = (Date.now() - t0) / 1000
+          const elapsed = (now - t0) / 1000
           const rate = elapsed > 0 ? p.frames_rendered / elapsed : 0
-          const remaining =
-            rate > 0
+          const rawRemaining =
+            elapsed >= ETA_MIN_SAMPLE_SECONDS && rate > 0
               ? Math.round((p.total_frames - p.frames_rendered) / rate)
               : null
+          if (
+            rawRemaining != null &&
+            (etaAnchorRemaining == null ||
+              now - etaLastReanchorAt >= ETA_REANCHOR_MS)
+          ) {
+            reanchorEta(rawRemaining, now)
+          }
           const pct =
             p.total_frames > 0
               ? Math.round((p.frames_rendered / p.total_frames) * 100)
@@ -45,7 +98,7 @@ export default async function renderVideo(state) {
             total: p.total_frames,
             percent: pct,
             status: 'rendering',
-            estimatedSecondsRemaining: remaining,
+            estimatedSecondsRemaining: currentEta(now),
             // Overlay timeline position (NOT wall-clock): how much of the
             // overlay's own duration has been rendered, so the user can sanity
             // -check the render length while it runs.
@@ -77,5 +130,14 @@ export default async function renderVideo(state) {
     throw error
   } finally {
     state.renderingVideo = false
+    state.renderProgress = {
+      current: 0,
+      total: 0,
+      percent: 0,
+      status: 'idle',
+      estimatedSecondsRemaining: null,
+      overlaySecondsRendered: 0,
+      overlayTotalSeconds: 0,
+    }
   }
 }

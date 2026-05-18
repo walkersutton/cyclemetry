@@ -37,6 +37,14 @@ pub struct SceneConfig {
     pub decimal_rounding: Option<i32>,
     pub color: Option<String>,
     pub opacity: Option<f32>,
+    pub layers: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LayerElement {
+    Label(usize),
+    Value(usize),
+    Plot(usize),
 }
 
 fn default_fps() -> u32 {
@@ -209,6 +217,53 @@ impl Template {
         }
 
         serde_json::from_value(raw)
+    }
+
+    pub fn layer_order(&self) -> Vec<LayerElement> {
+        let mut out = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+
+        if let Some(layers) = &self.scene.layers {
+            for id in layers {
+                if let Some(layer) = self.parse_layer_id(id) {
+                    if seen.insert(id.clone()) {
+                        out.push(layer);
+                    }
+                }
+            }
+        }
+
+        for i in 0..self.labels.len() {
+            let id = format!("label-{i}");
+            if seen.insert(id) {
+                out.push(LayerElement::Label(i));
+            }
+        }
+        for i in 0..self.plots.len() {
+            let id = format!("plot-{i}");
+            if seen.insert(id) {
+                out.push(LayerElement::Plot(i));
+            }
+        }
+        for i in 0..self.values.len() {
+            let id = format!("value-{i}");
+            if seen.insert(id) {
+                out.push(LayerElement::Value(i));
+            }
+        }
+
+        out
+    }
+
+    fn parse_layer_id(&self, id: &str) -> Option<LayerElement> {
+        let (kind, idx) = id.rsplit_once('-')?;
+        let idx = idx.parse::<usize>().ok()?;
+        match kind {
+            "label" if idx < self.labels.len() => Some(LayerElement::Label(idx)),
+            "value" if idx < self.values.len() => Some(LayerElement::Value(idx)),
+            "plot" if idx < self.plots.len() => Some(LayerElement::Plot(idx)),
+            _ => None,
+        }
     }
 }
 

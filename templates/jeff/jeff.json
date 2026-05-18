@@ -1,0 +1,107 @@
+{
+  "labels": [
+    {
+      "color": "#ffffff",
+      "font_size": 100,
+      "opacity": 1,
+      "text": "| ———— | ———— |",
+      "x": 47,
+      "y": 1943
+    }
+  ],
+  "plots": [
+    {
+      "color": "#f4f4f4",
+      "height": 1000,
+      "line": {
+        "width": 6
+      },
+      "margin": 0.1,
+      "points": [
+        {
+          "opacity": 1,
+          "weight": 1000
+        }
+      ],
+      "rotation": 0,
+      "value": "course",
+      "width": 600,
+      "x": 2725,
+      "y": 1113
+    }
+  ],
+  "scene": {
+    "color": "#ffffff",
+    "decimal_rounding": 0,
+    "end": 2520,
+    "font": "Arial.ttf",
+    "font_size": 30,
+    "fps": 30,
+    "height": 2160,
+    "layers": [
+      "plot-0",
+      "value-0",
+      "value-1",
+      "value-2",
+      "value-3",
+      "label-0",
+      "value-4",
+      "value-5"
+    ],
+    "opacity": 0.5,
+    "start": 1380,
+    "width": 3840
+  },
+  "values": [
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " mph",
+      "unit": "imperial",
+      "value": "speed",
+      "x": 3551,
+      "y": 1842
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " bpm",
+      "value": "heartrate",
+      "x": 1047,
+      "y": 2058
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " m to go",
+      "value": "speed",
+      "x": 3396,
+      "y": 121
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " W",
+      "value": "power",
+      "x": 1105,
+      "y": 1929
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " kph",
+      "unit": "metric",
+      "value": "speed",
+      "x": 3571,
+      "y": 1985
+    },
+    {
+      "font_size": 80,
+      "opacity": 1,
+      "suffix": " rpm",
+      "value": "cadence",
+      "x": 3568,
+      "y": 2110
+    }
+  ]
+}

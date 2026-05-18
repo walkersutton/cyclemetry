@@ -7,6 +7,11 @@
 
   let cancelling = $state(false)
 
+  $effect(() => {
+    void app.renderingVideo
+    cancelling = false
+  })
+
   async function cancel() {
     cancelling = true
     try {
@@ -20,6 +25,12 @@
   let p = $derived(app.renderProgress)
   let pct = $derived(p.total > 0 ? Math.round((p.current / p.total) * 100) : 0)
   let finalizing = $derived(pct >= 100)
+  let estimating = $derived(
+    !finalizing &&
+      app.renderingVideo &&
+      p.status === 'rendering' &&
+      p.estimatedSecondsRemaining == null,
+  )
 </script>
 
 {#if app.renderingVideo}
@@ -48,7 +59,12 @@
       <div>
         <div class="flex justify-between text-[11px] mb-1.5">
           <span class="text-primary font-medium">{pct}%</span>
-          {#if !finalizing && p.estimatedSecondsRemaining != null}
+          {#if estimating}
+            <span class="text-zinc-500 font-mono inline-flex items-center gap-1">
+              <span class="h-2 w-2 rounded-full border border-zinc-500 border-t-transparent animate-spin"></span>
+              estimating…
+            </span>
+          {:else if !finalizing && p.estimatedSecondsRemaining != null}
             <span class="text-zinc-500 font-mono">{formatTime(p.estimatedSecondsRemaining)} remaining</span>
           {/if}
         </div>

@@ -7,6 +7,11 @@ fn main() {
     if !ffmpeg_stub.exists() {
         let _ = std::fs::write(ffmpeg_stub, b"");
     }
+    // Windows uses tauri.windows.conf.json which bundles ffmpeg.exe instead.
+    let ffmpeg_exe_stub = std::path::Path::new("../resources/ffmpeg.exe");
+    if !ffmpeg_exe_stub.exists() {
+        let _ = std::fs::write(ffmpeg_exe_stub, b"");
+    }
 
     tauri_build::build();
     // Bake a Unix timestamp so every build has a unique, visible identifier.

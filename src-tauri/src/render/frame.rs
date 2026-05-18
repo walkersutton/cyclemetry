@@ -9,7 +9,7 @@ use crate::render::activity::{
 };
 use crate::render::chart::ChartCache;
 use crate::render::color::hex_with_opacity;
-use crate::render::template::{LabelConfig, Template, ValueConfig};
+use crate::render::template::{LabelConfig, LayerElement, PlotConfig, Template, ValueConfig};
 
 /// Pixel-perfect bounding box for a single overlay element in overlay coordinates.
 #[derive(Debug, Clone, Serialize)]
@@ -97,8 +97,8 @@ pub struct SceneCache {
     /// Pre-rendered base frame as an immutable Skia Image.
     /// Stored as Image (not raw bytes) to avoid a heap allocation + 8 MB copy on every frame.
     pub base_image: skia_safe::Image,
-    /// One ChartCache per plot attribute that has a dynamic position marker.
-    pub charts: HashMap<String, ChartCache>,
+    /// One ChartCache per plot index.
+    pub charts: Vec<Option<ChartCache>>,
     pub width: u32,
     pub height: u32,
     /// Pre-loaded typefaces keyed by filename. Eliminates disk I/O inside the per-frame
@@ -115,35 +115,44 @@ impl SceneCache {
         let w = template.scene.width;
         let h = template.scene.height;
 
-        // --- Pre-load all typefaces referenced by value elements ---
+        // --- Pre-load all typefaces referenced by text elements ---
         let mut typefaces: HashMap<String, Typeface> = HashMap::new();
-        for val_cfg in &template.values {
-            let font_name = val_cfg
-                .font
-                .as_deref()
-                .or(template.scene.font.as_deref())
-                .unwrap_or("Arial.ttf")
-                .to_string();
+        for font_name in template
+            .values
+            .iter()
+            .map(|v| {
+                v.font
+                    .as_deref()
+                    .or(template.scene.font.as_deref())
+                    .unwrap_or("Arial.ttf")
+                    .to_string()
+            })
+            .chain(template.labels.iter().map(|l| {
+                l.font
+                    .as_deref()
+                    .or(template.scene.font.as_deref())
+                    .unwrap_or("Arial.ttf")
+                    .to_string()
+            }))
+        {
             typefaces.entry(font_name.clone()).or_insert_with(|| {
                 load_typeface(&font_name, fonts_dir).expect("failed to load typeface")
             });
         }
 
         // --- Build chart caches ---
-        let mut charts = HashMap::new();
-        for plot_cfg in &template.plots {
-            if !plot_cfg.has_position_markers() {
-                continue; // static plots handled in base frame
-            }
+        let mut charts: Vec<Option<ChartCache>> = std::iter::repeat_with(|| None)
+            .take(template.plots.len())
+            .collect();
+        for (idx, plot_cfg) in template.plots.iter().enumerate() {
             let (x_data, y_data) = activity.plot_data(&plot_cfg.value);
             if let Some(cache) = ChartCache::build(plot_cfg, x_data, y_data, fonts_dir) {
-                charts.insert(plot_cfg.value.clone(), cache);
+                charts[idx] = Some(cache);
             }
         }
 
-        // --- Pre-render base frame as a Skia Image ---
-        // Contains: transparent background + static labels + static (no-marker) plots.
-        let base_image = render_base_frame(w, h, template, activity, fonts_dir)?;
+        // --- Pre-render transparent base frame as a Skia Image ---
+        let base_image = render_base_frame(w, h)?;
 
         Ok(SceneCache {
             base_image,
@@ -213,24 +222,36 @@ pub fn render_frame(
             canvas.translate((-ox as f32, -oy as f32));
         }
 
-        // 1. Blit pre-rendered base frame (static labels + static charts).
+        // 1. Blit transparent base frame.
         //    Drawing an Image reference — no extra allocation or byte copy.
         canvas.draw_image(&cache.base_image, (0, 0), None);
 
-        // 2. Composite dynamic charts (cached background + position marker).
-        for chart in cache.charts.values() {
-            chart.draw_on_canvas(canvas, frame_idx);
-        }
-
-        // 3. Draw dynamic value text (speed, HR, elevation, etc.).
-        for val_cfg in &template.values {
-            let attr = &val_cfg.value;
-            if !activity.valid_attributes.contains(attr) {
-                continue;
+        // 2. Draw all elements back-to-front according to scene.layers.
+        for layer in template.layer_order() {
+            match layer {
+                LayerElement::Label(idx) => {
+                    if let Some(label) = template.labels.get(idx) {
+                        draw_label(canvas, label, template, &cache.typefaces, "");
+                    }
+                }
+                LayerElement::Value(idx) => {
+                    if let Some(val_cfg) = template.values.get(idx) {
+                        draw_value(
+                            canvas,
+                            val_cfg,
+                            template,
+                            activity,
+                            frame_idx,
+                            &cache.typefaces,
+                        );
+                    }
+                }
+                LayerElement::Plot(idx) => {
+                    if let Some(plot_cfg) = template.plots.get(idx) {
+                        draw_plot(canvas, plot_cfg, idx, frame_idx, cache);
+                    }
+                }
             }
-            let raw = activity.get_scalar(attr, frame_idx);
-            let display = format_value(raw, val_cfg);
-            draw_text_on_canvas(canvas, &display, val_cfg, template, &cache.typefaces);
         }
     } // surface dropped here → releases the &mut pixels borrow
 
@@ -340,13 +361,7 @@ pub fn compute_crop_rect(
 
 // ─── Base frame pre-renderer ───────────────────────────────────────────────
 
-fn render_base_frame(
-    w: u32,
-    h: u32,
-    template: &Template,
-    activity: &Activity,
-    fonts_dir: &str,
-) -> Result<skia_safe::Image, String> {
+fn render_base_frame(w: u32, h: u32) -> Result<skia_safe::Image, String> {
     let info = ImageInfo::new(
         ISize::new(w as i32, h as i32),
         skia_safe::ColorType::BGRA8888,
@@ -358,29 +373,45 @@ fn render_base_frame(
     let canvas = surface.canvas();
     canvas.clear(Color::TRANSPARENT);
 
-    // Static labels
-    for label in &template.labels {
-        draw_label(canvas, label, template, fonts_dir);
-    }
-
-    // Static plots (those without position markers)
-    for plot_cfg in &template.plots {
-        if plot_cfg.has_position_markers() {
-            continue; // dynamic charts handled per-frame
-        }
-        let (x_data, y_data) = activity.plot_data(&plot_cfg.value);
-        if let Some(chart) =
-            crate::render::chart::ChartCache::build(plot_cfg, x_data, y_data, fonts_dir)
-        {
-            canvas.draw_image(
-                &chart.background,
-                skia_safe::Point::new(chart.x_offset as f32, chart.y_offset as f32),
-                None,
-            );
-        }
-    }
-
     Ok(surface.image_snapshot())
+}
+
+fn draw_value(
+    canvas: &Canvas,
+    val_cfg: &ValueConfig,
+    template: &Template,
+    activity: &Activity,
+    frame_idx: usize,
+    typefaces: &HashMap<String, Typeface>,
+) {
+    let attr = &val_cfg.value;
+    if !activity.valid_attributes.contains(attr) {
+        return;
+    }
+    let raw = activity.get_scalar(attr, frame_idx);
+    let display = format_value(raw, val_cfg);
+    draw_text_on_canvas(canvas, &display, val_cfg, template, typefaces);
+}
+
+fn draw_plot(
+    canvas: &Canvas,
+    plot_cfg: &PlotConfig,
+    idx: usize,
+    frame_idx: usize,
+    cache: &SceneCache,
+) {
+    let Some(Some(chart)) = cache.charts.get(idx) else {
+        return;
+    };
+    if plot_cfg.has_position_markers() {
+        chart.draw_on_canvas(canvas, frame_idx);
+    } else {
+        canvas.draw_image(
+            &chart.background,
+            skia_safe::Point::new(chart.x_offset as f32, chart.y_offset as f32),
+            None,
+        );
+    }
 }
 
 // ─── Text rendering ────────────────────────────────────────────────────────
@@ -412,7 +443,13 @@ fn draw_text_on_canvas(
     }
 }
 
-fn draw_label(canvas: &Canvas, label: &LabelConfig, template: &Template, fonts_dir: &str) {
+fn draw_label(
+    canvas: &Canvas,
+    label: &LabelConfig,
+    template: &Template,
+    typefaces: &HashMap<String, Typeface>,
+    fonts_dir: &str,
+) {
     let font_name = label
         .font
         .as_deref()
@@ -423,7 +460,11 @@ fn draw_label(canvas: &Canvas, label: &LabelConfig, template: &Template, fonts_d
     let (r, g, b, a) = hex_with_opacity(color_str, label.opacity);
     let color = Color::from_argb(a, r, g, b);
 
-    if let Some(font) = load_font(font_name, font_size, fonts_dir) {
+    let font = typefaces
+        .get(font_name)
+        .map(|tf| Font::new(tf.clone(), font_size))
+        .or_else(|| load_font(font_name, font_size, fonts_dir));
+    if let Some(font) = font {
         let mut paint = Paint::default();
         paint.set_anti_alias(true);
         paint.set_color(color);

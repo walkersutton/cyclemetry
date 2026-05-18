@@ -204,19 +204,71 @@ export function createAppState() {
     commitConfig(next)
   }
 
+  function elementIdFor(category, idx) {
+    return `${category.slice(0, -1)}-${idx}`
+  }
+
+  function allElementIds(nextConfig = config) {
+    if (!nextConfig) return []
+    return [
+      ...(nextConfig.labels ?? []).map((_, i) => `label-${i}`),
+      ...(nextConfig.plots ?? []).map((_, i) => `plot-${i}`),
+      ...(nextConfig.values ?? []).map((_, i) => `value-${i}`),
+    ]
+  }
+
+  function normalizedElementLayerIds(nextConfig = config) {
+    const ids = allElementIds(nextConfig)
+    const existing = (nextConfig?.scene?.layers ?? []).filter((id) =>
+      ids.includes(id),
+    )
+    const missing = ids.filter((id) => !existing.includes(id))
+    return [...existing, ...missing]
+  }
+
+  function withNormalizedLayers(nextConfig) {
+    if (!nextConfig?.scene) return nextConfig
+    return {
+      ...nextConfig,
+      scene: {
+        ...nextConfig.scene,
+        layers: normalizedElementLayerIds(nextConfig),
+      },
+    }
+  }
+
   function addElement(category, defaults) {
     if (!config) return
     const arr = [...(config[category] ?? []), defaults]
-    commitConfig({ ...config, [category]: arr })
+    const next = { ...config, [category]: arr }
+    const layers = normalizedElementLayerIds(next)
+    const id = elementIdFor(category, arr.length - 1)
+    commitConfig({
+      ...next,
+      scene: { ...next.scene, layers: [...layers.filter((x) => x !== id), id] },
+    })
   }
 
   function removeElement(category, idx) {
     if (!config?.[category]) return
     const arr = config[category].filter((_, i) => i !== idx)
-    commitConfig({ ...config, [category]: arr })
-    if (selectedElementId === `${category.slice(0, -1)}-${idx}`) {
+    commitConfig(withNormalizedLayers({ ...config, [category]: arr }))
+    if (selectedElementId === elementIdFor(category, idx)) {
       selectOnly(null)
     }
+  }
+
+  function moveElementLayer(id, delta) {
+    if (!config?.scene) return
+    const layers = normalizedElementLayerIds()
+    const from = layers.indexOf(id)
+    if (from < 0) return
+    const to = Math.max(0, Math.min(layers.length - 1, from + delta))
+    if (to === from) return
+    const next = [...layers]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    commitConfig({ ...config, scene: { ...config.scene, layers: next } })
   }
 
   const ELEMENT_CATEGORY = { label: 'labels', value: 'values', plot: 'plots' }
@@ -249,12 +301,40 @@ export function createAppState() {
   // ── Template actions ─────────────────────────────────────────────────────
 
   function toFilename(raw) {
-    return (
-      raw
-        .toLowerCase()
-        .replace(/\s+/g, '_')
-        .replace(/\.json$/, '') + '.json'
-    )
+    const stem = raw
+      .trim()
+      .toLowerCase()
+      .replace(/\.json$/, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+    return stem ? `${stem}.json` : null
+  }
+
+  function templateDisplayName(filename) {
+    return filename
+      .replace(/\.json$/, '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+  }
+
+  function blankTemplate(name) {
+    return {
+      scene: {
+        width: outputWidth,
+        height: outputHeight,
+        fps: 30,
+        start: 0,
+        end: Math.max(1, Math.floor(activityDuration || 60)),
+        color: '#ffffff',
+        opacity: 1,
+        font_size: 64,
+        overlay_filename: name.replace(/\.json$/, ''),
+        layers: [],
+      },
+      labels: [],
+      values: [],
+      plots: [],
+    }
   }
 
   function showSuccess(msg) {
@@ -276,6 +356,7 @@ export function createAppState() {
       )
       if (!name) return
       filename = toFilename(name)
+      if (!filename) return
     }
     await backend.saveTemplate(filename, config)
     loadedTemplateFilename = filename
@@ -295,6 +376,7 @@ export function createAppState() {
     )
     if (!name) return
     const filename = toFilename(name)
+    if (!filename) return
     await backend.saveTemplate(filename, config)
     loadedTemplateFilename = filename
     markPristine()
@@ -309,7 +391,8 @@ export function createAppState() {
     const name = prompt('New template name:', 'my_overlay')
     if (!name) return
     const filename = toFilename(name)
-    const base = await backend.getTemplate('default.json')
+    if (!filename) return
+    const base = blankTemplate(filename)
     await backend.saveTemplate(filename, base)
     config = base
     loadedTemplateFilename = filename
@@ -317,6 +400,31 @@ export function createAppState() {
     resetHistory()
     markPristine()
     await fetchTemplates()
+    showSuccess(`Created "${templateDisplayName(filename)}"`)
+  }
+
+  async function renameTemplate(nextName = null) {
+    if (!loadedTemplateFilename) {
+      errorMessage = 'Load or create a template before renaming it.'
+      return
+    }
+    const current = loadedTemplateFilename.replace(/\.json$/, '')
+    const name = nextName ?? prompt('Rename template:', current)
+    if (!name) return
+    const filename = toFilename(name)
+    if (!filename || filename === loadedTemplateFilename) return
+    try {
+      await backend.renameTemplate(loadedTemplateFilename, filename)
+    } catch (e) {
+      const message = e?.message ?? String(e)
+      if (!message.includes('Template not found')) throw e
+      if (!config) throw e
+      await backend.saveTemplate(filename, config)
+      markPristine()
+    }
+    loadedTemplateFilename = filename
+    await fetchTemplates()
+    showSuccess(`Renamed to "${templateDisplayName(filename)}"`)
   }
 
   async function fetchTemplates() {
@@ -478,6 +586,10 @@ export function createAppState() {
       return history.length > 0
     },
     undo,
+    get elementLayerOrder() {
+      return normalizedElementLayerIds()
+    },
+    moveElementLayer,
     get renderProgress() {
       return renderProgress
     },
@@ -500,5 +612,6 @@ export function createAppState() {
     saveTemplate,
     saveTemplateAs,
     newTemplate,
+    renameTemplate,
   }
 }

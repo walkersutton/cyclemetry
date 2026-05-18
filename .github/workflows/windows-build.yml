@@ -2,8 +2,8 @@ name: Windows Build (exploratory)
 
 # Build-only signal for the Windows port. This proves whether the app
 # COMPILES and BUNDLES on Windows — it does NOT exercise rendering, so
-# runtime gaps (e.g. prores_videotoolbox is macOS-only, ffmpeg resolution,
-# path layout) will not surface here; those need an actual render run.
+# runtime gaps (e.g. path layout, codec availability) will not surface here;
+# those need an actual render run on real hardware.
 # Standalone and non-blocking: a failing run is the breakage signal.
 
 on:
@@ -32,9 +32,20 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # No ffmpeg fetch: build.rs writes a zero-byte resources/ffmpeg stub so
-      # Tauri's bundle-resource validation passes. resolve_ffmpeg() would fall
-      # back to PATH at runtime — irrelevant for a build-only job.
+      # Download a static Windows ffmpeg (LGPL) and place it where
+      # tauri.windows.conf.json expects it so it gets bundled in the installer.
+      # prores_ks (CPU ProRes encoder) is included in LGPL builds.
+      - name: Fetch Windows FFmpeg
+        shell: pwsh
+        run: |
+          $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl.zip"
+          Invoke-WebRequest -Uri $url -OutFile ffmpeg.zip
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg_extracted
+          $exe = Get-ChildItem -Recurse ffmpeg_extracted -Filter "ffmpeg.exe" |
+                   Where-Object { $_.DirectoryName -like "*bin*" } |
+                   Select-Object -First 1
+          Copy-Item $exe.FullName resources/ffmpeg.exe
+          Write-Host "Bundled ffmpeg: $((Get-Item resources/ffmpeg.exe).Length) bytes"
 
       - name: Install frontend dependencies
         run: pnpm install
