@@ -1,25 +1,12 @@
 {
   "name": "cyclemetry",
   "version": "0.1.2",
-  "description": "",
-  "main": "index.js",
   "scripts": {
-    "dev": "tauri dev",
-    "build": "tauri build",
-    "sync-version": "node -e \"const fs=require('fs');const v=fs.readFileSync('src-tauri/Cargo.toml','utf8').match(/^version = \\\"(.+)\\\"/m)[1];['package.json','app/package.json'].forEach(f=>{const p=JSON.parse(fs.readFileSync(f,'utf8'));p.version=v;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\\n')})\"",
-    "release": "VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/version = \"\\(.*\\)\"/\\1/') && pnpm sync-version && git add src-tauri/Cargo.toml package.json app/package.json && git commit -m \"v$VERSION\" && git tag v$VERSION && git push origin main && git push origin v$VERSION",
-    "lint": "cd app && pnpm lint",
-    "format": "cd app && pnpm format"
+    "dev": "app/node_modules/.bin/tauri dev",
+    "build": "app/node_modules/.bin/tauri build",
+    "lint": "pnpm --dir app lint",
+    "format": "pnpm --dir app format",
+    "release": "pnpm --dir app release"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.25.0",
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.9.6",
-    "concurrently": "^9.2.1"
-  },
-  "dependencies": {
-    "@tauri-apps/plugin-shell": "~2.3.3"
-  }
+  "packageManager": "pnpm@10.25.0"
 }

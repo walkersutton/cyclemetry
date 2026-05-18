@@ -48,10 +48,10 @@ jobs:
           Write-Host "Bundled ffmpeg: $((Get-Item resources/ffmpeg.exe).Length) bytes"
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm -C app install
 
       - name: Build Tauri app (no signing, no release)
-        run: pnpm tauri build --bundles nsis
+        run: app/node_modules/.bin/tauri build --bundles nsis
 
       - name: Upload installer artifacts
         if: success()

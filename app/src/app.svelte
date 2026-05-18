@@ -47,6 +47,22 @@
       return
     }
 
+    // Copy element (⌘/Ctrl+C). Only when an element is selected and not in a text field.
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+      if (inField || blocked || !app.selectedElementId) return
+      e.preventDefault()
+      app.copyElement()
+      return
+    }
+
+    // Paste element clone (⌘/Ctrl+V).
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'v' || e.key === 'V')) {
+      if (inField || blocked || !app.copiedElement) return
+      e.preventDefault()
+      app.pasteElement()
+      return
+    }
+
     if (e.key !== 'Delete' && e.key !== 'Backspace') return
     if (blocked || inField) return
     if (!app.selectedElementId) return

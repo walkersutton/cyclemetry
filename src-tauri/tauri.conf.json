@@ -5,8 +5,8 @@
   "build": {
     "frontendDist": "../app/dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "cd app && pnpm dev",
-    "beforeBuildCommand": "cd app && pnpm build"
+    "beforeDevCommand": "pnpm -C app vite",
+    "beforeBuildCommand": "pnpm -C app vite-build"
   },
   "app": {
     "withGlobalTauri": true,

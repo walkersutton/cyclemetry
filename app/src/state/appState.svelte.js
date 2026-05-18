@@ -37,6 +37,7 @@ export function createAppState() {
   )
 
   // ── Transient ────────────────────────────────────────────────────────────────
+  let copiedElement = $state(null) // { category, item } — in-memory element clipboard
   let previewFps = $state(1)
   let renderingVideo = $state(false)
   let currentPreviewImage = $state(null) // data:image/png;base64,... from latest demo frame
@@ -296,6 +297,21 @@ export function createAppState() {
   function deleteSelectedElement() {
     const s = parseSelectedElement()
     if (s) removeElement(s.category, s.idx)
+  }
+
+  function copyElement() {
+    const s = parseSelectedElement()
+    if (!s) return
+    copiedElement = { category: s.category, item: s.item }
+  }
+
+  function pasteElement() {
+    if (!copiedElement) return
+    addElement(copiedElement.category, {
+      ...copiedElement.item,
+      x: (copiedElement.item.x ?? 0) + 20,
+      y: (copiedElement.item.y ?? 0) + 20,
+    })
   }
 
   // ── Template actions ─────────────────────────────────────────────────────
@@ -606,6 +622,11 @@ export function createAppState() {
     addElement,
     removeElement,
     deleteSelectedElement,
+    get copiedElement() {
+      return copiedElement
+    },
+    copyElement,
+    pasteElement,
     selectedElementLabel,
     fetchTemplates,
     loadTemplate,

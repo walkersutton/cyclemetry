@@ -43,11 +43,22 @@ fn fonts_user_dir() -> PathBuf {
     dir
 }
 
-/// ~/Movies/Cyclemetry/ — default render output destination.
+/// Default render output directory, platform-appropriate.
 fn default_output_dir() -> PathBuf {
-    let dir = std::env::var("HOME")
-        .map(|h| PathBuf::from(h).join("Movies").join("Cyclemetry"))
-        .unwrap_or_else(|_| PathBuf::from("/tmp/cyclemetry/output"));
+    let dir = {
+        #[cfg(windows)]
+        {
+            std::env::var("USERPROFILE")
+                .map(|h| PathBuf::from(h).join("Videos").join("Cyclemetry"))
+                .unwrap_or_else(|_| std::env::temp_dir().join("Cyclemetry"))
+        }
+        #[cfg(not(windows))]
+        {
+            std::env::var("HOME")
+                .map(|h| PathBuf::from(h).join("Movies").join("Cyclemetry"))
+                .unwrap_or_else(|_| std::env::temp_dir().join("Cyclemetry"))
+        }
+    };
     std::fs::create_dir_all(&dir).ok();
     dir
 }
@@ -112,9 +123,9 @@ fn resolve_gpx_path(gpx_filename: &str) -> Result<(String, Option<String>), Stri
         .and_then(|n| n.to_str())
         .unwrap_or(gpx_filename);
 
-    let prod = format!("/tmp/cyclemetry/uploads/{}", basename);
-    if Path::new(&prod).exists() {
-        return Ok((prod, None));
+    let prod = uploads_dir().join(basename);
+    if prod.exists() {
+        return Ok((prod.to_string_lossy().to_string(), None));
     }
 
     if let Ok(exe) = std::env::current_exe() {
@@ -1052,6 +1063,23 @@ fn record_gpx_opened(app: tauri::AppHandle, path: String) {
 // ─── App entry point ──────────────────────────────────────────────────────────
 
 pub fn run() {
+    // On Windows (release), panics produce no visible output — write a crash file
+    // to %TEMP% so the user can report it. Also write a startup marker so we know
+    // the process launched at all if there are no logs.
+    #[cfg(windows)]
+    {
+        let tmp = std::env::temp_dir();
+        std::fs::write(
+            tmp.join("cyclemetry_started.txt"),
+            env!("CARGO_PKG_VERSION"),
+        )
+        .ok();
+        std::panic::set_hook(Box::new(|info| {
+            let msg = format!("{info}");
+            std::fs::write(std::env::temp_dir().join("cyclemetry_panic.txt"), &msg).ok();
+        }));
+    }
+
     // Read recent GPX list before building the app so the menu can use it at startup.
     #[cfg(target_os = "macos")]
     let initial_recent_gpx = recent::read();
@@ -1099,10 +1127,36 @@ pub fn run() {
             record_gpx_opened,
         ])
         .setup(move |app| {
+            // Init logging FIRST — if anything below panics/fails, we at least have a log.
+            if cfg!(debug_assertions) {
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::new()
+                        .level(log::LevelFilter::Debug)
+                        .targets([
+                            tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                            tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
+                        ])
+                        .build(),
+                )?;
+            } else {
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::new()
+                        .level(log::LevelFilter::Info)
+                        .level_for("tauri_plugin_updater", log::LevelFilter::Warn)
+                        .targets([tauri_plugin_log::Target::new(
+                            tauri_plugin_log::TargetKind::LogDir {
+                                file_name: Some("cyclemetry".into()),
+                            },
+                        )])
+                        .build(),
+                )?;
+            }
+
             if let Ok(dir) = app.path().app_data_dir() {
                 std::fs::create_dir_all(&dir).ok();
                 APP_DATA_DIR.set(dir).ok();
             }
+            log::info!("startup: app_data_dir = {:?}", app_data_base());
 
             #[cfg(all(debug_assertions, target_os = "macos"))]
             {
@@ -1389,29 +1443,6 @@ pub fn run() {
                 });
             }
 
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::new()
-                        .level(log::LevelFilter::Debug)
-                        .targets([
-                            tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
-                            tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
-                        ])
-                        .build(),
-                )?;
-            } else {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::new()
-                        .level(log::LevelFilter::Info)
-                        .level_for("tauri_plugin_updater", log::LevelFilter::Warn)
-                        .targets([tauri_plugin_log::Target::new(
-                            tauri_plugin_log::TargetKind::LogDir {
-                                file_name: Some("cyclemetry".into()),
-                            },
-                        )])
-                        .build(),
-                )?;
-            }
             Ok(())
         })
         .run(tauri::generate_context!())
