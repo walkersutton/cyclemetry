@@ -53,6 +53,7 @@
       x: 100, y: 100,
       font_size: app.config?.scene?.font_size ?? 32,
       color: '#ffffff',
+      opacity: 1,
     })
   }
 
@@ -61,6 +62,7 @@
       value: 'speed',
       x: 100, y: 200,
       font_size: app.config?.scene?.font_size ?? 48,
+      opacity: 1,
     })
   }
 
@@ -69,6 +71,7 @@
       value: 'elevation',
       x: 50, y: 800,
       width: 500, height: 120,
+      opacity: 1,
       line: { color: '#ffffff', width: 1.5 },
       fill: { opacity: 0.25, color: '#ffffff' },
       points: [{ color: '#ffffff', weight: 80, remove_edge_color: true }],
@@ -80,6 +83,7 @@
       value: 'course',
       x: 50, y: 580,
       width: 200, height: 200,
+      opacity: 1,
       line: { color: '#ffffff', width: 1.5 },
       points: [{ color: '#ef4444', weight: 80, edge_color: '#ffffff' }],
     })

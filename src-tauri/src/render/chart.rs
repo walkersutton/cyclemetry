@@ -104,6 +104,14 @@ pub struct ChartCache {
     pub point_label: Option<PointLabelConfig>,
     /// Typeface for the point label, loaded once (None if no label).
     pub label_typeface: Option<Typeface>,
+    /// For course plots: draw traveled portion at this opacity per-frame.
+    pub past_opacity: Option<f32>,
+    /// For course plots: full-route background drawn at this opacity; None = full opacity.
+    pub future_opacity: Option<f32>,
+    /// Line color string (needed for per-frame past-segment drawing).
+    pub line_color: String,
+    /// Line width (needed for per-frame past-segment drawing).
+    pub line_width: f32,
 }
 
 impl ChartCache {
@@ -189,6 +197,17 @@ impl ChartCache {
             crate::render::frame::load_typeface(font, fonts_dir)
         });
 
+        let past_opacity = if is_course {
+            config.line_past_opacity()
+        } else {
+            None
+        };
+        let future_opacity = if is_course {
+            config.line_future_opacity()
+        } else {
+            None
+        };
+
         Some(ChartCache {
             background,
             x_data,
@@ -205,6 +224,10 @@ impl ChartCache {
             value_attr: config.value.clone(),
             point_label,
             label_typeface,
+            past_opacity,
+            future_opacity,
+            line_color: config.line_color(),
+            line_width: config.line_width(),
         })
     }
 
@@ -237,7 +260,44 @@ impl ChartCache {
             None,
         );
 
-        // 2. Draw position marker (the per-frame part).
+        // 2. Overdraw the traveled (past) segment at past_opacity when split is active.
+        if (self.past_opacity.is_some() || self.future_opacity.is_some())
+            && frame_idx < self.x_data.len()
+        {
+            if let Some(geo) = &self.geo {
+                let past_end = frame_idx + 1;
+                let past_opacity = self.past_opacity.unwrap_or(1.0);
+                let past_color = to_skia_color(&self.line_color, Some(past_opacity));
+                let mut pb = PathBuilder::new();
+                for (i, (&x, &y)) in self
+                    .x_data
+                    .iter()
+                    .zip(self.y_data.iter())
+                    .take(past_end)
+                    .enumerate()
+                {
+                    let local_pt = geo.to_pixel(x, y, &self.plot_bounds);
+                    let abs_pt = Point::new(
+                        local_pt.x + self.x_offset as f32,
+                        local_pt.y + self.y_offset as f32,
+                    );
+                    if i == 0 {
+                        pb.move_to(abs_pt);
+                    } else {
+                        pb.line_to(abs_pt);
+                    }
+                }
+                let path = pb.snapshot();
+                let mut paint = Paint::default();
+                paint.set_anti_alias(true);
+                paint.set_color(past_color);
+                paint.set_stroke_width(self.line_width);
+                paint.set_style(PaintStyle::Stroke);
+                canvas.draw_path(&path, &paint);
+            }
+        }
+
+        // 3. Draw position marker (the per-frame part).
         if frame_idx < self.x_data.len() {
             let x = self.x_data[frame_idx];
             let y = self.y_data.get(frame_idx).copied().unwrap_or(0.0);
@@ -274,7 +334,7 @@ impl ChartCache {
                 }
             }
 
-            // 3. Optional value label next to the marker (e.g. "960 M" /
+            // 4. Optional value label next to the marker (e.g. "960 M" /
             //    "3150 FT"), one line per unit, metric first.
             if let (Some(pl), Some(tf)) = (&self.point_label, &self.label_typeface) {
                 let raw = self.y_data.get(frame_idx).copied().unwrap_or(0.0);
@@ -443,8 +503,18 @@ fn render_chart_background(
         }
     }
 
-    // Draw the line
-    let line_color = to_skia_color(&config.line_color(), None);
+    // Draw the line. When split opacities are configured the background shows
+    // the full route at future_opacity; the past segment is overdrawn per-frame.
+    let is_course = geo.is_some();
+    let split_opacity = if is_course {
+        config.line_future_opacity().or_else(|| {
+            // past_opacity only → background at full opacity, past overdrawn per-frame
+            config.line_past_opacity().map(|_| 1.0)
+        })
+    } else {
+        None
+    };
+    let line_color = to_skia_color(&config.line_color(), split_opacity);
     let mut line_paint = Paint::default();
     line_paint.set_anti_alias(true);
     line_paint.set_color(line_color);

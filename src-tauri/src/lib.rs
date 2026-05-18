@@ -184,6 +184,18 @@ fn resolve_fonts_dir() -> String {
                 return prod.to_string_lossy().to_string();
             }
         }
+        // Production Windows: fonts/ next to the exe or inside resources/
+        #[cfg(windows)]
+        if let Some(exe_dir) = exe.parent() {
+            for candidate in &[
+                exe_dir.join("fonts"),
+                exe_dir.join("resources").join("fonts"),
+            ] {
+                if candidate.exists() {
+                    return candidate.to_string_lossy().to_string();
+                }
+            }
+        }
     }
     "./fonts".to_string()
 }

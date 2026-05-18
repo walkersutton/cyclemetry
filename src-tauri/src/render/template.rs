@@ -102,6 +102,10 @@ pub struct PlotConfig {
 pub struct LineConfig {
     pub width: Option<f32>,
     pub color: Option<String>,
+    /// Opacity for the portion of the course line before the current position.
+    pub past_opacity: Option<f32>,
+    /// Opacity for the portion of the course line after the current position.
+    pub future_opacity: Option<f32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,6 +165,14 @@ impl PlotConfig {
 
     pub fn margin_fraction(&self) -> f64 {
         self.margin.unwrap_or(0.1)
+    }
+
+    pub fn line_past_opacity(&self) -> Option<f32> {
+        self.line.as_ref().and_then(|l| l.past_opacity)
+    }
+
+    pub fn line_future_opacity(&self) -> Option<f32> {
+        self.line.as_ref().and_then(|l| l.future_opacity)
     }
 }
 

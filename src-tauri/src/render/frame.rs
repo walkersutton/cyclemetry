@@ -283,13 +283,22 @@ pub fn compute_crop_rect(
     };
 
     // Plots: fixed rect (may extend off-frame; clamped later).
+    // Rotated plots are bounded by their circumscribed circle.
     for p in &template.plots {
-        acc(
-            p.x as f32,
-            p.y as f32,
-            (p.x as f32) + p.width as f32,
-            (p.y as f32) + p.height as f32,
-        );
+        let rot = p.rotation.unwrap_or(0.0);
+        if rot != 0.0 {
+            let cx = p.x as f32 + p.width as f32 / 2.0;
+            let cy = p.y as f32 + p.height as f32 / 2.0;
+            let r = ((p.width as f32).powi(2) + (p.height as f32).powi(2)).sqrt() / 2.0;
+            acc(cx - r, cy - r, cx + r, cy + r);
+        } else {
+            acc(
+                p.x as f32,
+                p.y as f32,
+                (p.x as f32) + p.width as f32,
+                (p.y as f32) + p.height as f32,
+            );
+        }
     }
 
     // Static labels.
@@ -403,6 +412,13 @@ fn draw_plot(
     let Some(Some(chart)) = cache.charts.get(idx) else {
         return;
     };
+    let rotation = plot_cfg.rotation.unwrap_or(0.0);
+    if rotation != 0.0 {
+        let cx = plot_cfg.x as f32 + plot_cfg.width as f32 / 2.0;
+        let cy = plot_cfg.y as f32 + plot_cfg.height as f32 / 2.0;
+        canvas.save();
+        canvas.rotate(rotation, Some(skia_safe::Point::new(cx, cy)));
+    }
     if plot_cfg.has_position_markers() {
         chart.draw_on_canvas(canvas, frame_idx);
     } else {
@@ -411,6 +427,9 @@ fn draw_plot(
             skia_safe::Point::new(chart.x_offset as f32, chart.y_offset as f32),
             None,
         );
+    }
+    if rotation != 0.0 {
+        canvas.restore();
     }
 }
 

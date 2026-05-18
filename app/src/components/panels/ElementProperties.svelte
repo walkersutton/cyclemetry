@@ -48,7 +48,7 @@
   function update(field, raw) {
     const s = selected()
     if (!s) return
-    const numFields = ['x', 'y', 'width', 'height', 'font_size', 'opacity', 'decimal_rounding']
+    const numFields = ['x', 'y', 'width', 'height', 'font_size', 'opacity', 'decimal_rounding', 'rotation']
     const value = numFields.includes(field) ? (raw === '' ? undefined : Number(raw)) : raw
     app.updateElement(s.category, s.idx, { [field]: value })
   }
@@ -57,7 +57,7 @@
   function updateNested(obj, field, raw) {
     const s = selected()
     if (!s) return
-    const numFields = ['width', 'opacity']
+    const numFields = ['width', 'opacity', 'past_opacity', 'future_opacity']
     const value = numFields.includes(field) ? (raw === '' ? undefined : Number(raw)) : raw
     const current = s.item[obj] ?? {}
     app.updateElement(s.category, s.idx, { [obj]: { ...current, [field]: value } })
@@ -204,7 +204,7 @@
       </div>
     </section>
 
-    <!-- Plot size (advanced) -->
+    <!-- Plot size + rotation (advanced) -->
     {#if showAdvanced && type === 'plot'}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Size</p>
@@ -218,6 +218,11 @@
             <Input type="number" value={numVal(item, 'height')} oninput={(e) => update('height', e.target.value)} />
           </label>
         </div>
+        <label class="space-y-1 block">
+          <span class="text-xs text-zinc-500">Rotation (°)</span>
+          <Input type="number" value={item.rotation ?? 0} min={-180} max={180} step={1}
+            oninput={(e) => update('rotation', e.target.value)} />
+        </label>
       </section>
     {/if}
 
@@ -273,6 +278,18 @@
           <Input type="number" value={item.line?.width ?? 1.75} min={0} step={0.25}
             oninput={(e) => updateNested('line', 'width', e.target.value)} />
         </label>
+        {#if showAdvanced && item.value === 'course'}
+        <label class="space-y-1 block">
+          <span class="text-xs text-zinc-500">Past opacity (traveled, 0–1)</span>
+          <Input type="number" value={item.line?.past_opacity ?? 1} min={0} max={1} step={0.05}
+            oninput={(e) => updateNested('line', 'past_opacity', e.target.value)} />
+        </label>
+        <label class="space-y-1 block">
+          <span class="text-xs text-zinc-500">Future opacity (ahead, 0–1)</span>
+          <Input type="number" value={item.line?.future_opacity ?? 1} min={0} max={1} step={0.05}
+            oninput={(e) => updateNested('line', 'future_opacity', e.target.value)} />
+        </label>
+        {/if}
       </section>
 
       {#if showAdvanced}

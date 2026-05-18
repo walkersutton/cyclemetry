@@ -97,6 +97,31 @@
   // follow via groupOffset so the whole selection moves in unison.
   let liveGroup = $state(null)
 
+  // Live rotation state: { id, degrees } while the user is dragging the handle.
+  let liveRotation = $state(null)
+
+  function getRotation(id) {
+    const el = parseId(id)
+    if (!el || el.category !== 'plots') return 0
+    return app.config?.plots?.[el.idx]?.rotation ?? 0
+  }
+
+  function rotationFor(id) {
+    if (liveRotation?.id === id) return liveRotation.degrees
+    return getRotation(id)
+  }
+
+  function handleRotate(id, degrees) {
+    liveRotation = { id, degrees }
+  }
+
+  function handleRotateEnd(id, degrees) {
+    liveRotation = null
+    const el = parseId(id)
+    if (!el || el.category !== 'plots') return
+    app.updateElement(el.category, el.idx, { rotation: Math.round(degrees) })
+  }
+
   function isGroupDrag(id) {
     return selectedSet.size > 1 && selectedSet.has(id)
   }
@@ -239,10 +264,13 @@
       bounds={{ x: el.x, y: el.y, w: el.w, h: el.h }}
       label={handleLabel(el.id)}
       selected={selectedSet.has(el.id)}
+      rotation={rotationFor(el.id)}
       groupOffset={groupOffsetFor(el.id)}
       onselect={(e) => handleSelect(el.id, e)}
       ondrag={(dx, dy) => handleDrag(el.id, dx, dy)}
       ondragend={(dx, dy) => handleDragEnd(el.id, dx, dy)}
+      onrotate={(deg) => handleRotate(el.id, deg)}
+      onrotateend={(deg) => handleRotateEnd(el.id, deg)}
     />
   {/each}
 

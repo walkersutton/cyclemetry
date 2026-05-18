@@ -352,15 +352,6 @@
               {Math.round(zoom * 100)}% · reset
             </button>
           {/if}
-          {#if app.isTemplateModified}
-            <span
-              class="text-[10px] font-medium text-amber-400 bg-zinc-950/70 rounded px-1.5 py-0.5 pointer-events-none flex items-center gap-1"
-              title="This template has unsaved changes — save it to reuse later"
-            >
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              Unsaved changes
-            </span>
-          {/if}
         </div>
       </div>
     {:else}

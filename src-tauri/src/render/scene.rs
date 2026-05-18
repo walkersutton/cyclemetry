@@ -492,15 +492,20 @@ fn resolve_ffmpeg() -> String {
                 return bundled.to_string_lossy().to_string();
             }
         }
-        // Production Windows: Tauri bundles resources next to the exe
-        if cfg!(windows) {
-            if let Some(exe_dir) = exe.parent() {
-                let bundled = exe_dir.join(bin_name);
-                if std::fs::metadata(&bundled)
+        // Production Windows: Tauri NSIS bundles resources next to the exe
+        // (destination ".") or inside a resources/ subdirectory.  Check both.
+        #[cfg(windows)]
+        if let Some(exe_dir) = exe.parent() {
+            for candidate in &[
+                exe_dir.join(bin_name),
+                exe_dir.join("resources").join(bin_name),
+            ] {
+                if std::fs::metadata(candidate)
                     .map(|m| m.len() > 0)
                     .unwrap_or(false)
                 {
-                    return bundled.to_string_lossy().to_string();
+                    log::info!("resolve_ffmpeg: found Windows bundled ffmpeg at {candidate:?}");
+                    return candidate.to_string_lossy().to_string();
                 }
             }
         }
