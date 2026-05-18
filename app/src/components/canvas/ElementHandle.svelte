@@ -8,7 +8,9 @@
     bounds = { x: 0, y: 0, w: 50, h: 30 },
     label = '',
     selected = false,
-    onselect,
+    groupOffset = { dx: 0, dy: 0 },  // live offset when another group member is dragging
+    onselect,   // (event) — event carries shiftKey for multi-select
+    ondrag,     // (dx, dy) live, every pointermove
     ondragend,  // (dx, dy) in scene/overlay coords
   } = $props()
 
@@ -18,8 +20,8 @@
 
   // Display position: base bounds + live drag offset
   let d = $derived.by(() => ({
-    x: bounds.x + dragDelta.dx,
-    y: bounds.y + dragDelta.dy,
+    x: bounds.x + dragDelta.dx + groupOffset.dx,
+    y: bounds.y + dragDelta.dy + groupOffset.dy,
     w: bounds.w,
     h: bounds.h,
   }))
@@ -35,7 +37,7 @@
 
   function onpointerdown(e) {
     e.stopPropagation()
-    onselect?.()
+    onselect?.(e)
     dragging = true
     dragOrigin = { mx: e.clientX, my: e.clientY }
     dragDelta = { dx: 0, dy: 0 }
@@ -47,6 +49,7 @@
     const svg = e.currentTarget.ownerSVGElement
     if (!svg) return
     dragDelta = screenToOverlayDelta(svg, dragOrigin.mx, dragOrigin.my, e.clientX, e.clientY)
+    ondrag?.(dragDelta.dx, dragDelta.dy)
   }
 
   function onpointerup() {

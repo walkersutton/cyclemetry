@@ -1,0 +1,111 @@
+{
+  "labels": [
+    {
+      "font_size": 60,
+      "text": "MPH",
+      "x": 80,
+      "y": 651
+    },
+    {
+      "font_size": 60,
+      "text": "PWR",
+      "x": 80,
+      "y": 950
+    },
+    {
+      "font_size": 60,
+      "text": "RPM",
+      "x": 80,
+      "y": 1250
+    },
+    {
+      "font_size": 60,
+      "text": "BPM",
+      "x": 80,
+      "y": 1550
+    }
+  ],
+  "plots": [
+    {
+      "color": "#f4f4f4",
+      "height": 500,
+      "line": {
+        "width": 6
+      },
+      "margin": 0.1,
+      "points": [
+        {
+          "opacity": 1,
+          "weight": 1000
+        }
+      ],
+      "rotation": 0,
+      "value": "course",
+      "width": 500,
+      "x": 51,
+      "y": 51
+    },
+    {
+      "color": "#f4f4f4",
+      "fill": {
+        "opacity": 0.65
+      },
+      "height": 400,
+      "line": {
+        "width": 10
+      },
+      "margin": 0.1,
+      "points": [
+        {
+          "opacity": 1,
+          "weight": 1200
+        }
+      ],
+      "rotation": 0,
+      "value": "elevation",
+      "width": 3840,
+      "x": 0,
+      "y": 1760
+    }
+  ],
+  "scene": {
+    "color": "#ffffff",
+    "decimal_rounding": 0,
+    "end": 3689,
+    "font": "Evogria.otf",
+    "font_size": 30,
+    "fps": 30,
+    "height": 2160,
+    "opacity": 0.5,
+    "start": 0,
+    "width": 3840
+  },
+  "values": [
+    {
+      "font_size": 220,
+      "unit": "imperial",
+      "value": "speed",
+      "x": 59,
+      "y": 851
+    },
+    {
+      "font_size": 220,
+      "value": "cadence",
+      "x": 60,
+      "y": 1450
+    },
+    {
+      "font_size": 220,
+      "value": "power",
+      "x": 59,
+      "y": 1150
+    },
+    {
+      "font_size": 220,
+      "opacity": 0.5,
+      "value": "heartrate",
+      "x": 60,
+      "y": 1750
+    }
+  ]
+}

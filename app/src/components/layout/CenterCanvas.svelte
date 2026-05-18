@@ -60,14 +60,17 @@
     if (cache.has(frameIdx) || pending.has(frameIdx)) return
     if (pending.size >= MAX_CONCURRENT) return
     // Fall back to the bundled demo GPX when no file has been loaded yet.
-    const gpx = app.gpxFilename || 'demo.gpxinit'
+    // Guard against stale "null"/"undefined" strings persisted by older builds.
+    const raw = app.gpxFilename
+    const gpx =
+      raw && raw !== 'null' && raw !== 'undefined' ? raw : 'demo.gpxinit'
 
     pending.add(frameIdx)
     try {
       const timeout = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Preview timed out. Try reloading, or check that your GPX file is valid.')), 8000)
       )
-      let data = await Promise.race([backend.nativeGenerateDemo(config, gpx, frameIdx, fps), timeout])
+      let data = await Promise.race([backend.nativeGenerateDemo(config, gpx, frameIdx, fps, app.outputWidth, app.outputHeight), timeout])
       if (data?.image) {
         fetchError = null
         if (stallTimer) { clearTimeout(stallTimer); stallTimer = null }
@@ -108,6 +111,8 @@
     const _config = app.config
     const _fps = app.previewFps ?? 1
     void app.gpxFilename // reactive dep: re-run when GPX changes
+    void app.outputWidth // reactive dep: re-render preview on resolution change
+    void app.outputHeight
     clearBuffer()
     if (_config) {
       const start = _config.scene?.start ?? 0
@@ -138,6 +143,11 @@
     untrack(() => { for (let i = 0; i < PREFETCH_AHEAD; i++) fetchFrame(frameIdx + i) })
   })
 
+  // Keep app.currentPreviewImage in sync so saveTemplate can use the latest frame.
+  $effect(() => {
+    if (currentFrameData?.image) app.currentPreviewImage = currentFrameData.image
+  })
+
   // ── Playback RAF loop ────────────────────────────────────────────────────────
   $effect(() => {
     if (playing) {
@@ -165,8 +175,10 @@
 
   let sceneStart = $derived(app.config?.scene?.start ?? 0)
   let sceneEnd = $derived(app.config?.scene?.end ?? app.activityDuration)
-  let sceneW = $derived(app.config?.scene?.width ?? 1920)
-  let sceneH = $derived(app.config?.scene?.height ?? 1080)
+  // Preview canvas matches the chosen output resolution (the backend renders
+  // the demo frame retargeted to these dims), so the aspect ratio is honored.
+  let sceneW = $derived(app.outputWidth ?? 1920)
+  let sceneH = $derived(app.outputHeight ?? 1080)
   let aspectRatio = $derived(sceneH / sceneW)
   let sceneInvalid = $derived(sceneEnd <= sceneStart)
 
@@ -178,7 +190,7 @@
   let zoom = $state(1)
   let panX = $state(0)
   let panY = $state(0)
-  let stageEl
+  let stageEl = $state()
 
   // Keep the scaled content overlapping the viewport so it can't be lost.
   function clampPan() {
@@ -233,7 +245,27 @@
     if (app.selectedSecond < s) app.selectedSecond = s
     else if (app.selectedSecond > e) app.selectedSecond = e
   })
+
+  // Spacebar toggles playback (unless typing or focused on a button).
+  function onKeydown(e) {
+    if (e.code !== 'Space') return
+    const t = e.target
+    if (
+      t?.tagName === 'INPUT' ||
+      t?.tagName === 'TEXTAREA' ||
+      t?.tagName === 'SELECT' ||
+      t?.tagName === 'BUTTON' ||
+      t?.isContentEditable
+    )
+      return
+    if (!app.config || sceneInvalid) return
+    e.preventDefault()
+    if (!playing && app.selectedSecond >= sceneEnd) app.selectedSecond = sceneStart
+    playing = !playing
+  }
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 <main class="flex-1 flex flex-col overflow-hidden bg-[#09090b]">
   <!-- Canvas area (flexible height) -->
@@ -286,7 +318,13 @@
             <p class="text-xs text-red-400 text-center leading-relaxed">{fetchError}</p>
             <button
               class="text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-500 rounded px-3 py-1 transition-colors"
-              onclick={() => { fetchError = null; clearBuffer(); fetchFrame(Math.floor(app.selectedSecond)) }}
+              onclick={() => {
+                fetchError = null
+                clearBuffer()
+                const fps = app.previewFps ?? 1
+                const start = app.config?.scene?.start ?? 0
+                fetchFrame(secToFrameIdx(app.selectedSecond, fps, start))
+              }}
             >Retry</button>
           </div>
         {:else}
@@ -303,7 +341,7 @@
         <!-- WYSIWYG drag layer — always on top -->
         <WysiwygLayer measuredElements={currentFrameData?.elements ?? []} />
 
-        <!-- Resolution badge -->
+        <!-- Top-right badges -->
         <div class="absolute top-2 right-2 flex items-center gap-1.5">
           {#if zoom !== 1}
             <button
@@ -314,9 +352,15 @@
               {Math.round(zoom * 100)}% · reset
             </button>
           {/if}
-          <span class="text-[10px] font-mono text-zinc-600 bg-zinc-950/70 rounded px-1.5 py-0.5 pointer-events-none">
-            {sceneW}×{sceneH}
-          </span>
+          {#if app.isTemplateModified}
+            <span
+              class="text-[10px] font-medium text-amber-400 bg-zinc-950/70 rounded px-1.5 py-0.5 pointer-events-none flex items-center gap-1"
+              title="This template has unsaved changes — save it to reuse later"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              Unsaved changes
+            </span>
+          {/if}
         </div>
       </div>
     {:else}

@@ -1,3 +1,4 @@
+import { open } from '@tauri-apps/plugin-dialog'
 import * as backend from '../api/backend.js'
 import { parseLocalStorage } from '../lib/utils.js'
 
@@ -5,7 +6,12 @@ export function createAppState() {
   // ── Persistent ──────────────────────────────────────────────────────────────
   // config is the single source of truth: scene settings + all element positions
   let config = $state(parseLocalStorage('editorConfig'))
-  let gpxFilename = $state(localStorage.getItem('gpxFilename') ?? null)
+  const _storedGpx = localStorage.getItem('gpxFilename')
+  let gpxFilename = $state(
+    _storedGpx && _storedGpx !== 'null' && _storedGpx !== 'undefined'
+      ? _storedGpx
+      : null,
+  )
   let activityDuration = $state(
     parseInt(localStorage.getItem('activityDuration') ?? '73'),
   )
@@ -22,16 +28,26 @@ export function createAppState() {
   let outputHeight = $state(
     parseInt(localStorage.getItem('outputHeight') ?? '1080'),
   )
+  // Snapshot of `config` as it was last loaded/saved. Used to detect unsaved
+  // template edits. Output resolution lives outside `config`, so switching a
+  // 1080p template into a 4K view never marks it modified.
+  let pristineConfig = $state(
+    localStorage.getItem('pristineConfig') ??
+      (config ? JSON.stringify(config) : null),
+  )
 
   // ── Transient ────────────────────────────────────────────────────────────────
   let previewFps = $state(1)
   let renderingVideo = $state(false)
+  let currentPreviewImage = $state(null) // data:image/png;base64,... from latest demo frame
   let errorMessage = $state(null)
   let successMessage = $state(null)
   let successTimer = null
   let templates = $state([])
+  let fonts = $state([])
   let showTemplatePicker = $state(false)
   let selectedElementId = $state(null)
+  let selectedElementIds = $state([])
   let renderProgress = $state({
     current: 0,
     total: 0,
@@ -47,7 +63,8 @@ export function createAppState() {
     if (config) localStorage.setItem('editorConfig', JSON.stringify(config))
   })
   $effect(() => {
-    if (gpxFilename != null) localStorage.setItem('gpxFilename', gpxFilename)
+    if (gpxFilename) localStorage.setItem('gpxFilename', gpxFilename)
+    else localStorage.removeItem('gpxFilename')
   })
   $effect(() => {
     localStorage.setItem('activityDuration', String(activityDuration))
@@ -69,38 +86,164 @@ export function createAppState() {
   $effect(() => {
     localStorage.setItem('outputHeight', String(outputHeight))
   })
+  $effect(() => {
+    if (pristineConfig != null)
+      localStorage.setItem('pristineConfig', pristineConfig)
+    else localStorage.removeItem('pristineConfig')
+  })
+
+  function markPristine() {
+    pristineConfig = config ? JSON.stringify(config) : null
+  }
+
+  function templateModified() {
+    return (
+      !!config &&
+      pristineConfig != null &&
+      JSON.stringify(config) !== pristineConfig
+    )
+  }
+
+  // Pending "discard unsaved edits?" action. When set, app.svelte shows a
+  // ConfirmDialog; running or clearing it resolves the gate.
+  let pendingDiscard = $state(null)
+
+  function confirmIfModified(run) {
+    if (templateModified()) pendingDiscard = run
+    else run()
+  }
+
+  function resolvePendingDiscard(ok) {
+    const run = pendingDiscard
+    pendingDiscard = null
+    showTemplatePicker = false
+    if (ok && run) run()
+  }
+
+  // ── Selection ─────────────────────────────────────────────────────────────
+  // selectedElementId is the "primary" element (drives the properties panel);
+  // selectedElementIds is the full set for shift-click multi-select + group drag.
+
+  function selectOnly(id) {
+    selectedElementId = id
+    selectedElementIds = id ? [id] : []
+  }
+
+  function setSelectedElements(ids) {
+    selectedElementIds = [...ids]
+    selectedElementId = ids.length ? ids[ids.length - 1] : null
+  }
+
+  function toggleElementSelection(id) {
+    if (selectedElementIds.includes(id)) {
+      selectedElementIds = selectedElementIds.filter((x) => x !== id)
+      if (selectedElementId === id) {
+        selectedElementId =
+          selectedElementIds[selectedElementIds.length - 1] ?? null
+      }
+    } else {
+      selectedElementIds = [...selectedElementIds, id]
+      selectedElementId = id
+    }
+  }
+
+  // ── Undo history ──────────────────────────────────────────────────────────
+  // Snapshots of `config` taken just before each edit. Template load/new and
+  // wholesale config replacement clear it (you can't undo across a switch).
+  const HISTORY_LIMIT = 50
+  let history = $state([])
+
+  // Apply an edit, recording the pre-edit config so it can be undone.
+  function commitConfig(next) {
+    if (config) {
+      history = [...history.slice(-(HISTORY_LIMIT - 1)), JSON.stringify(config)]
+    }
+    config = next
+  }
+
+  function resetHistory() {
+    history = []
+  }
+
+  function undo() {
+    if (history.length === 0) return
+    const prev = history[history.length - 1]
+    history = history.slice(0, -1)
+    config = JSON.parse(prev)
+  }
 
   // ── Config mutation helpers ───────────────────────────────────────────────
 
   function updateScene(updates) {
     if (!config?.scene) return
-    config = { ...config, scene: { ...config.scene, ...updates } }
+    commitConfig({ ...config, scene: { ...config.scene, ...updates } })
   }
 
   function updateElement(category, idx, updates) {
     if (!config?.[category]) return
     const arr = [...config[category]]
     arr[idx] = { ...arr[idx], ...updates }
-    config = { ...config, [category]: arr }
+    commitConfig({ ...config, [category]: arr })
   }
 
   function updateElementPos(category, idx, x, y) {
     updateElement(category, idx, { x: Math.round(x), y: Math.round(y) })
   }
 
+  // Apply several position changes as ONE edit (one undo step) — used by
+  // group drag so the whole move reverts together.
+  function updateElementPositions(moves) {
+    if (!config || moves.length === 0) return
+    let next = config
+    for (const m of moves) {
+      const arr = [...(next[m.category] ?? [])]
+      if (!arr[m.idx]) continue
+      arr[m.idx] = { ...arr[m.idx], x: Math.round(m.x), y: Math.round(m.y) }
+      next = { ...next, [m.category]: arr }
+    }
+    commitConfig(next)
+  }
+
   function addElement(category, defaults) {
     if (!config) return
     const arr = [...(config[category] ?? []), defaults]
-    config = { ...config, [category]: arr }
+    commitConfig({ ...config, [category]: arr })
   }
 
   function removeElement(category, idx) {
     if (!config?.[category]) return
     const arr = config[category].filter((_, i) => i !== idx)
-    config = { ...config, [category]: arr }
+    commitConfig({ ...config, [category]: arr })
     if (selectedElementId === `${category.slice(0, -1)}-${idx}`) {
-      selectedElementId = null
+      selectOnly(null)
     }
+  }
+
+  const ELEMENT_CATEGORY = { label: 'labels', value: 'values', plot: 'plots' }
+  const ELEMENT_TYPE_NAME = { label: 'Label', value: 'Metric', plot: 'Chart' }
+
+  function parseSelectedElement() {
+    if (!selectedElementId || !config) return null
+    const m = selectedElementId.match(/^(label|value|plot)-(\d+)$/)
+    if (!m) return null
+    const category = ELEMENT_CATEGORY[m[1]]
+    const idx = parseInt(m[2])
+    const item = config[category]?.[idx]
+    return item ? { category, idx, item, type: m[1] } : null
+  }
+
+  function selectedElementLabel() {
+    const s = parseSelectedElement()
+    if (!s) return null
+    const text = s.item.text || s.item.value || ''
+    return text
+      ? `${ELEMENT_TYPE_NAME[s.type]} "${text}"`
+      : ELEMENT_TYPE_NAME[s.type]
+  }
+
+  function deleteSelectedElement() {
+    const s = parseSelectedElement()
+    if (s) removeElement(s.category, s.idx)
   }
 
   // ── Template actions ─────────────────────────────────────────────────────
@@ -136,6 +279,10 @@ export function createAppState() {
     }
     await backend.saveTemplate(filename, config)
     loadedTemplateFilename = filename
+    markPristine()
+    if (currentPreviewImage) {
+      backend.saveTemplatePreview(filename, currentPreviewImage).catch(() => {})
+    }
     await fetchTemplates()
     showSuccess(`Saved "${filename}"`)
   }
@@ -150,6 +297,10 @@ export function createAppState() {
     const filename = toFilename(name)
     await backend.saveTemplate(filename, config)
     loadedTemplateFilename = filename
+    markPristine()
+    if (currentPreviewImage) {
+      backend.saveTemplatePreview(filename, currentPreviewImage).catch(() => {})
+    }
     await fetchTemplates()
     showSuccess(`Saved "${filename}"`)
   }
@@ -162,7 +313,9 @@ export function createAppState() {
     await backend.saveTemplate(filename, base)
     config = base
     loadedTemplateFilename = filename
-    selectedElementId = null
+    selectOnly(null)
+    resetHistory()
+    markPristine()
     await fetchTemplates()
   }
 
@@ -174,11 +327,38 @@ export function createAppState() {
     }
   }
 
+  async function fetchFonts() {
+    try {
+      fonts = await backend.listFonts()
+    } catch (err) {
+      console.error('Failed to fetch fonts:', err)
+    }
+  }
+
+  // Pick a .ttf/.otf, copy it into the user fonts dir, refresh the list, and
+  // return the new font's filename so the caller can select it.
+  async function addCustomFont() {
+    const selected = await open({
+      multiple: false,
+      filters: [{ name: 'Fonts', extensions: ['ttf', 'otf'] }],
+    })
+    if (!selected) return null
+    try {
+      fonts = await backend.importFont(selected)
+      return selected.split(/[\\/]/).pop()
+    } catch (err) {
+      errorMessage = `Could not add font: ${err?.message ?? err}`
+      return null
+    }
+  }
+
   async function loadTemplate(filename) {
     const data = await backend.getTemplate(filename)
     config = data
     loadedTemplateFilename = filename
-    selectedElementId = null
+    selectOnly(null)
+    resetHistory()
+    markPristine()
   }
 
   return {
@@ -187,6 +367,7 @@ export function createAppState() {
     },
     set config(v) {
       config = v
+      resetHistory()
     },
     get gpxFilename() {
       return gpxFilename
@@ -206,6 +387,14 @@ export function createAppState() {
     set selectedSecond(v) {
       selectedSecond = v
     },
+    get isTemplateModified() {
+      return templateModified()
+    },
+    get pendingDiscard() {
+      return pendingDiscard
+    },
+    confirmIfModified,
+    resolvePendingDiscard,
     get loadedTemplateFilename() {
       return loadedTemplateFilename
     },
@@ -236,6 +425,12 @@ export function createAppState() {
     set previewFps(v) {
       previewFps = v
     },
+    get currentPreviewImage() {
+      return currentPreviewImage
+    },
+    set currentPreviewImage(v) {
+      currentPreviewImage = v
+    },
     get renderingVideo() {
       return renderingVideo
     },
@@ -257,6 +452,11 @@ export function createAppState() {
     set templates(v) {
       templates = v
     },
+    get fonts() {
+      return fonts
+    },
+    fetchFonts,
+    addCustomFont,
     get showTemplatePicker() {
       return showTemplatePicker
     },
@@ -267,8 +467,17 @@ export function createAppState() {
       return selectedElementId
     },
     set selectedElementId(v) {
-      selectedElementId = v
+      selectOnly(v)
     },
+    get selectedElementIds() {
+      return selectedElementIds
+    },
+    toggleElementSelection,
+    setSelectedElements,
+    get canUndo() {
+      return history.length > 0
+    },
+    undo,
     get renderProgress() {
       return renderProgress
     },
@@ -281,8 +490,11 @@ export function createAppState() {
     updateScene,
     updateElement,
     updateElementPos,
+    updateElementPositions,
     addElement,
     removeElement,
+    deleteSelectedElement,
+    selectedElementLabel,
     fetchTemplates,
     loadTemplate,
     saveTemplate,

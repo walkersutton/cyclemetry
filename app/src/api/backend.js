@@ -32,6 +32,14 @@ export const saveTemplate = (filename, config) =>
 
 export const openTemplatesFolder = () => invoke('backend_open_templates')
 
+// ─── Fonts ────────────────────────────────────────────────────────────────────
+
+export const listFonts = () => invoke('backend_list_fonts')
+
+export const importFont = (path) => invoke('backend_import_font', { path })
+
+export const openActivitiesFolder = () => invoke('backend_open_activities')
+
 // ─── File system ──────────────────────────────────────────────────────────────
 
 export const openDownloads = (dir) =>
@@ -58,6 +66,12 @@ export const fetchCommunityTemplates = () =>
 export const installCommunityTemplate = (id) =>
   invoke('backend_install_community_template', { id })
 
+export const deleteTemplate = (filename) =>
+  invoke('backend_delete_template', { filename })
+
+export const saveTemplatePreview = (filename, imageDataUrl) =>
+  invoke('backend_save_template_preview', { filename, imageDataUrl })
+
 // ─── Native Rust renderer ─────────────────────────────────────────────────────
 
 export const nativeGenerateDemo = (
@@ -65,7 +79,17 @@ export const nativeGenerateDemo = (
   gpxFilename,
   frameIndex,
   previewFps,
-) => invoke('native_demo', { config, gpxFilename, frameIndex, previewFps })
+  targetWidth,
+  targetHeight,
+) =>
+  invoke('native_demo', {
+    config,
+    gpxFilename,
+    frameIndex,
+    previewFps,
+    targetWidth,
+    targetHeight,
+  })
 
 export const nativeStartRender = (
   config,

@@ -15,10 +15,11 @@
   import UpdateBanner from './components/overlays/UpdateBanner.svelte'
   import Settings from './components/overlays/Settings.svelte'
   import TemplatePickerModal from './components/overlays/TemplatePickerModal.svelte'
+  import ConfirmDialog from './components/overlays/ConfirmDialog.svelte'
   import Button from './components/ui/Button.svelte'
   import Tooltip from './components/ui/Tooltip.svelte'
 
-  import { Activity, Play, FolderOpen } from 'lucide-svelte'
+  import { Activity, Play, FolderOpen, Undo2 } from 'lucide-svelte'
 
   // ── State ──────────────────────────────────────────────────────────────────
   const app = createAppState()
@@ -27,9 +28,35 @@
   let rendering = $state(false)
   let showSettings = $state(false)
   let buildInfo = $state('')
+  let confirmDeleteElement = $state(false)
+
+  function onWindowKeydown(e) {
+    const t = e.target
+    const inField =
+      t?.tagName === 'INPUT' ||
+      t?.tagName === 'TEXTAREA' ||
+      t?.tagName === 'SELECT' ||
+      t?.isContentEditable
+    const blocked = confirmDeleteElement || showSettings || app.showTemplatePicker
+
+    // Undo (⌘/Ctrl+Z). Skip when typing in a field so native text undo works.
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+      if (inField || blocked || !app.canUndo) return
+      e.preventDefault()
+      app.undo()
+      return
+    }
+
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return
+    if (blocked || inField) return
+    if (!app.selectedElementId) return
+    e.preventDefault()
+    confirmDeleteElement = true
+  }
 
   onMount(() => {
     app.fetchTemplates()
+    app.fetchFonts()
     if (import.meta.env.DEV) backend.appBuildInfo().then(s => { buildInfo = s }).catch(() => {})
 
     if (typeof window.__TAURI__ !== 'undefined') {
@@ -38,8 +65,9 @@
         listen('menu_open_recent_gpx',  (e) => handleOpenRecentGpx(e.payload)),
         listen('menu_save_template',    () => app.saveTemplate().catch(e => { app.errorMessage = e.message })),
         listen('menu_save_template_as', () => app.saveTemplateAs().catch(e => { app.errorMessage = e.message })),
-        listen('menu_new_template',     () => app.newTemplate().catch(e => { app.errorMessage = e.message })),
+        listen('menu_new_template',     () => app.confirmIfModified(() => app.newTemplate().catch(e => { app.errorMessage = e.message }))),
         listen('menu_show_downloads',   () => handleOpenDownloads()),
+        listen('menu_show_activities',  () => backend.openActivitiesFolder().catch(() => {})),
         listen('menu_show_templates',   () => backend.openTemplatesFolder().catch(() => {})),
         listen('menu_settings',         () => { showSettings = true }),
         listen('menu_browse_community_templates', () => { app.showTemplatePicker = true }),
@@ -127,6 +155,8 @@
   })
 </script>
 
+<svelte:window onkeydown={onWindowKeydown} />
+
 <div class="h-screen flex flex-col bg-[#09090b] text-foreground overflow-hidden select-none">
   <ErrorToast />
   <UpdateBanner />
@@ -136,6 +166,25 @@
   {/if}
   {#if app.showTemplatePicker}
     <TemplatePickerModal onclose={() => { app.showTemplatePicker = false }} />
+  {/if}
+  {#if confirmDeleteElement}
+    <ConfirmDialog
+      title="Delete element?"
+      message={`Delete ${app.selectedElementLabel() ?? 'this element'}? This cannot be undone.`}
+      confirmText="Delete"
+      onconfirm={() => { app.deleteSelectedElement(); confirmDeleteElement = false }}
+      oncancel={() => { confirmDeleteElement = false }}
+    />
+  {/if}
+  {#if app.pendingDiscard}
+    <ConfirmDialog
+      title="Discard unsaved changes?"
+      message="This template has unsaved edits. Switching will lose them. Save the template first if you want to reuse it."
+      confirmText="Discard"
+      cancelText="Keep editing"
+      onconfirm={() => app.resolvePendingDiscard(true)}
+      oncancel={() => app.resolvePendingDiscard(false)}
+    />
   {/if}
 
   <!-- ── Header ─────────────────────────────────────────────────────────────── -->
@@ -156,6 +205,16 @@
         <span class="truncate">{gpxLabel}</span>
       </Button>
     </Tooltip>
+
+    <Button
+      variant="ghost"
+      size="icon"
+      onclick={() => app.undo()}
+      disabled={!app.canUndo}
+      title="Undo (⌘Z)"
+    >
+      <Undo2 size={14} />
+    </Button>
 
     <div class="flex-1"></div>
 

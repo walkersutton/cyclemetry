@@ -10,6 +10,8 @@
   let communityLoading = $state(true)
   let communityError = $state(null)
   let installing = $state([])
+  let deleting = $state([])
+  let confirmingDelete = $state(null)
   let failedPreviews = $state([])
 
   onMount(async () => {
@@ -55,13 +57,19 @@
     if (!failedPreviews.includes(id)) failedPreviews = [...failedPreviews, id]
   }
 
-  async function handleLoad(id) {
-    try {
-      await app.loadTemplate(id)
+  function handleLoad(id) {
+    if (isActive(id)) {
       onclose()
-    } catch (e) {
-      app.errorMessage = `Failed to load: ${e?.message ?? e}`
+      return
     }
+    app.confirmIfModified(async () => {
+      try {
+        await app.loadTemplate(id)
+        onclose()
+      } catch (e) {
+        app.errorMessage = `Failed to load: ${e?.message ?? e}`
+      }
+    })
   }
 
   async function handleInstall(id) {
@@ -73,6 +81,20 @@
       app.errorMessage = `Install failed: ${e?.message ?? e}`
     } finally {
       installing = installing.filter((x) => x !== id)
+    }
+  }
+
+  async function handleDelete(id) {
+    confirmingDelete = null
+    deleting = [...deleting, id]
+    try {
+      await backend.deleteTemplate(id)
+      if (app.loadedTemplateFilename === id) app.loadedTemplateFilename = null
+      await app.fetchTemplates()
+    } catch (e) {
+      app.errorMessage = `Delete failed: ${e?.message ?? e}`
+    } finally {
+      deleting = deleting.filter((x) => x !== id)
     }
   }
 </script>
@@ -112,15 +134,18 @@
             {#each installed as tpl (tpl.id)}
               {@const active = isActive(tpl.id)}
               {@const label = statusLabel(tpl.type)}
-              <button
-                onclick={() => handleLoad(tpl.id)}
-                class="text-left rounded-lg border overflow-hidden transition-colors
+              {@const busy = deleting.includes(tpl.id)}
+              <div
+                class="rounded-lg border overflow-hidden transition-colors
                        {active
                          ? 'border-[#DC143C] bg-zinc-800'
                          : 'border-zinc-700 bg-zinc-800/40 hover:border-zinc-500 hover:bg-zinc-800/80'}"
               >
-                <!-- Preview -->
-                <div class="aspect-video bg-zinc-800 flex items-center justify-center overflow-hidden">
+                <!-- Preview (clickable) -->
+                <button
+                  onclick={() => handleLoad(tpl.id)}
+                  class="w-full text-left aspect-video bg-zinc-800 flex items-center justify-center overflow-hidden block"
+                >
                   {#if tpl.preview_url && !previewFailed(tpl.id)}
                     <img
                       src={tpl.preview_url}
@@ -131,15 +156,44 @@
                   {:else}
                     <span class="text-[10px] text-zinc-600 font-mono">{tpl.id}</span>
                   {/if}
-                </div>
-                <!-- Info -->
-                <div class="px-2.5 py-2 flex items-center justify-between gap-1">
-                  <span class="text-xs font-medium text-zinc-100 truncate">{tpl.name}</span>
+                </button>
+                <!-- Info row -->
+                <div class="px-2.5 py-2 flex items-center gap-1">
+                  <button
+                    onclick={() => handleLoad(tpl.id)}
+                    class="flex-1 min-w-0 text-left"
+                  >
+                    <span class="text-xs font-medium text-zinc-100 truncate block">{tpl.name}</span>
+                  </button>
                   {#if label}
                     <span class="shrink-0 text-[10px] text-zinc-500">{label}</span>
                   {/if}
+                  {#if confirmingDelete === tpl.id}
+                    <button
+                      onclick={() => handleDelete(tpl.id)}
+                      disabled={busy}
+                      class="shrink-0 text-[10px] text-red-400 hover:text-red-300 transition-colors disabled:opacity-40 ml-1"
+                    >
+                      {busy ? '…' : 'Delete'}
+                    </button>
+                    <button
+                      onclick={() => (confirmingDelete = null)}
+                      class="shrink-0 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  {:else}
+                    <button
+                      onclick={() => (confirmingDelete = tpl.id)}
+                      disabled={busy}
+                      class="shrink-0 text-[10px] text-zinc-600 hover:text-red-400 transition-colors disabled:opacity-40 ml-1"
+                      title="Delete template"
+                    >
+                      {busy ? '…' : '✕'}
+                    </button>
+                  {/if}
                 </div>
-              </button>
+              </div>
             {/each}
           </div>
         </div>

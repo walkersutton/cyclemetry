@@ -3,12 +3,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Template {
     pub scene: SceneConfig,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_seq_as_default")]
     pub labels: Vec<LabelConfig>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_seq_as_default")]
     pub values: Vec<ValueConfig>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_seq_as_default")]
     pub plots: Vec<PlotConfig>,
+}
+
+/// `#[serde(default)]` covers a missing key but NOT an explicit `null`
+/// (which errors with "invalid type: null, expected a sequence").
+/// Templates are user-editable / community-sourced, so treat an explicit
+/// `null` array the same as absent → empty.
+fn null_seq_as_default<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -145,29 +157,34 @@ impl PlotConfig {
 }
 
 impl Template {
+    #[cfg(test)]
     pub fn from_value(raw: serde_json::Value) -> Result<Self, serde_json::Error> {
         Self::from_value_scaled(raw, None)
     }
 
-    /// Parse a template, optionally scaling every spatial field from the
-    /// resolution it was authored at (`scene.width`/`scene.height`) to a
-    /// target resolution. Templates are stored once at their native
-    /// resolution; any 16:9 target is derived by a single uniform scale.
+    /// Parse a template, optionally retargeting it to a chosen output
+    /// resolution. Templates are authored at one resolution; we scale every
+    /// spatial field by a single uniform factor derived from **height**
+    /// (`target_height / authored_height`) and set the canvas to the exact
+    /// target. Non-16:9 targets keep their aspect: the canvas is the target
+    /// width/height and elements positioned past the new width simply fall
+    /// off-screen (acceptable until aspect-specific template variants exist).
     pub fn from_value_scaled(
         mut raw: serde_json::Value,
         target: Option<(u32, u32)>,
     ) -> Result<Self, serde_json::Error> {
         if let Some((tw, th)) = target {
-            let authored_w = raw
+            let authored_h = raw
                 .get("scene")
-                .and_then(|s| s.get("width"))
+                .and_then(|s| s.get("height"))
                 .and_then(|v| v.as_f64())
                 .unwrap_or(0.0);
-            if authored_w > 0.0 {
-                let factor = tw as f64 / authored_w;
-                if (factor - 1.0).abs() > 1e-9 {
-                    scale_template(&mut raw, factor, tw, th);
-                }
+            if authored_h > 0.0 {
+                // Always retarget (even when factor ≈ 1) so the canvas adopts
+                // the chosen width/height — e.g. 3840×2160 → 2160×2160 square
+                // has factor 1 but still needs scene.width updated.
+                let factor = th as f64 / authored_h;
+                scale_template(&mut raw, factor, tw, th);
             }
         }
 

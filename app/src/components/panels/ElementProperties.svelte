@@ -9,7 +9,22 @@
 
   const app = getContext('app')
 
-  const FONTS = ['Arial.ttf', 'Evogria.otf', 'Furore.otf']
+  const ADD_FONT = '__add_font__'
+
+  // Single source of truth: app.fonts (bundled ∪ user-installed), plus an
+  // inline "add custom font" affordance.
+  function fontOpts(includeSceneDefault) {
+    return [
+      ...(includeSceneDefault ? [{ value: '', label: 'Scene default' }] : []),
+      ...app.fonts.map((f) => ({ value: f, label: f.replace(/\.(ttf|otf)$/i, '') })),
+      { value: ADD_FONT, label: '+ Add custom font…' },
+    ]
+  }
+
+  async function pickFont(apply) {
+    const f = await app.addCustomFont()
+    if (f) apply(f)
+  }
   const METRICS = ['speed', 'heartrate', 'power', 'elevation', 'cadence', 'gradient', 'temperature', 'time']
   const PLOT_METRICS = ['elevation', 'speed', 'heartrate', 'power', 'cadence', 'gradient', 'temperature', 'course']
   const UNITS = [
@@ -115,6 +130,39 @@
     return s?.item[obj]?.[field] ?? fallback
   }
 
+  // The element's representative color, shown by the single basic-mode swatch.
+  function primaryColor() {
+    const s = selected()
+    if (!s) return '#ffffff'
+    const it = s.item
+    return (
+      it.color ??
+      it.line?.color ??
+      it.points?.[0]?.color ??
+      '#ffffff'
+    )
+  }
+
+  // Basic mode: one color drives every color on the element. Applied as a
+  // single updateElement call so it's one undo step.
+  function setAllColors(raw) {
+    const s = selected()
+    if (!s) return
+    if (s.type === 'plot') {
+      const it = s.item
+      const patch = {
+        color: raw,
+        line: { ...(it.line ?? {}), color: raw },
+        fill: { ...(it.fill ?? {}), color: raw },
+      }
+      if (it.points?.[0]) patch.points = [{ ...it.points[0], color: raw }]
+      if (it.point_label) patch.point_label = { ...it.point_label, color: raw }
+      app.updateElement(s.category, s.idx, patch)
+    } else {
+      app.updateElement(s.category, s.idx, { color: raw })
+    }
+  }
+
   // Progressive disclosure: most overlays reuse the same colors/fonts/line
   // weights, so detailed/structural controls hide behind "Advanced".
   let showAdvanced = $state(false)
@@ -141,8 +189,7 @@
       {showAdvanced ? 'Hide' : 'Show'} advanced options
     </button>
 
-    <!-- Position -->
-    {#if showAdvanced}
+    <!-- Position (basic) -->
     <section class="mb-4 space-y-2">
       <p class="text-[10px] uppercase tracking-wider text-zinc-600">Position</p>
       <div class="grid grid-cols-2 gap-2">
@@ -157,8 +204,8 @@
       </div>
     </section>
 
-    <!-- Plot size -->
-    {#if type === 'plot'}
+    <!-- Plot size (advanced) -->
+    {#if showAdvanced && type === 'plot'}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Size</p>
         <div class="grid grid-cols-2 gap-2">
@@ -172,7 +219,6 @@
           </label>
         </div>
       </section>
-    {/if}
     {/if}
 
     <!-- Text content (label) -->
@@ -211,6 +257,7 @@
     {#if type === 'plot'}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Line</p>
+        {#if showAdvanced}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Color</span>
           <div class="flex gap-2 items-center">
@@ -220,6 +267,7 @@
             <Input value={colorRow('line', 'color')} oninput={(e) => updateNested('line', 'color', e.target.value)} class="flex-1 font-mono text-xs" />
           </div>
         </label>
+        {/if}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Width (px)</span>
           <Input type="number" value={item.line?.width ?? 1.75} min={0} step={0.25}
@@ -251,6 +299,7 @@
       {@const pt = item.points?.[0] ?? {}}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Tracking Point</p>
+        {#if showAdvanced}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Color</span>
           <div class="flex gap-2 items-center">
@@ -260,11 +309,13 @@
             <Input value={pt.color ?? '#ffffff'} oninput={(e) => updatePoint('color', e.target.value)} class="flex-1 font-mono text-xs" />
           </div>
         </label>
+        {/if}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Size (area px²)</span>
           <Input type="number" value={pt.weight ?? 80} min={4} step={4}
             oninput={(e) => updatePoint('weight', e.target.value)} />
         </label>
+        {#if showAdvanced}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Edge Color</span>
           <div class="flex gap-2 items-center">
@@ -280,6 +331,7 @@
             class="accent-primary" />
           <span class="text-xs text-zinc-400">Remove edge</span>
         </label>
+        {/if}
       </section>
 
       <!-- Point Label — value text next to the marker -->
@@ -312,8 +364,8 @@
             <span class="text-xs text-zinc-500">Font</span>
             <Select
               value={pl.font ?? 'Furore.otf'}
-              options={FONTS.map((f) => ({ value: f, label: f.replace(/\.(ttf|otf)$/, '') }))}
-              onchange={(v) => updatePL('font', v)}
+              options={fontOpts(false)}
+              onchange={(v) => (v === ADD_FONT ? pickFont((f) => updatePL('font', f)) : updatePL('font', v))}
             />
           </label>
           <label class="space-y-1 block">
@@ -356,14 +408,16 @@
     {#if type !== 'plot'}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Typography</p>
+        {#if showAdvanced}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Font</span>
           <Select
             value={item.font ?? ''}
-            options={[{ value: '', label: 'Scene default' }, ...FONTS.map((f) => ({ value: f, label: f.replace(/\.(ttf|otf)$/, '') }))]}
-            onchange={(v) => update('font', v || undefined)}
+            options={fontOpts(true)}
+            onchange={(v) => (v === ADD_FONT ? pickFont((f) => update('font', f)) : update('font', v || undefined))}
           />
         </label>
+        {/if}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Size</span>
           <Input type="number" value={numVal(item, 'font_size')} placeholder="Scene default" oninput={(e) => update('font_size', e.target.value)} />
@@ -374,6 +428,7 @@
     <!-- Appearance -->
     <section class="mb-4 space-y-2">
       <p class="text-[10px] uppercase tracking-wider text-zinc-600">Appearance</p>
+      {#if showAdvanced}
       <label class="space-y-1 block">
         <span class="text-xs text-zinc-500">Color</span>
         <div class="flex gap-2 items-center">
@@ -386,22 +441,37 @@
           <Input value={item.color ?? '#ffffff'} oninput={(e) => update('color', e.target.value)} class="flex-1 font-mono text-xs" />
         </div>
       </label>
+      {:else}
+      <label class="space-y-1 block">
+        <span class="text-xs text-zinc-500">Color</span>
+        <div class="flex gap-2 items-center">
+          <input
+            type="color"
+            value={primaryColor().slice(0, 7)}
+            oninput={(e) => setAllColors(e.target.value)}
+            class="h-7 w-10 rounded border border-zinc-700 bg-zinc-800 cursor-pointer p-0.5"
+          />
+          <Input value={primaryColor()} oninput={(e) => setAllColors(e.target.value)} class="flex-1 font-mono text-xs" />
+        </div>
+      </label>
+      {/if}
       {#if showAdvanced}
       <label class="space-y-1 block">
         <span class="text-xs text-zinc-500">Opacity (0–1)</span>
-        <Input type="number" value={item.opacity ?? 1} min={0} max={1} step={0.05} oninput={(e) => update('opacity', e.target.value)} />
+        <Input type="number" value={item.opacity ?? app.config?.scene?.opacity ?? 1} min={0} max={1} step={0.05} oninput={(e) => update('opacity', e.target.value)} />
       </label>
       {/if}
     </section>
 
     <!-- Value-specific -->
-    {#if type === 'value' && showAdvanced}
+    {#if type === 'value'}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Formatting</p>
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Unit system</span>
           <Select value={item.unit ?? ''} options={UNITS} onchange={(v) => update('unit', v || undefined)} />
         </label>
+        {#if showAdvanced}
         <label class="space-y-1 block">
           <span class="text-xs text-zinc-500">Suffix</span>
           <Input value={item.suffix ?? ''} placeholder="e.g. mph" oninput={(e) => update('suffix', e.target.value || undefined)} />
@@ -410,6 +480,7 @@
           <span class="text-xs text-zinc-500">Decimal places</span>
           <Input type="number" value={numVal(item, 'decimal_rounding')} min={0} max={4} oninput={(e) => update('decimal_rounding', e.target.value)} />
         </label>
+        {/if}
       </section>
     {/if}
   {/if}

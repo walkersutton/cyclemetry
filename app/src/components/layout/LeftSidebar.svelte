@@ -2,8 +2,27 @@
   import { getContext } from 'svelte'
   import TemplateSection from '../panels/TemplateSection.svelte'
   import ElementList from '../panels/ElementList.svelte'
+  import Select from '../ui/Select.svelte'
 
   const app = getContext('app')
+
+  const ADD_FONT = '__add_font__'
+
+  function fontOpts() {
+    return [
+      ...app.fonts.map((f) => ({ value: f, label: f.replace(/\.(ttf|otf)$/i, '') })),
+      { value: ADD_FONT, label: '+ Add custom font…' },
+    ]
+  }
+
+  async function onSceneFont(v) {
+    if (v === ADD_FONT) {
+      const f = await app.addCustomFont()
+      if (f) app.updateScene({ font: f })
+      return
+    }
+    app.updateScene({ font: v })
+  }
 
   // Resolution presets — common formats for cycling/action cam footage sharing
   const RES_PRESETS = [
@@ -91,6 +110,16 @@
         </div>
       </div>
 
+      <!-- Font (scene default — elements inherit unless overridden) -->
+      <div class="space-y-1">
+        <span class="text-[11px] text-zinc-500">Font</span>
+        <Select
+          value={app.config.scene.font ?? 'Arial.ttf'}
+          options={fontOpts()}
+          onchange={onSceneFont}
+        />
+      </div>
+
       <!-- FPS -->
       <label class="flex items-center justify-between">
         <span class="text-[11px] text-zinc-500">FPS</span>
@@ -133,6 +162,11 @@
             value={secToTimecode(app.config.scene.end ?? app.activityDuration)}
             placeholder={secToTimecode(app.activityDuration)}
             onchange={(e) => {
+              if (e.target.value.trim().toLowerCase() === 'end') {
+                app.updateScene({ end: app.activityDuration })
+                e.target.value = secToTimecode(app.activityDuration)
+                return
+              }
               const v = timecodeToSec(e.target.value)
               if (!isNaN(v)) app.updateScene({ end: Math.min(Math.max(0, v), app.activityDuration) })
               else e.target.value = secToTimecode(app.config.scene.end ?? app.activityDuration)

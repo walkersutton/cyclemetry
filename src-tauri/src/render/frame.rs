@@ -433,11 +433,17 @@ fn draw_label(canvas: &Canvas, label: &LabelConfig, template: &Template, fonts_d
 
 pub(crate) fn load_typeface(font_name: &str, fonts_dir: &str) -> Option<Typeface> {
     let mgr = FontMgr::default();
-    let path = format!("{fonts_dir}/{font_name}");
-    if let Ok(bytes) = std::fs::read(&path) {
-        let data = skia_safe::Data::new_copy(&bytes);
-        if let Some(tf) = mgr.new_from_data(&data, None) {
-            return Some(tf);
+    // Bundled fonts first, then user-installed custom fonts.
+    let candidates = [
+        std::path::PathBuf::from(format!("{fonts_dir}/{font_name}")),
+        crate::fonts_user_dir().join(font_name),
+    ];
+    for path in candidates {
+        if let Ok(bytes) = std::fs::read(&path) {
+            let data = skia_safe::Data::new_copy(&bytes);
+            if let Some(tf) = mgr.new_from_data(&data, None) {
+                return Some(tf);
+            }
         }
     }
     let family = font_name.trim_end_matches(".ttf").trim_end_matches(".TTF");

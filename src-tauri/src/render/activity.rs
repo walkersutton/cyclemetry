@@ -36,6 +36,40 @@ impl Activity {
         Self::parse_gpx(&content)
     }
 
+    /// Plausible sample ride used for the WYSIWYG preview when no GPX is
+    /// loaded. Avoids shipping a bundled demo file: every metric is populated
+    /// so any template element has something to render.
+    pub fn synthetic(secs: usize) -> Self {
+        let n = secs.max(1);
+        let mut a = Activity::default();
+        for i in 0..n {
+            let t = i as f64;
+            a.speed.push(8.0 + 3.0 * (t / 10.0).sin());
+            a.power.push(200.0 + 60.0 * (t / 8.0).sin());
+            a.heartrate.push(140.0 + 15.0 * (t / 12.0).sin());
+            a.cadence.push(88.0 + 6.0 * (t / 6.0).sin());
+            a.elevation.push(100.0 + 20.0 * (t / 15.0).sin());
+            a.gradient.push(3.0 * (t / 15.0).cos());
+            a.temperature.push(21.0);
+            a.course
+                .push((37.0 + t * 1.0e-4, -122.0 + (t / 20.0).sin() * 1.0e-3));
+        }
+        a.valid_attributes = [
+            ATTR_COURSE,
+            ATTR_SPEED,
+            ATTR_ELEVATION,
+            ATTR_GRADIENT,
+            ATTR_HEARTRATE,
+            ATTR_CADENCE,
+            ATTR_POWER,
+            ATTR_TEMPERATURE,
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+        a
+    }
+
     pub fn parse_gpx(content: &str) -> Result<Self, String> {
         let mut reader = Reader::from_str(content);
         reader.config_mut().trim_text(true);

@@ -4,54 +4,43 @@ mod render;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use tauri::Manager;
 
 // ─── Path helpers ─────────────────────────────────────────────────────────────
 
-/// Dev: {repo_root}/backend/uploads/   Production: /tmp/cyclemetry/uploads/
-fn uploads_dir() -> PathBuf {
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(root) = exe.ancestors().find(|p| p.join("backend").exists()) {
-            let dev = root.join("backend").join("uploads");
-            std::fs::create_dir_all(&dev).ok();
-            return dev;
-        }
-    }
-    let prod = PathBuf::from("/tmp/cyclemetry/uploads");
-    std::fs::create_dir_all(&prod).ok();
-    prod
+/// Per-user writable data root: `~/Library/Application Support/com.cyclemetry/`.
+/// Resolved once from Tauri's `app_data_dir()` in `setup()`. Persists across
+/// app updates (unlike the bundle) and reboots (unlike `/tmp`).
+static APP_DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
+
+fn app_data_base() -> PathBuf {
+    APP_DATA_DIR
+        .get()
+        .cloned()
+        .unwrap_or_else(|| std::env::temp_dir().join("cyclemetry"))
 }
 
-/// User-editable templates directory.
-/// Dev: {repo_root}/backend/templates/   Production: /tmp/cyclemetry/templates/
-fn templates_user_dir() -> PathBuf {
-    let dir = PathBuf::from("/tmp/cyclemetry/templates");
+/// Where opened/uploaded GPX activities are stored.
+fn uploads_dir() -> PathBuf {
+    let dir = app_data_base().join("uploads");
     std::fs::create_dir_all(&dir).ok();
     dir
 }
 
-/// Read-only bundled templates shipped with the app.
-/// Dev: {repo_root}/templates/   Production: Contents/Resources/templates/
-fn templates_bundled_dir() -> PathBuf {
-    if let Ok(exe) = std::env::current_exe() {
-        // Production macOS .app bundle: exe is Contents/MacOS/Cyclemetry,
-        // Tauri resources land at Contents/Resources/
-        if let Some(contents) = exe.parent().and_then(|p| p.parent()) {
-            let bundled = contents.join("Resources").join("templates");
-            if bundled.exists() {
-                return bundled;
-            }
-        }
-        // Dev: repo root templates/
-        if let Some(root) = exe.ancestors().find(|p| p.join("templates").exists()) {
-            let dev = root.join("templates");
-            if dev.exists() {
-                return dev;
-            }
-        }
-    }
-    PathBuf::from("templates")
+/// User-editable templates directory (created + installed community templates).
+fn templates_user_dir() -> PathBuf {
+    let dir = app_data_base().join("templates");
+    std::fs::create_dir_all(&dir).ok();
+    dir
+}
+
+/// User-installed custom fonts directory. Checked by the renderer (via
+/// `load_typeface`) and listed alongside bundled fonts.
+fn fonts_user_dir() -> PathBuf {
+    let dir = app_data_base().join("fonts");
+    std::fs::create_dir_all(&dir).ok();
+    dir
 }
 
 /// ~/Movies/Cyclemetry/ — default render output destination.
@@ -61,39 +50,6 @@ fn default_output_dir() -> PathBuf {
         .unwrap_or_else(|_| PathBuf::from("/tmp/cyclemetry/output"));
     std::fs::create_dir_all(&dir).ok();
     dir
-}
-
-/// Copy any bundled templates that don't yet exist in the user dir (handles subdirectories).
-fn seed_user_templates() {
-    let user = templates_user_dir();
-    let bundled = templates_bundled_dir();
-    if bundled == user {
-        return;
-    }
-    if let Ok(entries) = std::fs::read_dir(&bundled) {
-        for entry in entries.flatten() {
-            let name = entry.file_name();
-            let dest = user.join(&name);
-            let Ok(ftype) = entry.file_type() else {
-                continue;
-            };
-            if ftype.is_file() {
-                if !dest.exists() {
-                    let _ = std::fs::copy(entry.path(), &dest);
-                }
-            } else if ftype.is_dir() {
-                let _ = std::fs::create_dir_all(&dest);
-                if let Ok(sub_entries) = std::fs::read_dir(entry.path()) {
-                    for sub in sub_entries.flatten() {
-                        let sub_dest = dest.join(sub.file_name());
-                        if !sub_dest.exists() {
-                            let _ = std::fs::copy(sub.path(), sub_dest);
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 fn template_display_name(s: &str) -> String {
@@ -108,6 +64,37 @@ fn template_display_name(s: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+/// Read a JPG into a base64 `data:` URL value, or `None` if it doesn't exist.
+fn jpg_data_url(path: &Path) -> Option<serde_json::Value> {
+    if !path.exists() {
+        return None;
+    }
+    use base64::Engine;
+    std::fs::read(path).ok().map(|bytes| {
+        let enc = base64::engine::general_purpose::STANDARD.encode(&bytes);
+        serde_json::Value::String(format!("data:image/jpeg;base64,{enc}"))
+    })
+}
+
+/// Resolve a template's preview image.
+/// 1. User-saved preview next to the json (`{user_dir}/{base}.jpg`).
+/// 2. Dev: the repo's `templates/{base}/preview.jpg` (inlined as a data URL).
+/// 3. Release: the GitHub raw URL for the bundled template preview.
+fn resolve_preview_value(user_dir: &Path, base: &str) -> serde_json::Value {
+    if let Some(v) = jpg_data_url(&user_dir.join(format!("{base}.jpg"))) {
+        return v;
+    }
+    #[cfg(debug_assertions)]
+    {
+        jpg_data_url(&repo_templates_dir().join(base).join("preview.jpg"))
+            .unwrap_or(serde_json::Value::Null)
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        serde_json::Value::String(format!("{GITHUB_RAW_TEMPLATES}/{base}/preview.jpg"))
+    }
 }
 
 // ─── GPX path resolution ──────────────────────────────────────────────────────
@@ -257,76 +244,56 @@ fn app_build_info() -> String {
 #[tauri::command]
 fn backend_list_templates() -> Result<String, String> {
     let mut templates: Vec<serde_json::Value> = Vec::new();
-    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
-    let user_dir = templates_user_dir();
-    let bundled_dir = templates_bundled_dir();
-
-    for (dir, is_user) in &[(&user_dir, true), (&bundled_dir, false)] {
-        let Ok(entries) = std::fs::read_dir(dir) else {
+    let dir = templates_user_dir();
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return Ok("[]".to_string());
+    };
+    for entry in entries.flatten() {
+        let Ok(ftype) = entry.file_type() else {
             continue;
         };
-        for entry in entries.flatten() {
-            let Ok(ftype) = entry.file_type() else {
-                continue;
-            };
-            let name_os = entry.file_name();
-            let name = name_os.to_string_lossy();
-            if ftype.is_file() && name.ends_with(".json") {
-                let fname = name.to_string();
-                if seen.insert(fname.clone()) {
-                    let display = template_display_name(fname.trim_end_matches(".json"));
-                    let type_label = if *is_user {
-                        let sidecar = dir.join(format!("{fname}.remote"));
-                        if sidecar.exists() {
-                            let current =
-                                std::fs::read_to_string(dir.join(&fname)).unwrap_or_default();
-                            let reference = std::fs::read_to_string(&sidecar).unwrap_or_default();
-                            if current.trim() == reference.trim() {
-                                "community"
-                            } else {
-                                "community-modified"
-                            }
-                        } else {
-                            "user"
-                        }
-                    } else {
-                        "built-in"
-                    };
-                    let base = fname.trim_end_matches(".json");
-                    let preview_url = match type_label {
-                        "user" => serde_json::Value::Null,
-                        _ => {
-                            serde_json::Value::String(format!("{GITHUB_RAW_TEMPLATES}/{base}.jpg"))
-                        }
-                    };
-                    templates.push(serde_json::json!({
-                        "id": fname,
-                        "name": display,
-                        "type": type_label,
-                        "preview_url": preview_url
-                    }));
+        let name_os = entry.file_name();
+        let name = name_os.to_string_lossy();
+        if ftype.is_file() && name.ends_with(".json") {
+            let fname = name.to_string();
+            let display = template_display_name(fname.trim_end_matches(".json"));
+            let sidecar = dir.join(format!("{fname}.remote"));
+            let type_label = if sidecar.exists() {
+                let current = std::fs::read_to_string(dir.join(&fname)).unwrap_or_default();
+                let reference = std::fs::read_to_string(&sidecar).unwrap_or_default();
+                if current.trim() == reference.trim() {
+                    "community"
+                } else {
+                    "community-modified"
                 }
-            }
+            } else {
+                "user"
+            };
+            let base = fname.trim_end_matches(".json");
+            let preview_url = resolve_preview_value(&dir, base);
+            templates.push(serde_json::json!({
+                "id": fname,
+                "name": display,
+                "type": type_label,
+                "preview_url": preview_url
+            }));
         }
     }
-
     Ok(serde_json::to_string(&templates).unwrap_or_else(|_| "[]".to_string()))
 }
 
 #[tauri::command]
 fn backend_get_template(filename: String) -> Result<String, String> {
     let rel = validate_template_path(&filename)?;
-    for dir in &[templates_user_dir(), templates_bundled_dir()] {
-        let path = dir.join(&rel);
-        if path.exists() {
-            let contents = std::fs::read_to_string(&path)
-                .map_err(|e| format!("Failed to read template: {e}"))?;
-            let parsed: serde_json::Value = serde_json::from_str(&contents)
-                .map_err(|e| format!("Invalid template JSON: {e}"))?;
-            return serde_json::to_string(&parsed).map_err(|e| e.to_string());
-        }
+    let path = templates_user_dir().join(&rel);
+    if !path.exists() {
+        return Err(format!("Template not found: {filename}"));
     }
-    Err(format!("Template not found: {filename}"))
+    let contents =
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read template: {e}"))?;
+    let parsed: serde_json::Value =
+        serde_json::from_str(&contents).map_err(|e| format!("Invalid template JSON: {e}"))?;
+    serde_json::to_string(&parsed).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -357,6 +324,53 @@ fn validate_template_path(filename: &str) -> Result<String, String> {
     }
 }
 
+// ─── Delete / preview commands ───────────────────────────────────────────────
+
+#[tauri::command]
+fn backend_delete_template(filename: String) -> Result<String, String> {
+    let rel = validate_template_path(&filename)?;
+    let user_dir = templates_user_dir();
+    let path = user_dir.join(&rel);
+    if !path.exists() {
+        return Err(format!("Template not found in user templates: {filename}"));
+    }
+    std::fs::remove_file(&path).map_err(|e| format!("Failed to delete template: {e}"))?;
+    let base = rel.trim_end_matches(".json");
+    let sidecar = user_dir.join(format!("{base}.json.remote"));
+    if sidecar.exists() {
+        std::fs::remove_file(&sidecar).ok();
+    }
+    let preview = user_dir.join(format!("{base}.jpg"));
+    if preview.exists() {
+        std::fs::remove_file(&preview).ok();
+    }
+    Ok(serde_json::json!({ "message": format!("Deleted {filename}") }).to_string())
+}
+
+#[tauri::command]
+fn backend_save_template_preview(filename: String, image_data_url: String) -> Result<(), String> {
+    let rel = validate_template_path(&filename)?;
+    let base = rel.trim_end_matches(".json").to_string();
+    let prefix = "data:image/png;base64,";
+    let encoded = image_data_url
+        .strip_prefix(prefix)
+        .ok_or("Expected data:image/png;base64, prefix")?;
+    use base64::Engine;
+    let png_bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .map_err(|e| format!("Base64 decode error: {e}"))?;
+    let img_data = skia_safe::Data::new_copy(&png_bytes);
+    let image =
+        skia_safe::Image::from_encoded(img_data).ok_or("Failed to decode PNG image data")?;
+    let jpeg_data = image
+        .encode(None, skia_safe::EncodedImageFormat::JPEG, 85)
+        .ok_or("Failed to encode image as JPEG")?;
+    let dest = templates_user_dir().join(format!("{base}.jpg"));
+    std::fs::write(&dest, jpeg_data.as_bytes())
+        .map_err(|e| format!("Failed to write preview: {e}"))?;
+    Ok(())
+}
+
 // ─── File-system open commands ────────────────────────────────────────────────
 
 #[tauri::command]
@@ -364,6 +378,52 @@ fn backend_open_templates() -> Result<String, String> {
     let dir = templates_user_dir();
     open_path(&dir.to_string_lossy())?;
     Ok(r#"{"message":"Templates folder opened"}"#.to_string())
+}
+
+#[tauri::command]
+fn backend_open_activities() -> Result<String, String> {
+    open_path(&uploads_dir().to_string_lossy())?;
+    Ok(r#"{"message":"Activities folder opened"}"#.to_string())
+}
+
+/// Single source of truth for available fonts: bundled fonts ∪ user-installed.
+#[tauri::command]
+fn backend_list_fonts() -> Vec<String> {
+    let mut set = std::collections::BTreeSet::new();
+    let dirs = [PathBuf::from(resolve_fonts_dir()), fonts_user_dir()];
+    for dir in dirs {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for e in entries.flatten() {
+                if let Some(name) = e.file_name().to_str() {
+                    let lower = name.to_lowercase();
+                    if lower.ends_with(".ttf") || lower.ends_with(".otf") {
+                        set.insert(name.to_string());
+                    }
+                }
+            }
+        }
+    }
+    set.into_iter().collect()
+}
+
+/// Copy a user-picked .ttf/.otf into the user fonts dir; returns updated list.
+#[tauri::command]
+fn backend_import_font(path: String) -> Result<Vec<String>, String> {
+    let src = Path::new(&path);
+    let ext = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_lowercase());
+    if !matches!(ext.as_deref(), Some("ttf") | Some("otf")) {
+        return Err("Font must be a .ttf or .otf file".into());
+    }
+    let name = src
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| "Invalid font filename".to_string())?;
+    let dest = fonts_user_dir().join(name);
+    std::fs::copy(src, &dest).map_err(|e| format!("Could not import font: {e}"))?;
+    Ok(backend_list_fonts())
 }
 
 #[tauri::command]
@@ -452,7 +512,7 @@ fn gpx_metadata_response(filename: &str, path: &str) -> Result<String, String> {
 #[cfg(not(debug_assertions))]
 const GITHUB_API_TEMPLATES: &str =
     "https://api.github.com/repos/walkersutton/cyclemetry/contents/templates";
-// Available in both dev and release for constructing preview URLs.
+#[cfg(not(debug_assertions))]
 const GITHUB_RAW_TEMPLATES: &str =
     "https://raw.githubusercontent.com/walkersutton/cyclemetry/main/templates";
 
@@ -467,11 +527,32 @@ async fn backend_community_templates() -> Result<String, String> {
     community_templates_from_github().await
 }
 
+/// Returns the repo's templates/ folder for dev-mode community browsing.
+/// The exe lives under `src-tauri/target/debug/`, which also has a build-copied
+/// `templates/`. Require the ancestor to contain `src-tauri/` so we match the
+/// real repo root and not that stale build-output copy.
+#[cfg(debug_assertions)]
+fn repo_templates_dir() -> PathBuf {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| {
+            exe.ancestors()
+                .find(|p| p.join("src-tauri").is_dir() && p.join("templates").is_dir())
+                .map(|root| root.join("templates"))
+        })
+        .unwrap_or_else(|| PathBuf::from("templates"))
+}
+
+/// Template folders use lowercase snake_case names (e.g. `crit`, `power_and_hr`).
+/// Dirs starting with uppercase (e.g. `TO_BE_REFACTORED`) or `.` are skipped.
+fn is_template_dir_name(name: &str) -> bool {
+    name.starts_with(|c: char| c.is_ascii_lowercase())
+}
+
 #[cfg(debug_assertions)]
 fn community_templates_from_disk() -> Result<String, String> {
-    let dir = templates_bundled_dir();
+    let dir = repo_templates_dir();
     let mut templates: Vec<serde_json::Value> = Vec::new();
-    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let Ok(entries) = std::fs::read_dir(&dir) else {
         return Ok("[]".to_string());
     };
@@ -480,17 +561,19 @@ fn community_templates_from_disk() -> Result<String, String> {
             continue;
         };
         let name_os = entry.file_name();
-        let name = name_os.to_string_lossy();
-        if ftype.is_file() && name.ends_with(".json") {
-            let fname = name.to_string();
-            if seen.insert(fname.clone()) {
-                let base = fname.trim_end_matches(".json");
-                let display = template_display_name(base);
-                let preview_url = format!("{GITHUB_RAW_TEMPLATES}/{base}.jpg");
+        let name = name_os.to_string_lossy().to_string();
+        if ftype.is_dir() && is_template_dir_name(&name) {
+            // Each template folder contains {name}/{name}.json + preview.jpg
+            let json_path = dir.join(&name).join(format!("{name}.json"));
+            if json_path.exists() {
+                let id = format!("{name}.json");
+                let display = template_display_name(&name);
+                let preview_url = jpg_data_url(&dir.join(&name).join("preview.jpg"))
+                    .unwrap_or(serde_json::Value::Null);
                 templates.push(serde_json::json!({
-                    "id": fname,
+                    "id": id,
                     "name": display,
-                    "preview_url": preview_url
+                    "preview_url": preview_url,
                 }));
             }
         }
@@ -516,37 +599,18 @@ async fn community_templates_from_github() -> Result<String, String> {
 
     let entries = root.as_array().ok_or("Expected array from GitHub API")?;
 
-    // Build preview map: template basename → image raw URL
-    let mut preview_urls: std::collections::HashMap<String, String> =
-        std::collections::HashMap::new();
-    for entry in entries {
-        let name = entry["name"].as_str().unwrap_or("");
-        if entry["type"] == "file" {
-            if let Some(base) = name
-                .strip_suffix(".jpg")
-                .or_else(|| name.strip_suffix(".png"))
-            {
-                if let Some(url) = entry["download_url"].as_str() {
-                    preview_urls.insert(base.to_string(), url.to_string());
-                }
-            }
-        }
-    }
-
+    // Each template is a subdirectory named with lowercase snake_case.
+    // Inside: {name}/{name}.json + preview.jpg
     let mut templates: Vec<serde_json::Value> = Vec::new();
     for entry in entries {
         let name = entry["name"].as_str().unwrap_or("");
-        if entry["type"] == "file" && name.ends_with(".json") {
-            let base = name.trim_end_matches(".json");
-            let display = template_display_name(base);
-            let preview_url = preview_urls
-                .get(base)
-                .cloned()
-                .unwrap_or_else(|| format!("{GITHUB_RAW_TEMPLATES}/{base}.jpg"));
+        if entry["type"] == "dir" && is_template_dir_name(name) {
+            let display = template_display_name(name);
+            let preview_url = format!("{GITHUB_RAW_TEMPLATES}/{name}/preview.jpg");
             templates.push(serde_json::json!({
-                "id": name,
+                "id": format!("{name}.json"),
                 "name": display,
-                "preview_url": preview_url
+                "preview_url": preview_url,
             }));
         }
     }
@@ -557,10 +621,8 @@ async fn community_templates_from_github() -> Result<String, String> {
 #[tauri::command]
 async fn backend_install_community_template(id: String) -> Result<String, String> {
     let rel = validate_template_path(&id)?;
+    // rel is e.g. "crit.json"; the source lives in the {name}/ subfolder
     let dest = templates_user_dir().join(&rel);
-    if let Some(parent) = dest.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {e}"))?;
-    }
     install_community_template_impl(&rel, &dest).await
 }
 
@@ -569,7 +631,9 @@ async fn install_community_template_impl(
     rel: &str,
     dest: &std::path::Path,
 ) -> Result<String, String> {
-    let src = templates_bundled_dir().join(rel);
+    let name = rel.trim_end_matches(".json");
+    // Source: templates/{name}/{name}.json
+    let src = repo_templates_dir().join(name).join(rel);
     std::fs::copy(&src, dest).map_err(|e| format!("Failed to copy template: {e}"))?;
     let content =
         std::fs::read_to_string(dest).map_err(|e| format!("Failed to read template: {e}"))?;
@@ -583,7 +647,9 @@ async fn install_community_template_impl(
     rel: &str,
     dest: &std::path::Path,
 ) -> Result<String, String> {
-    let url = format!("{GITHUB_RAW_TEMPLATES}/{rel}");
+    let name = rel.trim_end_matches(".json");
+    // Source: templates/{name}/{name}.json on GitHub raw
+    let url = format!("{GITHUB_RAW_TEMPLATES}/{name}/{rel}");
     let body = reqwest::Client::builder()
         .user_agent("cyclemetry-app")
         .build()
@@ -768,14 +834,33 @@ async fn native_demo(
     gpx_filename: String,
     frame_index: u32,
     preview_fps: u32,
+    target_width: Option<u32>,
+    target_height: Option<u32>,
     demo_cache: tauri::State<'_, SharedDemoCache>,
 ) -> Result<String, String> {
-    let wh = template_value_wh(&config);
+    let target = match (target_width, target_height) {
+        (Some(w), Some(h)) => Some((w, h)),
+        _ => None,
+    };
+    // Preview canvas = chosen output resolution (so aspect ratio is honored).
+    let wh = target.unwrap_or_else(|| template_value_wh(&config));
     let preview_fps = preview_fps.max(1);
-    // Include preview_fps in cache hash so changing fps triggers a rebuild with
-    // the appropriate interpolation level.
-    let config_hash = quick_hash(&format!("{}:{}", config, preview_fps));
-    let (gpx_path, gpx_warning) = resolve_gpx_path(&gpx_filename)?;
+    // Include preview_fps + target in cache hash so changing either rebuilds.
+    let config_hash = quick_hash(&format!("{}:{}:{:?}", config, preview_fps, target));
+    // No bundled demo file: if the GPX can't be resolved, preview synthetic
+    // sample data rather than failing the whole preview.
+    let (gpx_path, gpx_warning) = match resolve_gpx_path(&gpx_filename) {
+        Ok(v) => v,
+        Err(_) => {
+            let real = !gpx_filename.is_empty()
+                && gpx_filename != "null"
+                && gpx_filename != "demo.gpxinit"
+                && gpx_filename != "demo.gpx";
+            let warning = real
+                .then(|| format!("GPX '{gpx_filename}' not found — showing sample data instead"));
+            ("<synthetic>".to_string(), warning)
+        }
+    };
     let fonts_dir = resolve_fonts_dir();
     let cache_arc = demo_cache.inner().clone();
 
@@ -788,11 +873,15 @@ async fn native_demo(
         };
 
         if needs_rebuild {
-            let template = render::template::Template::from_value(config)
+            let template = render::template::Template::from_value_scaled(config, target)
                 .map_err(|e| format!("Template parse error: {e}"))?;
 
-            let mut activity = render::activity::Activity::from_gpx(&gpx_path)
-                .map_err(|e| format!("GPX parse error: {e}"))?;
+            let mut activity = if gpx_path == "<synthetic>" {
+                render::activity::Activity::synthetic(60)
+            } else {
+                render::activity::Activity::from_gpx(&gpx_path)
+                    .map_err(|e| format!("GPX parse error: {e}"))?
+            };
 
             // Trim first (1 Hz indices == seconds), then interpolate so chart
             // paths are built at the requested preview resolution.
@@ -903,8 +992,6 @@ fn record_gpx_opened(app: tauri::AppHandle, path: String) {
 // ─── App entry point ──────────────────────────────────────────────────────────
 
 pub fn run() {
-    seed_user_templates();
-
     // Read recent GPX list before building the app so the menu can use it at startup.
     #[cfg(target_os = "macos")]
     let initial_recent_gpx = recent::read();
@@ -937,15 +1024,25 @@ pub fn run() {
             backend_get_template,
             backend_save_template,
             backend_open_templates,
+            backend_list_fonts,
+            backend_import_font,
+            backend_open_activities,
             backend_open_downloads,
             backend_open_video,
             backend_load_gpx,
             backend_upload,
             backend_community_templates,
             backend_install_community_template,
+            backend_delete_template,
+            backend_save_template_preview,
             record_gpx_opened,
         ])
         .setup(move |app| {
+            if let Ok(dir) = app.path().app_data_dir() {
+                std::fs::create_dir_all(&dir).ok();
+                APP_DATA_DIR.set(dir).ok();
+            }
+
             #[cfg(all(debug_assertions, target_os = "macos"))]
             {
                 use objc2::{AnyThread, MainThreadMarker};
@@ -1031,34 +1128,10 @@ pub fn run() {
                 };
 
                 let file_sep1 = PredefinedMenuItem::separator(app)?;
-                let save_tpl = MenuItem::with_id(
-                    app,
-                    "save_template",
-                    "Save Template",
-                    true,
-                    Some("CmdOrCtrl+S"),
-                )?;
-                let save_tpl_as = MenuItem::with_id(
-                    app,
-                    "save_template_as",
-                    "Save Template As...",
-                    true,
-                    Some("CmdOrCtrl+Shift+S"),
-                )?;
-                let new_tpl =
-                    MenuItem::with_id(app, "new_template", "New Template", true, None::<&str>)?;
-                let file_sep2 = PredefinedMenuItem::separator(app)?;
                 let show_dl = MenuItem::with_id(
                     app,
                     "show_downloads",
                     "Show Downloads Folder",
-                    true,
-                    None::<&str>,
-                )?;
-                let show_tpl_dir = MenuItem::with_id(
-                    app,
-                    "show_templates",
-                    "Show Templates Folder",
                     true,
                     None::<&str>,
                 )?;
@@ -1067,17 +1140,30 @@ pub fn run() {
                     app,
                     "File",
                     true,
-                    &[
-                        &open_gpx,
-                        &open_recent,
-                        &file_sep1,
-                        &save_tpl,
-                        &save_tpl_as,
-                        &new_tpl,
-                        &file_sep2,
-                        &show_dl,
-                        &show_tpl_dir,
-                    ],
+                    &[&open_gpx, &open_recent, &file_sep1, &show_dl],
+                )?;
+
+                // ── Activities menu ───────────────────────────────────────
+                let act_open = MenuItem::with_id(
+                    app,
+                    "activities_open_gpx",
+                    "Open Activity (GPX)…",
+                    true,
+                    None::<&str>,
+                )?;
+                let act_sep = PredefinedMenuItem::separator(app)?;
+                let act_show_folder = MenuItem::with_id(
+                    app,
+                    "activities_show_folder",
+                    "Show Activities Folder",
+                    true,
+                    None::<&str>,
+                )?;
+                let activities_submenu = Submenu::with_items(
+                    app,
+                    "Activities",
+                    true,
+                    &[&act_open, &act_sep, &act_show_folder],
                 )?;
 
                 // ── Help menu ─────────────────────────────────────────────
@@ -1104,6 +1190,31 @@ pub fn run() {
                     Submenu::with_items(app, "Help", true, &[&help_docs, &help_issues])?;
 
                 // ── Templates menu ────────────────────────────────────────
+                let new_tpl =
+                    MenuItem::with_id(app, "new_template", "New Template", true, None::<&str>)?;
+                let save_tpl = MenuItem::with_id(
+                    app,
+                    "save_template",
+                    "Save Template",
+                    true,
+                    Some("CmdOrCtrl+S"),
+                )?;
+                let save_tpl_as = MenuItem::with_id(
+                    app,
+                    "save_template_as",
+                    "Save Template As...",
+                    true,
+                    Some("CmdOrCtrl+Shift+S"),
+                )?;
+                let tpl_sep1 = PredefinedMenuItem::separator(app)?;
+                let show_tpl_dir = MenuItem::with_id(
+                    app,
+                    "show_templates",
+                    "Show Templates Folder",
+                    true,
+                    None::<&str>,
+                )?;
+                let tpl_sep2 = PredefinedMenuItem::separator(app)?;
                 let browse_community = MenuItem::with_id(
                     app,
                     "browse_community_templates",
@@ -1111,16 +1222,29 @@ pub fn run() {
                     true,
                     None::<&str>,
                 )?;
-                let templates_submenu =
-                    Submenu::with_items(app, "Templates", true, &[&browse_community])?;
+                let templates_submenu = Submenu::with_items(
+                    app,
+                    "Templates",
+                    true,
+                    &[
+                        &new_tpl,
+                        &save_tpl,
+                        &save_tpl_as,
+                        &tpl_sep1,
+                        &show_tpl_dir,
+                        &tpl_sep2,
+                        &browse_community,
+                    ],
+                )?;
 
                 app.set_menu(Menu::with_items(
                     app,
                     &[
                         &app_submenu,
                         &file_submenu,
-                        &templates_submenu,
                         &edit_submenu,
+                        &templates_submenu,
+                        &activities_submenu,
                         &help_submenu,
                     ],
                 )?)?;
@@ -1135,8 +1259,11 @@ pub fn run() {
                         "check_updates" => {
                             app_handle.emit("check_for_updates", ()).ok();
                         }
-                        "open_gpx" => {
+                        "open_gpx" | "activities_open_gpx" => {
                             app_handle.emit("menu_open_gpx", ()).ok();
+                        }
+                        "activities_show_folder" => {
+                            app_handle.emit("menu_show_activities", ()).ok();
                         }
                         "save_template" => {
                             app_handle.emit("menu_save_template", ()).ok();
