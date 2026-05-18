@@ -7,6 +7,8 @@
 ///     bounded channel; consumer (main thread) drains to FFmpeg stdin concurrently so render
 ///     and encode overlap instead of running back-to-back.
 use rayon::prelude::*;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -112,32 +114,37 @@ pub fn render_video(
     // --- Spawn FFmpeg ---
     let ffmpeg_bin = resolve_ffmpeg();
     log::info!("render_video: spawning FFmpeg from {ffmpeg_bin}");
-    let mut ffmpeg = Command::new(&ffmpeg_bin)
-        .args([
-            "-loglevel",
-            "warning",
-            "-f",
-            "rawvideo",
-            // Skia renders BGRA8888 natively; feeding bgra means FFmpeg does
-            // zero per-frame swscale conversion before the encoder.
-            "-pix_fmt",
-            "bgra",
-            "-s",
-            &format!("{w}x{h}"),
-            "-r",
-            &template.scene.fps.to_string(),
-            "-i",
-            "-",
-            "-c:v",
-            ffmpeg_codec(),
-            "-profile:v",
-            "4444",
-            "-y",
-            output_path,
-        ])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped())
+    let mut cmd = Command::new(&ffmpeg_bin);
+    cmd.args([
+        "-loglevel",
+        "warning",
+        "-f",
+        "rawvideo",
+        // Skia renders BGRA8888 natively; feeding bgra means FFmpeg does
+        // zero per-frame swscale conversion before the encoder.
+        "-pix_fmt",
+        "bgra",
+        "-s",
+        &format!("{w}x{h}"),
+        "-r",
+        &template.scene.fps.to_string(),
+        "-i",
+        "-",
+        "-c:v",
+        ffmpeg_codec(),
+        "-profile:v",
+        "4444",
+        "-y",
+        output_path,
+    ])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::null())
+    .stderr(Stdio::piped());
+    // Suppress the console window Windows opens for console-subsystem
+    // executables when spawned from a GUI process (CREATE_NO_WINDOW).
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
+    let mut ffmpeg = cmd
         .spawn()
         .map_err(|e| format!("Failed to spawn FFmpeg ({ffmpeg_bin}): {e}"))?;
 

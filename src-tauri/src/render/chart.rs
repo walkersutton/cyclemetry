@@ -302,9 +302,11 @@ impl ChartCache {
             let x = self.x_data[frame_idx];
             let y = self.y_data.get(frame_idx).copied().unwrap_or(0.0);
             let local_pt = self.data_to_pixel(x, y);
+            // Snap to integer pixels so the anti-aliasing pattern is stable
+            // across frames — sub-pixel drift causes a visible shimmer/wobble.
             let abs_pt = Point::new(
-                local_pt.x + self.x_offset as f32,
-                local_pt.y + self.y_offset as f32,
+                (local_pt.x + self.x_offset as f32).round(),
+                (local_pt.y + self.y_offset as f32).round(),
             );
 
             for pc in &self.point_configs {

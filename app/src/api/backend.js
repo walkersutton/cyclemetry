@@ -113,6 +113,21 @@ export const nativeGetProgress = () => invoke('native_progress')
 
 export const nativeCancelRender = () => invoke('native_cancel')
 
+export const nativeBenchmark = (
+  config,
+  gpxFilename,
+  frames,
+  targetWidth,
+  targetHeight,
+) =>
+  invoke('native_benchmark', {
+    config,
+    gpxFilename,
+    frames,
+    targetWidth: targetWidth ?? null,
+    targetHeight: targetHeight ?? null,
+  })
+
 // ─── Recent GPX ──────────────────────────────────────────────────────────────
 
 export const recordGpxOpened = (path) => invoke('record_gpx_opened', { path })

@@ -1048,6 +1048,81 @@ fn template_value_wh(config: &serde_json::Value) -> (u32, u32) {
     (w, h)
 }
 
+/// Renders `frames` frames (no ffmpeg, no output file) and returns elapsed
+/// milliseconds. Used by the frontend to estimate full render duration without
+/// needing to run or store a real render first.
+#[tauri::command]
+async fn native_benchmark(
+    config: serde_json::Value,
+    gpx_filename: String,
+    frames: u32,
+    target_width: Option<u32>,
+    target_height: Option<u32>,
+) -> Result<String, String> {
+    let target = match (target_width, target_height) {
+        (Some(w), Some(h)) => Some((w, h)),
+        _ => None,
+    };
+    let template = render::template::Template::from_value_scaled(config, target)
+        .map_err(|e| format!("Template parse error: {e}"))?;
+    let fonts_dir = resolve_fonts_dir();
+    let (gpx_path, _) = resolve_gpx_path(&gpx_filename)?;
+    let frames = frames.clamp(1, 300) as usize;
+
+    tokio::task::spawn_blocking(move || {
+        let mut activity = if gpx_path == "<synthetic>" {
+            render::activity::Activity::synthetic(60)
+        } else {
+            render::activity::Activity::from_gpx(&gpx_path)
+                .map_err(|e| format!("GPX parse: {e}"))?
+        };
+        activity.interpolate(template.scene.fps);
+        let start = template.scene.start.unwrap_or(0);
+        let end = template
+            .scene
+            .end
+            .unwrap_or(activity.data_len())
+            .min(activity.data_len());
+        if end > start {
+            activity
+                .trim(start, end)
+                .map_err(|e| format!("Trim: {e}"))?;
+        }
+        if activity.data_len() == 0 {
+            return Err("No activity data".to_string());
+        }
+        let cache = render::frame::SceneCache::build(&activity, &template, &fonts_dir)
+            .map_err(|e| format!("SceneCache: {e}"))?;
+
+        let total = activity.data_len();
+        let n = frames.min(total);
+        // Spread sample indices evenly across the full timeline so varied
+        // segments (elevation changes, map tiles, chart curves) are represented.
+        let indices: Vec<usize> = (0..n)
+            .map(|i| {
+                if n > 1 {
+                    (i * (total - 1)) / (n - 1)
+                } else {
+                    0
+                }
+            })
+            .collect();
+        // Three warm-up frames to prime font/surface/path caches before timing.
+        for &idx in indices.iter().take(3) {
+            let _ = render::frame::render_frame(idx, &cache, &activity, &template, None);
+        }
+        let t0 = std::time::Instant::now();
+        for &idx in &indices {
+            let _ = render::frame::render_frame(idx, &cache, &activity, &template, None);
+        }
+        let elapsed_ms = t0.elapsed().as_millis() as u64;
+
+        Ok(serde_json::json!({ "frames": n, "elapsed_ms": elapsed_ms }).to_string())
+    })
+    .await
+    .map_err(|e| format!("Join error: {e}"))?
+}
+
 // ─── Recent GPX state ─────────────────────────────────────────────────────────
 
 type SharedRecentGpx = Arc<Mutex<Vec<String>>>;
@@ -1108,6 +1183,7 @@ pub fn run() {
             native_progress,
             native_cancel,
             native_demo,
+            native_benchmark,
             backend_list_templates,
             backend_get_template,
             backend_save_template,

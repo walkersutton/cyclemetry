@@ -108,7 +108,14 @@ export default async function renderVideo(state) {
           if (!p.is_running) {
             clearInterval(iv)
             if (p.error) reject(new Error(p.error))
-            else resolve()
+            else {
+              if (p.frames_rendered > 0 && elapsed > 0) {
+                const fps = p.frames_rendered / elapsed
+                state.lastRenderFps = fps
+                localStorage.setItem('lastRenderFps', fps.toFixed(4))
+              }
+              resolve()
+            }
           }
         } catch (err) {
           clearInterval(iv)

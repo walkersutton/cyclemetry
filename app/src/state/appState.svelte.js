@@ -39,6 +39,10 @@ export function createAppState() {
   // ── Transient ────────────────────────────────────────────────────────────────
   let copiedElement = $state(null) // { category, item } — in-memory element clipboard
   let previewFps = $state(1)
+  let benchmarking = $state(false)
+  let lastRenderFps = $state(
+    parseFloat(localStorage.getItem('lastRenderFps') ?? '') || null,
+  )
   let renderingVideo = $state(false)
   let currentPreviewImage = $state(null) // data:image/png;base64,... from latest demo frame
   let errorMessage = $state(null)
@@ -476,6 +480,41 @@ export function createAppState() {
     }
   }
 
+  async function runBenchmark() {
+    if (renderingVideo || benchmarking || !config || !gpxFilename) return
+    benchmarking = true
+    try {
+      const result = await backend.nativeBenchmark(
+        config,
+        gpxFilename,
+        90,
+        outputWidth,
+        outputHeight,
+      )
+      if (result.frames > 0 && result.elapsed_ms > 0) {
+        const fps = (result.frames / result.elapsed_ms) * 1000
+        lastRenderFps = fps
+        localStorage.setItem('lastRenderFps', fps.toFixed(4))
+      }
+    } catch (e) {
+      console.debug('Benchmark failed:', e)
+    } finally {
+      benchmarking = false
+    }
+  }
+
+  // Re-benchmark whenever the template or GPX changes (debounced so rapid
+  // config edits don't flood the Rust thread pool).
+  $effect(() => {
+    void loadedTemplateFilename
+    void gpxFilename
+    void outputWidth
+    void outputHeight
+    if (!config || !gpxFilename) return
+    const timer = setTimeout(runBenchmark, 800)
+    return () => clearTimeout(timer)
+  })
+
   async function loadTemplate(filename) {
     const data = await backend.getTemplate(filename)
     config = data
@@ -627,6 +666,15 @@ export function createAppState() {
     },
     copyElement,
     pasteElement,
+    get lastRenderFps() {
+      return lastRenderFps
+    },
+    set lastRenderFps(v) {
+      lastRenderFps = v
+    },
+    get benchmarking() {
+      return benchmarking
+    },
     selectedElementLabel,
     fetchTemplates,
     loadTemplate,

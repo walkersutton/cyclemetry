@@ -20,6 +20,7 @@
   import Tooltip from './components/ui/Tooltip.svelte'
 
   import { Activity, Play } from 'lucide-svelte'
+  import { formatTime } from './lib/utils.js'
 
   // ── State ──────────────────────────────────────────────────────────────────
   const app = createAppState()
@@ -165,6 +166,20 @@
     }
   }
 
+  // Estimate render wall-clock time from the last recorded render FPS.
+  // Re-evaluates whenever renderingVideo or config changes, so it picks up
+  // the freshly-stored FPS right after a render finishes.
+  let renderEstimateSecs = $derived.by(() => {
+    if (app.renderingVideo || !app.config?.scene) return null
+    const fps = app.config.scene.fps ?? 30
+    const start = app.config.scene.start ?? 0
+    const end = app.config.scene.end ?? app.activityDuration
+    if (start >= end) return null
+    const renderFps = app.lastRenderFps
+    if (!renderFps || renderFps <= 0) return null
+    return Math.round(((end - start) * fps) / renderFps)
+  })
+
   let gpxLabel = $derived.by(() => {
     if (!app.gpxFilename) return 'Load GPX'
     const basename = app.gpxFilename.split(/[\\/]/).pop()
@@ -225,21 +240,26 @@
 
     <div class="flex-1"></div>
 
-    <!-- Render button -->
-    <Tooltip
-      content={!app.config ? 'Load a template first' : app.renderingVideo ? 'Render in progress' : null}
-      side="bottom"
-    >
-      <Button
-        onclick={handleRender}
-        disabled={!app.config || app.renderingVideo}
-        class="gap-1.5"
-        size="sm"
+    <!-- Render button + estimate -->
+    <div class="flex items-center gap-2">
+      {#if renderEstimateSecs != null}
+        <span class="text-[11px] text-zinc-500 font-mono">~{formatTime(renderEstimateSecs)}</span>
+      {/if}
+      <Tooltip
+        content={!app.config ? 'Load a template first' : app.renderingVideo ? 'Render in progress' : null}
+        side="bottom"
       >
-        <Play size={13} />
-        {app.renderingVideo ? 'Rendering…' : 'Render'}
-      </Button>
-    </Tooltip>
+        <Button
+          onclick={handleRender}
+          disabled={!app.config || app.renderingVideo}
+          class="gap-1.5"
+          size="sm"
+        >
+          <Play size={13} />
+          {app.renderingVideo ? 'Rendering…' : 'Render'}
+        </Button>
+      </Tooltip>
+    </div>
 
   </header>
 
