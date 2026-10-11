@@ -1,6 +1,6 @@
 {
   "name": "cyclemetry",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "scripts": {
     "prepare": "git config core.hooksPath scripts/git-hooks || true",
     "dev": "node scripts/dev.mjs",

@@ -1,6 +1,6 @@
 [package]
 name = "Cyclemetry"
-version = "0.4.0"
+version = "0.4.1"
 description = "Tool for creating telemetry video overlays"
 authors = ["Walker Sutton"]
 license = "MIT"
