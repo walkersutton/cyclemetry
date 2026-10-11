@@ -1,6 +1,6 @@
 ---
 title: v0.4.1
-description: Cyclemetry v0.4.1 release notes.
+description: Cyclemetry v0.4.1 release notes — in-app updates on Windows and Linux.
 ---
 
 import { Callout } from 'nextra/components'
@@ -13,10 +13,19 @@ import { Callout } from 'nextra/components'
   Download from [GitHub Releases](https://github.com/walkersutton/cyclemetry/releases/tag/v0.4.1)
 </Callout>
 
-## Features
+## What's New
 
-- In-app updates on Windows and Linux
+### In-App Updates on Windows and Linux
+
+Windows and Linux now update the same way macOS does. Cyclemetry checks for a new version when it starts and shows a banner when one is available. You can also check any time from **Help → Check for Updates**.
+
+- **Windows:** the installer downloads and runs on its own.
+- **Linux AppImage:** the AppImage replaces itself in place.
+- **Linux `.deb`:** asks for your password, then installs the new package.
+
+If an update check or install fails, the banner now has a **Download** link to the release page.
 
 ## Upgrading
 
-Download the latest `.dmg` (macOS), `.exe` installer (Windows), or `.deb`/`.AppImage` (Linux) from [GitHub Releases](https://github.com/walkersutton/cyclemetry/releases).
+- **macOS:** choose **Cyclemetry → Check for Updates**, or accept the update banner.
+- **Windows and Linux:** download this version from [GitHub Releases](https://github.com/walkersutton/cyclemetry/releases/tag/v0.4.1). It's the last manual download; later versions arrive in-app.
