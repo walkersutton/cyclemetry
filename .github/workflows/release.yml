@@ -166,44 +166,36 @@ jobs:
           echo "intel_updater_asset_name=Cyclemetry-macOS-updater-Intel-v${VERSION}.app.tar.gz" >> "$GITHUB_OUTPUT"
           ls -la release-assets
 
-      - name: Generate update manifest
+      # Each platform job writes its own slice of the updater manifest; the
+      # publish-update-manifest job merges them into one latest.json.
+      - name: Generate update manifest fragment
         run: |
-          VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-          ARM_SIG=$(cat "release-assets/Cyclemetry-macOS-updater-Apple-Silicon-v${VERSION}.app.tar.gz.sig")
-          INTEL_SIG=$(cat "release-assets/Cyclemetry-macOS-updater-Intel-v${VERSION}.app.tar.gz.sig")
-          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
+          VERSION="${{ steps.release-version.outputs.version }}"
+          BASE="https://github.com/walkersutton/cyclemetry/releases/download/v${VERSION}"
+          mkdir -p updater-manifest
           jq -n \
-            --arg version "$VERSION" \
-            --arg arm_sig "$ARM_SIG" \
-            --arg intel_sig "$INTEL_SIG" \
-            --arg arm_url "https://github.com/walkersutton/cyclemetry/releases/download/v${VERSION}/${{ steps.release-assets.outputs.arm_updater_asset_name }}" \
-            --arg intel_url "https://github.com/walkersutton/cyclemetry/releases/download/v${VERSION}/${{ steps.release-assets.outputs.intel_updater_asset_name }}" \
-            --arg pub_date "$PUB_DATE" \
+            --arg arm_sig "$(cat "release-assets/Cyclemetry-macOS-updater-Apple-Silicon-v${VERSION}.app.tar.gz.sig")" \
+            --arg intel_sig "$(cat "release-assets/Cyclemetry-macOS-updater-Intel-v${VERSION}.app.tar.gz.sig")" \
+            --arg arm_url "${BASE}/${{ steps.release-assets.outputs.arm_updater_asset_name }}" \
+            --arg intel_url "${BASE}/${{ steps.release-assets.outputs.intel_updater_asset_name }}" \
             '{
-              version: $version,
-              notes: "See the release page for details.",
-              pub_date: $pub_date,
-              platforms: {
-                "darwin-aarch64": {
-                  signature: $arm_sig,
-                  url: $arm_url
-                },
-                "darwin-x86_64": {
-                  signature: $intel_sig,
-                  url: $intel_url
-                }
-              }
-            }' > latest.json
+              "darwin-aarch64": { signature: $arm_sig, url: $arm_url },
+              "darwin-x86_64": { signature: $intel_sig, url: $intel_url }
+            }' > updater-manifest/macos.json
+          cat updater-manifest/macos.json
+
+      - name: Upload update manifest fragment
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-manifest-macos
+          path: updater-manifest/macos.json
 
       - name: Upload macOS workflow artifacts
         if: ${{ !inputs.publish_release }}
         uses: actions/upload-artifact@v4
         with:
           name: cyclemetry-macos
-          path: |
-            release-assets/*
-            latest.json
+          path: release-assets/*
 
       - name: Upload artifacts to release
         if: ${{ inputs.publish_release }}
@@ -215,7 +207,6 @@ jobs:
             release-assets/Cyclemetry-macOS-Intel-v${{ steps.release-version.outputs.version }}.dmg
             release-assets/Cyclemetry-macOS-updater-Apple-Silicon-v${{ steps.release-version.outputs.version }}.app.tar.gz
             release-assets/Cyclemetry-macOS-updater-Intel-v${{ steps.release-version.outputs.version }}.app.tar.gz
-            latest.json
           draft: false
           prerelease: false
         env:
@@ -285,23 +276,47 @@ jobs:
 
       - name: Build Tauri app
         shell: pwsh
+        # createUpdaterArtifacts signs the NSIS installer itself (.exe.sig) so
+        # the in-app updater can download and run it.
         run: |
           if ($env:WINDOWS_CERTIFICATE_THUMBPRINT) {
-            app/node_modules/.bin/tauri build --bundles nsis --config "{`"bundle`":{`"windows`":{`"digestAlgorithm`":`"sha256`",`"certificateThumbprint`":`"$env:WINDOWS_CERTIFICATE_THUMBPRINT`",`"timestampUrl`":`"http://timestamp.digicert.com`"}}}"
+            app/node_modules/.bin/tauri build --bundles nsis --config "{`"bundle`":{`"createUpdaterArtifacts`":true,`"windows`":{`"digestAlgorithm`":`"sha256`",`"certificateThumbprint`":`"$env:WINDOWS_CERTIFICATE_THUMBPRINT`",`"timestampUrl`":`"http://timestamp.digicert.com`"}}}"
           } else {
             Write-Host "No Windows signing certificate configured; building unsigned installer."
-            app/node_modules/.bin/tauri build --bundles nsis
+            app/node_modules/.bin/tauri build --bundles nsis --config "{`"bundle`":{`"createUpdaterArtifacts`":true}}"
           }
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Prepare Windows release assets
         shell: pwsh
         run: |
           $version = "${{ steps.release-version.outputs.version }}"
           New-Item -ItemType Directory -Force release-assets | Out-Null
-          $installer = Get-ChildItem src-tauri/target/release/bundle/nsis -Filter "*.exe" | Select-Object -First 1
+          $installer = Get-ChildItem src-tauri/target/release/bundle/nsis -Filter "*-setup.exe" | Select-Object -First 1
           if (-not $installer) { throw "No Windows installer found" }
-          Copy-Item $installer.FullName "release-assets/Cyclemetry-Windows-x64-Setup-v$version.exe"
+          if (-not (Test-Path "$($installer.FullName).sig")) { throw "No updater signature for $($installer.Name)" }
+          $assetName = "Cyclemetry-Windows-x64-Setup-v$version.exe"
+          Copy-Item $installer.FullName "release-assets/$assetName"
           Get-ChildItem release-assets
+
+          # Update manifest fragment, merged by publish-update-manifest.
+          New-Item -ItemType Directory -Force updater-manifest | Out-Null
+          $sig = (Get-Content "$($installer.FullName).sig" -Raw).Trim()
+          @{
+            "windows-x86_64" = @{
+              signature = $sig
+              url = "https://github.com/walkersutton/cyclemetry/releases/download/v$version/$assetName"
+            }
+          } | ConvertTo-Json -Depth 3 | Set-Content updater-manifest/windows.json
+          Get-Content updater-manifest/windows.json
+
+      - name: Upload update manifest fragment
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-manifest-windows
+          path: updater-manifest/windows.json
 
       - name: Upload artifacts to release
         if: ${{ inputs.publish_release }}
@@ -330,10 +345,13 @@ jobs:
           - arch: amd64
             runner: ubuntu-latest
             ffmpeg_target: linux64
+            updater_arch: x86_64
           - arch: arm64
             runner: ubuntu-24.04-arm
             ffmpeg_target: linuxarm64
+            updater_arch: aarch64
     runs-on: ${{ matrix.runner }}
+    environment: cyclemetry
     permissions:
       contents: write
 
@@ -392,7 +410,17 @@ jobs:
         run: pnpm -C app install
 
       - name: Build Tauri app
-        run: app/node_modules/.bin/tauri build --config src-tauri/tauri.linux.conf.json --bundles deb,appimage
+        # createUpdaterArtifacts signs the AppImage (.AppImage.sig). The
+        # bundler doesn't sign .deb packages, so sign that one explicitly;
+        # the updater installs it through pkexec on .deb installs.
+        run: |
+          app/node_modules/.bin/tauri build --config src-tauri/tauri.linux.conf.json --config '{"bundle":{"createUpdaterArtifacts":true}}' --bundles deb,appimage
+          DEB=$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' | head -1)
+          test -n "$DEB"
+          app/node_modules/.bin/tauri signer sign "$DEB"
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Prepare Linux release assets
         run: |
@@ -410,9 +438,39 @@ jobs:
           test -n "$DEB"
           test -n "$APPIMAGE"
 
-          cp "$DEB" "release-assets/Cyclemetry-Linux-${ASSET_ARCH}-Debian-v${VERSION}.deb"
-          cp "$APPIMAGE" "release-assets/Cyclemetry-Linux-${ASSET_ARCH}-AppImage-v${VERSION}.AppImage"
+          test -f "$DEB.sig"
+          test -f "$APPIMAGE.sig"
+
+          DEB_NAME="Cyclemetry-Linux-${ASSET_ARCH}-Debian-v${VERSION}.deb"
+          APPIMAGE_NAME="Cyclemetry-Linux-${ASSET_ARCH}-AppImage-v${VERSION}.AppImage"
+          cp "$DEB" "release-assets/$DEB_NAME"
+          cp "$APPIMAGE" "release-assets/$APPIMAGE_NAME"
           ls -la release-assets
+
+          # Update manifest fragment, merged by publish-update-manifest. The
+          # updater picks linux-<arch>-<bundle> for how the app was installed,
+          # falling back to the bare key (AppImage) when that's unknown.
+          BASE="https://github.com/walkersutton/cyclemetry/releases/download/v${VERSION}"
+          TARGET="linux-${{ matrix.updater_arch }}"
+          mkdir -p updater-manifest
+          jq -n \
+            --arg target "$TARGET" \
+            --arg deb_sig "$(cat "$DEB.sig")" \
+            --arg appimage_sig "$(cat "$APPIMAGE.sig")" \
+            --arg deb_url "${BASE}/${DEB_NAME}" \
+            --arg appimage_url "${BASE}/${APPIMAGE_NAME}" \
+            '{
+              ($target + "-deb"): { signature: $deb_sig, url: $deb_url },
+              ($target + "-appimage"): { signature: $appimage_sig, url: $appimage_url },
+              ($target): { signature: $appimage_sig, url: $appimage_url }
+            }' > "updater-manifest/linux-${{ matrix.arch }}.json"
+          cat "updater-manifest/linux-${{ matrix.arch }}.json"
+
+      - name: Upload update manifest fragment
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-manifest-linux-${{ matrix.arch }}
+          path: updater-manifest/linux-${{ matrix.arch }}.json
 
       - name: Upload artifacts to release
         if: ${{ inputs.publish_release }}
@@ -434,3 +492,84 @@ jobs:
           name: cyclemetry-linux-${{ matrix.arch }}
           path: |
             release-assets/*
+
+  # Merge every platform's fragment into the single latest.json the in-app
+  # updater reads. On a single-platform re-run, the entries already published
+  # for this version are kept, so rebuilding one platform never drops the others.
+  publish-update-manifest:
+    needs: [build-macos, build-windows, build-linux]
+    if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read release version
+        id: release-version
+        run: |
+          VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download manifest fragments
+        uses: actions/download-artifact@v4
+        with:
+          pattern: updater-manifest-*
+          merge-multiple: true
+          path: fragments
+
+      - name: Fetch published manifest
+        if: ${{ inputs.publish_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p published
+          gh release download "${{ steps.release-version.outputs.tag }}" \
+            --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir published \
+            || echo "No latest.json published for this version yet"
+
+      - name: Merge update manifest
+        run: |
+          VERSION="${{ steps.release-version.outputs.version }}"
+          EXISTING='{}'
+          if [ -f published/latest.json ] \
+            && [ "$(jq -r .version published/latest.json)" = "$VERSION" ]; then
+            EXISTING=$(jq .platforms published/latest.json)
+          fi
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg pub_date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --argjson existing "$EXISTING" \
+            --slurpfile fragments <(jq -s 'add' fragments/*.json) \
+            '{
+              version: $version,
+              notes: "See the release page for details.",
+              pub_date: $pub_date,
+              platforms: ($existing + $fragments[0])
+            }' > latest.json
+          cat latest.json
+
+          # Every shipped platform must be updatable once a full release is out.
+          for key in darwin-aarch64 darwin-x86_64 windows-x86_64 linux-x86_64 linux-aarch64; do
+            jq -e --arg k "$key" '.platforms[$k].signature | length > 0' latest.json >/dev/null \
+              || echo "::warning::latest.json has no entry for $key"
+          done
+
+      - name: Upload manifest to release
+        if: ${{ inputs.publish_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.release-version.outputs.tag }}" latest.json \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Upload manifest workflow artifact
+        if: ${{ !inputs.publish_release }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-json
+          path: latest.json

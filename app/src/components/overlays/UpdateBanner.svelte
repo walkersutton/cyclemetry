@@ -3,11 +3,16 @@
   import { check } from '@tauri-apps/plugin-updater'
   import { relaunch } from '@tauri-apps/plugin-process'
   import { listen } from '@tauri-apps/api/event'
+  import { open } from '@tauri-apps/plugin-shell'
+
+  const RELEASES_URL =
+    'https://github.com/walkersutton/cyclemetry/releases/latest'
 
   // hidden | checking | available | downloading | done | up_to_date | error
   let status = $state('hidden')
   let update = $state(null)
   let progress = $state(0)
+  let errorText = $state('')
 
   async function doCheck({ silent = false } = {}) {
     if (import.meta.env.DEV) return
@@ -27,6 +32,7 @@
       }
     } catch {
       if (!silent) {
+        errorText = 'Update check failed'
         status = 'error'
       } else {
         status = 'hidden'
@@ -54,6 +60,7 @@
       status = 'done'
       setTimeout(() => relaunch(), 800)
     } catch {
+      errorText = 'Update failed'
       status = 'error'
     }
   }
@@ -110,7 +117,12 @@
       <span class="text-zinc-400">You're up to date</span>
     {:else if status === 'error'}
       <span class="h-1.5 w-1.5 rounded-full bg-[#EF4444] shrink-0"></span>
-      <span class="text-zinc-400">Update check failed</span>
+      <span class="text-zinc-400">{errorText}</span>
+      <button
+        onclick={() => open(RELEASES_URL)}
+        class="ml-1 cursor-pointer font-medium text-zinc-300 hover:text-white transition-colors duration-[150ms]"
+        >Download</button
+      >
       <button
         onclick={() => (status = 'hidden')}
         class="ml-1 cursor-pointer text-zinc-600 hover:text-zinc-300 text-sm leading-none transition-colors duration-[150ms]"
