@@ -864,7 +864,6 @@
   <div
     bind:this={clipEl}
     class="relative flex-1 flex items-center justify-center p-6 overflow-hidden"
-    style="background: radial-gradient(120% 90% at 50% 0%, rgba(220, 20, 60, 0.09), transparent 58%);"
     onwheel={onCanvasWheel}
     ondblclick={resetZoom}
   >
