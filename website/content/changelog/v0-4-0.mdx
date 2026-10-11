@@ -1,0 +1,52 @@
+---
+title: v0.4.0
+description: Cyclemetry v0.4.0 release notes.
+---
+
+import { Callout } from 'nextra/components'
+
+# v0.4.0
+
+<div className="blog-meta">Released 11 October 2026</div>
+
+<Callout type="info">
+  Download from [GitHub Releases](https://github.com/walkersutton/cyclemetry/releases/tag/v0.4.0)
+</Callout>
+
+## Features
+
+- Enduro HUD template with unit-tracking labels and compact units
+- Prompt for rider weight wherever W/kg would render as 0
+- Feature the newest showcase videos first
+- Support vertical Instagram reels in the videos showcase
+- Expose unmodelled source fields as custom metrics
+- Allow distance-based x-axis for elevation charts
+- Smooth GPS-derived speed to remove position jitter
+- Band-colored plots (color_by) for TdF-style climb profiles
+- Pick a template first, no demo ride before a GPX
+- Export a still frame as well as the video
+- Web companion (wasm), Strava integration, UI polish
+- Prefer device-reported speed when present
+
+## Bug Fixes
+
+- Harden distance x-axis for banding, flat rides, and metric switches
+- Keep the window draggable while a modal is open
+- Keep macOS from throttling a render in the background
+
+## Performance
+
+- Cache parsed activity file across backend commands
+
+## Improvements
+
+- Fix strava template aspect ratio
+- New vertical template and support for totaling
+- Snapping, buffed unit handling,
+- Better custom font support
+- Support w/kg metric
+- 0.3.0 changelog editz
+
+## Upgrading
+
+Download the latest `.dmg` (macOS), `.exe` installer (Windows), or `.deb`/`.AppImage` (Linux) from [GitHub Releases](https://github.com/walkersutton/cyclemetry/releases).
