@@ -1,7 +1,6 @@
 mod activity;
 mod recent;
 mod render;
-mod strava;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 use serde::{Deserialize, Serialize};
@@ -2717,11 +2716,6 @@ pub fn run() {
             backend_activity_start_time_ms,
             backend_activity_metric_range,
             record_gpx_opened,
-            strava::strava_status,
-            strava::strava_connect,
-            strava::strava_disconnect,
-            strava::strava_activities,
-            strava::strava_import_activity,
         ])
         .setup(move |app| {
             // Init logging FIRST — if anything below panics/fails, we at least have a log.

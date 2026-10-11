@@ -14,7 +14,7 @@ app/dist/
 resources/ffmpeg
 resources/ffmpeg.exe
 
-# Local secrets (Strava client secret; CI injects from Actions secrets)
+# Local env/secrets
 src-tauri/.env
 
 # npm lockfiles (pnpm is the package manager; demo/ tooling installs ad hoc)

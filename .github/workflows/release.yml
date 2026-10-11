@@ -28,10 +28,6 @@ jobs:
     environment: cyclemetry
     permissions:
       contents: write
-    env:
-      # Repository-level secret (build-linux has no environment), baked into
-      # the binary by src-tauri/build.rs.
-      STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
 
     steps:
       - name: Checkout
@@ -233,7 +229,6 @@ jobs:
       contents: write
     env:
       SIGN_WINDOWS: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' && 'true' || 'false' }}
-      STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
 
     steps:
       - name: Checkout
@@ -341,8 +336,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
-    env:
-      STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
 
     steps:
       - name: Checkout
