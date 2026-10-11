@@ -33,10 +33,9 @@
 - **Dim:** `#6F6F6F` — icon defaults, tertiary text
 - **Muted:** `#A7A7A7` — secondary text, labels, placeholders
 - **Primary text:** `#FAFAFA`
-- **Accent:** `#DC143C` — Crimson. Used only for: active element states, primary CTAs (Render is solid crimson with a soft glow), selected rows, the canvas wash. Not for errors. Not scattered.
+- **Accent:** `#DC143C` — Crimson. Used only for: active element states, primary CTAs (Render is solid crimson with a soft glow), selected rows. Not for errors. Not scattered.
 - **Accent hover:** `#F04060` — hover state for solid-crimson buttons and links
 - **Accent dim:** `#7F0A22` — pressed accent backgrounds
-- **Canvas wash:** `radial-gradient(120% 90% at 50% 0%, rgba(220,20,60,0.09), transparent 58%)` — soft crimson glow behind the preview
 - **Success:** `#22C55E` — saved state, render complete
 - **Warning:** `#F5B544` — modified state, unsaved changes
 - **Error:** `#EF4444` — distinct from accent red, for actual error states only
@@ -71,3 +70,4 @@
 | 2026-04-08 | Dark-only, no light mode      | Video editing context — always dark |
 | 2026-04-08 | Industrial Precision aesthetic | The overlay is the product; the editor should disappear |
 | 2026-07-10 | "Faithful Spotify" shell redesign | Solid `#000` canvas with `#121212` panels floating on 8px gaps replaces bordered zones; controls are filled (`#1C1C1C`), not outlined; Render CTA is solid crimson with glow; soft crimson wash behind the preview. From claude.ai/design project "Cyclemetry Redesign" (option 1a). |
+| 2026-10-11 | Drop the crimson canvas wash | The area behind the preview is the plain panel color; the red-to-black glow distracted from the overlay being edited |
