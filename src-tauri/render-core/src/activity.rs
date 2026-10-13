@@ -20,6 +20,7 @@ pub const ATTR_REAR_GEAR: &str = "rear_gear";
 pub const ATTR_SPEED: &str = "speed";
 pub const ATTR_TIME: &str = "time";
 pub const ATTR_TEMPERATURE: &str = "temperature";
+pub const ATTR_CALORIES: &str = "calories";
 
 // ─── Summary (aggregate) metrics ───────────────────────────────────────────
 // Whole-window totals/averages rendered as a single constant value across every
@@ -28,6 +29,7 @@ pub const ATTR_TEMPERATURE: &str = "temperature";
 // [`Activity::summary_value`] against a precomputed [`ActivitySummary`].
 pub const SUM_TOTAL_DISTANCE: &str = "total_distance";
 pub const SUM_TOTAL_TIME: &str = "total_time";
+pub const SUM_TOTAL_CALORIES: &str = "total_calories";
 pub const SUM_ELEVATION_GAIN: &str = "elevation_gain";
 pub const SUM_ELEVATION_LOSS: &str = "elevation_loss";
 pub const SUM_MAX_ELEVATION: &str = "max_elevation";
@@ -110,9 +112,10 @@ pub fn is_custom_metric(name: &str) -> bool {
 /// case-insensitively, since the same field is spelled `Watts`, `watts`, and
 /// `PowerInWatts` across the three formats.
 fn is_reserved_custom_name(name: &str) -> bool {
-    const RESERVED: [&str; 34] = [
+    const RESERVED: [&str; 36] = [
         // Built-in attribute tokens.
         "cadence",
+        "calories",
         "course",
         "distance",
         "elevation",
@@ -127,6 +130,7 @@ fn is_reserved_custom_name(name: &str) -> bool {
         "speed",
         "temperature",
         "time",
+        "total_calories",
         // Source spellings the parsers already consume.
         "altitude",
         "atemp",
@@ -195,6 +199,7 @@ pub fn summary_base_metric(name: &str) -> Option<&'static str> {
     Some(match name {
         SUM_TOTAL_DISTANCE => ATTR_DISTANCE,
         SUM_TOTAL_TIME => ATTR_TIME,
+        SUM_TOTAL_CALORIES => ATTR_CALORIES,
         SUM_ELEVATION_GAIN | SUM_ELEVATION_LOSS | SUM_MAX_ELEVATION | SUM_MIN_ELEVATION => {
             ATTR_ELEVATION
         }
@@ -308,6 +313,7 @@ pub struct ActivitySummary {
     pub avg_heartrate: f64,
     pub max_heartrate: f64,
     pub avg_cadence: f64,
+    pub total_calories: f64,
 }
 
 pub const MPH_CONVERSION: f64 = 2.23694;
@@ -344,6 +350,7 @@ pub struct Activity {
     pub front_gear: Vec<f64>,
     pub rear_gear: Vec<f64>,
     pub gear: Vec<f64>,
+    pub calories: Vec<f64>,
     /// Per-sample series for source fields with no built-in attribute, keyed by
     /// source field name and aligned 1:1 with the series above. Read through
     /// the `custom:<name>` metric token — see the custom source field section
@@ -482,6 +489,7 @@ impl Activity {
                     let mut cadence: Option<f64> = None;
                     let mut power: Option<f64> = None;
                     let mut temperature: Option<f64> = None;
+                    let mut calories: Option<f64> = None;
                     let mut speed: Option<f64> = None;
                     let mut enhanced_speed: Option<f64> = None;
                     let mut time_str: Option<String> = None;
@@ -509,6 +517,7 @@ impl Activity {
                             "cadence" => cadence = fit_f64(field.value()),
                             "power" => power = fit_f64(field.value()),
                             "temperature" => temperature = fit_f64(field.value()),
+                            "calories" | "total_calories" => calories = fit_f64(field.value()),
                             "speed" => speed = fit_f64(field.value()),
                             "enhanced_speed" => enhanced_speed = fit_f64(field.value()),
                             "front_gear" => {
@@ -569,6 +578,7 @@ impl Activity {
                             front_gear,
                             rear_gear,
                             speed,
+                            calories,
                             custom,
                         });
                     }
@@ -653,6 +663,9 @@ impl Activity {
                             "Watts" | "PowerInWatts" if in_extensions => {
                                 pt.power = current_text.parse().ok();
                             }
+                            "Calories" | "calories" => {
+                                pt.calories = current_text.parse().ok();
+                            }
                             "Speed" if in_extensions => {
                                 pt.speed =
                                     current_text.parse::<f64>().ok().filter(|v| v.is_finite());
@@ -704,12 +717,14 @@ impl Activity {
         let n = secs.max(1);
         let mut a = Activity::default();
         let mut cum_dist = 0.0;
+        let mut cum_cal = 0.0;
         for i in 0..n {
             let t = i as f64;
             let spd = 8.0 + 3.0 * (t / 10.0).sin();
             if i > 0 {
                 cum_dist += spd; // 1-second intervals
             }
+            cum_cal += 0.2; // ~720 kcal/h
             a.speed.push(spd);
             a.power.push(200.0 + 60.0 * (t / 8.0).sin());
             a.heartrate.push(140.0 + 15.0 * (t / 12.0).sin());
@@ -718,6 +733,7 @@ impl Activity {
             a.elevation.push(100.0 + 20.0 * (t / 15.0).sin());
             a.gradient.push(3.0 * (t / 15.0).cos());
             a.temperature.push(21.0);
+            a.calories.push(cum_cal);
             a.front_gear.push(2.0);
             a.rear_gear.push(5.0 + ((t / 12.0).sin() + 1.0) * 4.0);
             a.gear.push(encode_gear(2.0, *a.rear_gear.last().unwrap()));
@@ -740,6 +756,7 @@ impl Activity {
             ATTR_POWER,
             ATTR_POWER_TO_WEIGHT,
             ATTR_TEMPERATURE,
+            ATTR_CALORIES,
             ATTR_FRONT_GEAR,
             ATTR_REAR_GEAR,
             ATTR_GEAR,
@@ -843,6 +860,9 @@ impl Activity {
                                 pt.speed =
                                     current_text.parse::<f64>().ok().filter(|v| v.is_finite());
                             }
+                            "calories" | "Calories" => {
+                                pt.calories = current_text.parse().ok();
+                            }
                             "TrackPointExtension" => {
                                 in_tpx = false;
                             }
@@ -927,6 +947,9 @@ impl Activity {
         if points.iter().any(|p| p.temperature.is_some()) {
             valid.insert(ATTR_TEMPERATURE.into());
         }
+        if points.iter().any(|p| p.calories.is_some()) {
+            valid.insert(ATTR_CALORIES.into());
+        }
         if points.iter().any(|p| p.front_gear.is_some()) {
             valid.insert(ATTR_FRONT_GEAR.into());
         }
@@ -1003,6 +1026,7 @@ impl Activity {
             activity.cadence.push(pt.cadence.unwrap_or(0.0));
             activity.power.push(pt.power.unwrap_or(0.0));
             activity.temperature.push(pt.temperature.unwrap_or(0.0));
+            activity.calories.push(pt.calories.unwrap_or(0.0));
             activity.front_gear.push(pt.front_gear.unwrap_or(0.0));
             activity.rear_gear.push(pt.rear_gear.unwrap_or(0.0));
             activity.gear.push(
@@ -1144,6 +1168,9 @@ impl Activity {
                 }
                 ATTR_TEMPERATURE => {
                     self.temperature = linear_interp(&self.temperature, fps);
+                }
+                ATTR_CALORIES => {
+                    self.calories = linear_interp(&self.calories, fps);
                 }
                 ATTR_FRONT_GEAR => {
                     self.front_gear = step_interp(&self.front_gear, fps);
@@ -1304,6 +1331,7 @@ impl Activity {
             out.cadence.push(sample.cadence);
             out.power.push(sample.power);
             out.temperature.push(sample.temperature);
+            out.calories.push(sample.calories);
             out.front_gear.push(sample.front_gear);
             out.rear_gear.push(sample.rear_gear);
             out.gear.push(sample.gear);
@@ -1408,6 +1436,7 @@ impl Activity {
             cadence: pos.value(&self.cadence),
             power: pos.value(&self.power),
             temperature: pos.value(&self.temperature),
+            calories: pos.value(&self.calories),
             front_gear: pos.step(&self.front_gear),
             rear_gear: pos.step(&self.rear_gear),
             gear: pos.step(&self.gear),
@@ -1428,6 +1457,7 @@ impl Activity {
             ATTR_CADENCE => safe(&self.cadence),
             ATTR_POWER => safe(&self.power),
             ATTR_TEMPERATURE => safe(&self.temperature),
+            ATTR_CALORIES => safe(&self.calories),
             ATTR_FRONT_GEAR => safe(&self.front_gear),
             ATTR_REAR_GEAR => safe(&self.rear_gear),
             ATTR_GEAR => safe(&self.gear),
@@ -1503,6 +1533,7 @@ impl Activity {
             avg_heartrate: mean_of(&self.heartrate),
             max_heartrate: max_of(&self.heartrate),
             avg_cadence: mean_of(&self.cadence),
+            total_calories: span(&self.calories),
         }
     }
 
@@ -1516,6 +1547,7 @@ impl Activity {
         match name {
             SUM_TOTAL_DISTANCE => s.total_distance,
             SUM_TOTAL_TIME => s.total_time,
+            SUM_TOTAL_CALORIES => s.total_calories,
             SUM_ELEVATION_GAIN => s.elevation_gain,
             SUM_ELEVATION_LOSS => s.elevation_loss,
             SUM_MAX_ELEVATION => s.max_elevation,
@@ -1772,6 +1804,7 @@ impl Activity {
             ATTR_CADENCE => scalar(&self.cadence),
             ATTR_POWER => scalar(&self.power),
             ATTR_TEMPERATURE => scalar(&self.temperature),
+            ATTR_CALORIES => scalar(&self.calories),
             ATTR_GRADIENT => scalar(&self.gradient),
             ATTR_FRONT_GEAR => scalar(&self.front_gear),
             ATTR_REAR_GEAR => scalar(&self.rear_gear),
@@ -1845,6 +1878,7 @@ struct ActivitySample {
     cadence: f64,
     power: f64,
     temperature: f64,
+    calories: f64,
     front_gear: f64,
     rear_gear: f64,
     gear: f64,
@@ -1866,6 +1900,7 @@ struct TrackPoint {
     temperature: Option<f64>,
     front_gear: Option<f64>,
     rear_gear: Option<f64>,
+    calories: Option<f64>,
     /// Native device-reported speed in m/s, if the source file provides one.
     /// `None` for GPS-only files, where speed is derived from position deltas.
     speed: Option<f64>,
@@ -2312,17 +2347,20 @@ mod tests {
             ATTR_DISTANCE.to_string(),
             ATTR_ELEVATION.to_string(),
             ATTR_SPEED.to_string(),
+            ATTR_CALORIES.to_string(),
         ];
         // Full ride: 0..1000m, elevation climbs 100→300 (gain 200).
         a.distance = vec![0.0, 500.0, 1000.0];
         a.elevation = vec![100.0, 200.0, 300.0];
         a.speed = vec![5.0, 10.0, 15.0];
+        a.calories = vec![100.0, 300.0, 600.0];
         a.elapsed_seconds = vec![0.0, 50.0, 100.0];
         a.activity_summary = a.compute_summary();
         // Overlay window = second half only: 500..1000m, elevation 200→300.
         let mut overlay = a.clone();
         overlay.distance = vec![500.0, 1000.0];
         overlay.elevation = vec![200.0, 300.0];
+        overlay.calories = vec![300.0, 600.0];
         overlay.elapsed_seconds = vec![50.0, 100.0];
         a.overlay_summary = overlay.compute_summary();
 
@@ -2331,12 +2369,16 @@ mod tests {
             1000.0
         );
         assert_eq!(a.summary_value(SUM_TOTAL_DISTANCE, Some("overlay")), 500.0);
+        assert_eq!(a.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 500.0);
+        assert_eq!(a.summary_value(SUM_TOTAL_CALORIES, Some("overlay")), 300.0);
+        assert_eq!(a.summary_value(SUM_TOTAL_CALORIES, None), 500.0);
         assert_eq!(a.summary_value(SUM_ELEVATION_GAIN, None), 200.0); // default = activity
         assert_eq!(a.summary_value(SUM_ELEVATION_GAIN, Some("overlay")), 100.0);
         assert_eq!(a.summary_value(SUM_MAX_ELEVATION, Some("activity")), 300.0);
         // avg_speed = distance / time = 1000 / 100 = 10 m/s.
         assert_eq!(a.summary_value(SUM_AVG_SPEED, Some("activity")), 10.0);
         assert!(a.has_summary(SUM_TOTAL_DISTANCE));
+        assert!(a.has_summary(SUM_TOTAL_CALORIES));
         assert!(!a.has_summary(SUM_AVG_POWER)); // power not in valid_attributes
     }
 
