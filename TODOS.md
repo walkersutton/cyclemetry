@@ -29,7 +29,7 @@
 
 - [ ] **Drop `natural_width`/`natural_height` from image elements.** These are captured at insert time and persisted, but are derivable from the image file at load time. Remove from the schema and resolve dimensions lazily in the Rust renderer via `imagesize` or equivalent. Currently present in aaron (1 image) and jeff (4 images).
 
-- [ ] **Element properties audit.**
+- [x] **Element properties audit.**
   1. **Basic vs. advanced categorization** — some properties are in the wrong bucket. Go through each element type and verify every property is correctly classified as basic (visible by default) or advanced (hidden behind toggle).
   2. **Per-element property sets** — some elements expose properties that don't apply to them. Remove anything that shouldn't be there.
   3. **Text properties on non-text elements** — some elements show text-related controls (font, italic, text_align, etc.) that are irrelevant to their type. Remove those panels/fields for element types that don't render text.
