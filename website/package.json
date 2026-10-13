@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "predev": "node ../scripts/update-templates-readme.mjs",
-    "dev": "next",
-    "build": "next build",
-    "start": "next start"
+    "dev": "dotenvx run --quiet --overload -- next",
+    "build": "dotenvx run --quiet --overload -- next build",
+    "start": "dotenvx run --quiet --overload -- next start"
   },
   "dependencies": {
     "mediabunny": "^1.50.8",
@@ -24,6 +24,7 @@
     }
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "^2.34.2",
     "@types/node": "20.17.6",
     "@types/react": "19.2.14"
   }

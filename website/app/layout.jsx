@@ -54,9 +54,13 @@ export default async function RootLayout({ children }) {
         <link rel="shortcut icon" href="/favicon.ico?v=2" />
       </Head>
       <body>
+        {/* Pageviews go to stats.walkersutton.com by way of this domain
+            (/api/s.js and /api/e) so ad blockers let them through. stats.js
+            counts client-side navigations itself. */}
         <Script
-          data-goatcounter="https://cyclemetry.goatcounter.com/count"
-          src="https://gc.zgo.at/count.js"
+          src="/api/s.js"
+          data-site-id="cyclemetry.walkersutton.com"
+          data-api="/api/e"
           strategy="afterInteractive"
         />
         <Layout
