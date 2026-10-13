@@ -2,7 +2,7 @@
 
 ## Bugs (P0)
 
-- [ ] **Pre-existing test failure: `render::frame::tests::layer_order_honors_explicit_ids_then_array_order`** — panics with `invalid type: floating point 0.0, expected i32` in `frame.rs`. Not caused by any branch change; exists on main. Fix the test or the schema mismatch it's catching. Noticed on branch `claude/template-creation-text-prompts-o1ow08` during `/ship`.
+- [x] **Pre-existing test failure: `render::frame::tests::layer_order_honors_explicit_ids_then_array_order`**: fixed: implemented flexible numeric deserialization for integer fields and isolated scene inheritance to styling attributes.
 
 ## Later
 
