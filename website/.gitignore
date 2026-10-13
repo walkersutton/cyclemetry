@@ -4,3 +4,5 @@
 node_modules/
 out/
 .env.local
+# .env is encrypted by dotenvx and safe to commit; .env.keys never is
+.env.keys

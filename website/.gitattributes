@@ -1,0 +1,2 @@
+# A template of placeholder values, not secrets; keep it readable.
+.env.local.example !filter

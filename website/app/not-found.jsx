@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import TrackEvent from '../components/TrackEvent'
 
 export const metadata = {
   title: 'Page Not Found',
@@ -7,6 +8,7 @@ export const metadata = {
 export default function NotFound() {
   return (
     <main className="not-found-page">
+      <TrackEvent name="404" />
       <div className="not-found-kicker">404</div>
       <h1>Page not found</h1>
       <p>
