@@ -127,7 +127,9 @@
     onerror={onVideoError}
     class="absolute inset-0 w-full h-full object-contain pointer-events-none rounded-lg"
     style:visibility={inRange ? 'visible' : 'hidden'}
-  ></video>
+  >
+    <track kind="captions" />
+  </video>
 {/if}
 {#if videoError}
   <div

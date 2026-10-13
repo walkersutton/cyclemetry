@@ -13,11 +13,18 @@
   } = $props()
 
   const app = getContext('app')
-  // Writable $derived: tracks the `value` prop but can be reassigned locally
-  // for in-flight slider/number-input edits before `oninput` is committed.
-  let currentValue = $derived(value ?? 1)
-  let inputDraft = $state(String(value ?? 1))
+  let overrideValue = $state(null)
+  let currentValue = $derived(overrideValue ?? (value ?? 1))
+  let inputDraft = $state('')
   let editingInput = $state(false)
+
+  $effect(() => {
+    if (value !== undefined) {
+      overrideValue = null
+    }
+  })
+
+  let displayDraft = $derived(editingInput ? inputDraft : String(currentValue))
 
   // Filled-track percentage. Drives a CSS variable on the input so the
   // custom track gradient knows where to switch from crimson → zinc, giving
@@ -31,8 +38,7 @@
 
   function emit(raw) {
     const nextValue = Math.max(min, Math.min(max, parseFloat(raw) || 0))
-    currentValue = nextValue
-    if (!editingInput) inputDraft = String(nextValue)
+    overrideValue = nextValue
     oninput?.({ target: { value: nextValue } })
   }
 
@@ -72,24 +78,21 @@
 
   function beginTextEdit() {
     editingInput = true
+    inputDraft = String(currentValue)
     app?.beginEditBatch?.()
   }
 
   function endTextEdit() {
     editingInput = false
-    inputDraft = String(currentValue)
+    inputDraft = ''
     app?.endEditBatch?.()
   }
-
-  $effect(() => {
-    if (!editingInput) inputDraft = String(currentValue)
-  })
 </script>
 
 <div class={cn('flex items-center gap-2', className)}>
   <input
     type="range"
-    bind:value={currentValue}
+    value={currentValue}
     {min}
     {max}
     {step}
@@ -108,7 +111,7 @@
   <Input
     type="text"
     inputmode="decimal"
-    value={inputDraft}
+    value={displayDraft}
     onfocus={beginTextEdit}
     onblur={endTextEdit}
     onkeydown={onTextKeydown}

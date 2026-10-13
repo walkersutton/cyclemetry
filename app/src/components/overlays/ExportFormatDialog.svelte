@@ -37,10 +37,12 @@
     oncancel,
   } = $props()
 
-  let selected = $state(initial)
+  let overrideSelected = $state(null)
+  let selected = $derived(overrideSelected ?? initial)
   let selectedFormat = $derived(formats.find((f) => f.value === selected))
   // Sizing only applies to transparent overlays; stitched always fills the frame.
-  let fullFrame = $state(initialFullFrame)
+  let overrideFullFrame = $state(null)
+  let fullFrame = $derived(overrideFullFrame ?? initialFullFrame)
   let showSizing = $derived(!!selectedFormat?.transparent)
 
   // Warn when the estimated file wouldn't fit while keeping the renderer's
@@ -127,11 +129,11 @@
           role="radio"
           aria-checked={active}
           tabindex="0"
-          onclick={() => (selected = f.value)}
+          onclick={() => (overrideSelected = f.value)}
           onkeydown={(e) => {
             if (e.key === ' ') {
               e.preventDefault()
-              selected = f.value
+              overrideSelected = f.value
             }
           }}
           class="{COLS} px-3 py-2.5 cursor-pointer transition-colors {i > 0
@@ -236,7 +238,7 @@
         <Switch
           checked={fullFrame}
           ariaLabel="Full-frame export"
-          onchange={(checked) => (fullFrame = checked)}
+          onchange={(checked) => (overrideFullFrame = checked)}
         />
       </div>
     {/if}
