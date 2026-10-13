@@ -28,6 +28,11 @@
     // bar with two handles — race start (green) and race finish (checkered).
     lapGate = null,
     onlapgatechange,
+    // Full activity timeline duration in seconds for overlay trim brackets
+    timelineDuration = 0,
+    ontrimchange,
+    onbegintrim,
+    onendtrim,
   } = $props()
 
   // Scrubbing is bounded to the overlay render window — the bar's left
@@ -152,9 +157,110 @@
         : 'marker-checkered',
   )
   let markerCss = $derived(`--cm-thumb: ${markerColor || '#ef4444'}`)
+
+  // ── Overlay trim handles (brackets) ────────────────────────────────────
+  let trimTrackEl = $state(null)
+  let trimDrag = $state(null)
+
+  let trimTotal = $derived(Math.max(0.0001, timelineDuration ?? 0))
+  let trimStartPct = $derived(
+    timelineDuration > 0
+      ? Math.max(0, Math.min(100, (start / trimTotal) * 100))
+      : 0,
+  )
+  let trimEndPct = $derived(
+    timelineDuration > 0
+      ? Math.max(0, Math.min(100, (end / trimTotal) * 100))
+      : 100,
+  )
+  let trimWindowWidthPct = $derived(Math.max(0, trimEndPct - trimStartPct))
+  let trimPlayheadPct = $derived(
+    timelineDuration > 0
+      ? Math.max(0, Math.min(100, (smoothPlayhead / trimTotal) * 100))
+      : 0,
+  )
+
+  function beginTrimDrag(handle, e) {
+    if (!trimTrackEl) return
+    e.preventDefault()
+    trimTrackEl.setPointerCapture(e.pointerId)
+    onbegintrim?.()
+    const initial = handle === 'start' ? start : end
+    trimDrag = { handle, pointerId: e.pointerId, startX: e.clientX, initial }
+  }
+
+  function onTrimPointerMove(e) {
+    if (!trimDrag || e.pointerId !== trimDrag.pointerId) return
+    const w = trimTrackEl?.offsetWidth ?? 1
+    const dxSec = ((e.clientX - trimDrag.startX) / w) * trimTotal
+    const next = Math.round(trimDrag.initial + dxSec)
+    if (trimDrag.handle === 'start') {
+      const clamped = Math.min(Math.max(0, next), end - 1)
+      ontrimchange?.('start', clamped)
+      seek(clamped)
+    } else {
+      const clamped = Math.max(start + 1, Math.min(next, timelineDuration))
+      ontrimchange?.('end', clamped)
+      seek(clamped)
+    }
+  }
+
+  function endTrimDrag(e) {
+    if (!trimDrag) return
+    if (trimTrackEl?.hasPointerCapture(e.pointerId)) {
+      trimTrackEl.releasePointerCapture(e.pointerId)
+    }
+    onendtrim?.()
+    trimDrag = null
+  }
 </script>
 
 <div class="flex flex-col gap-2 px-5 pt-3.5 pb-4 border-t border-white/[0.06]">
+  <!-- Overlay trim bar: brackets the render window within the full activity range -->
+  {#if timelineDuration > 0}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      bind:this={trimTrackEl}
+      class="relative h-4 select-none flex items-center"
+      onpointermove={onTrimPointerMove}
+      onpointerup={endTrimDrag}
+      onpointercancel={endTrimDrag}
+      title="Overlay trim range: {formatTime(start)} → {formatTime(end)} ({formatTime(timelineDuration)} total)"
+    >
+      <div
+        class="absolute inset-x-0 top-1.5 h-1 rounded-full bg-[var(--panel3)]"
+      ></div>
+      <div
+        class="absolute top-1.5 h-1 bg-primary/70 rounded-full"
+        style="left: {trimStartPct}%; width: {trimWindowWidthPct}%"
+      ></div>
+      <div
+        class="absolute top-1 -translate-x-1/2 w-2 h-2 rounded-full bg-white/90 shadow-sm pointer-events-none"
+        style="left: {trimPlayheadPct}%"
+      ></div>
+      <button
+        type="button"
+        aria-label="Overlay start"
+        onpointerdown={(e) => beginTrimDrag('start', e)}
+        class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
+         bg-primary border border-zinc-950 cursor-ew-resize
+         hover:scale-125 transition-transform shadow z-10"
+        style="left: {trimStartPct}%"
+        title="Overlay start: {formatTime(start)}"
+      ></button>
+      <button
+        type="button"
+        aria-label="Overlay end"
+        onpointerdown={(e) => beginTrimDrag('end', e)}
+        class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
+         bg-primary border border-zinc-950 cursor-ew-resize
+         hover:scale-125 transition-transform shadow z-10"
+        style="left: {trimEndPct}%"
+        title="Overlay end: {formatTime(end)}"
+      ></button>
+    </div>
+  {/if}
+
   <!-- Scrub bar with buffered indicator -->
   <div class="relative h-5 flex items-center">
     <!-- Buffered ranges (visual only) -->
