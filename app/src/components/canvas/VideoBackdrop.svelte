@@ -118,6 +118,8 @@
 </script>
 
 {#if src}
+  <!-- User footage shown as editing backdrop without embedded tracks -->
+  <!-- svelte-ignore a11y_media_has_caption -->
   <video
     bind:this={videoEl}
     {src}
@@ -127,9 +129,7 @@
     onerror={onVideoError}
     class="absolute inset-0 w-full h-full object-contain pointer-events-none rounded-lg"
     style:visibility={inRange ? 'visible' : 'hidden'}
-  >
-    <track kind="captions" />
-  </video>
+  ></video>
 {/if}
 {#if videoError}
   <div

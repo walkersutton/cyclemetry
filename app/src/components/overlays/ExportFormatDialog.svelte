@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import { TriangleAlert } from 'lucide-svelte'
   import WindowDragStrip from './WindowDragStrip.svelte'
   import Switch from '../ui/Switch.svelte'
@@ -37,12 +37,11 @@
     oncancel,
   } = $props()
 
-  let overrideSelected = $state(null)
-  let selected = $derived(overrideSelected ?? initial)
+  // Snapshot initial props once per modal open (dialog is mounted conditionally via {#if}).
+  let selected = $state(untrack(() => initial))
   let selectedFormat = $derived(formats.find((f) => f.value === selected))
   // Sizing only applies to transparent overlays; stitched always fills the frame.
-  let overrideFullFrame = $state(null)
-  let fullFrame = $derived(overrideFullFrame ?? initialFullFrame)
+  let fullFrame = $state(untrack(() => initialFullFrame))
   let showSizing = $derived(!!selectedFormat?.transparent)
 
   // Warn when the estimated file wouldn't fit while keeping the renderer's
@@ -129,11 +128,11 @@
           role="radio"
           aria-checked={active}
           tabindex="0"
-          onclick={() => (overrideSelected = f.value)}
+          onclick={() => (selected = f.value)}
           onkeydown={(e) => {
             if (e.key === ' ') {
               e.preventDefault()
-              overrideSelected = f.value
+              selected = f.value
             }
           }}
           class="{COLS} px-3 py-2.5 cursor-pointer transition-colors {i > 0
@@ -238,7 +237,7 @@
         <Switch
           checked={fullFrame}
           ariaLabel="Full-frame export"
-          onchange={(checked) => (overrideFullFrame = checked)}
+          onchange={(checked) => (fullFrame = checked)}
         />
       </div>
     {/if}
