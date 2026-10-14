@@ -2,6 +2,7 @@
   import { formatTime, TOOLTIP_DELAY } from '@/lib/utils.js'
   import { Play, Pause, SkipBack, SkipForward } from 'lucide-svelte'
   import Tooltip from '@/components/ui/Tooltip.svelte'
+  import { computeTrimDrag, nudgeTrim } from '@/lib/trimDragMath.js'
 
   let {
     playhead = $bindable(0),
@@ -191,17 +192,63 @@
 
   function onTrimPointerMove(e) {
     if (!trimDrag || e.pointerId !== trimDrag.pointerId) return
-    const w = trimTrackEl?.offsetWidth ?? 1
-    const dxSec = ((e.clientX - trimDrag.startX) / w) * trimTotal
-    const next = Math.round(trimDrag.initial + dxSec)
-    if (trimDrag.handle === 'start') {
-      const clamped = Math.min(Math.max(0, next), end - 1)
-      ontrimchange?.('start', clamped)
-      seek(clamped)
-    } else {
-      const clamped = Math.max(start + 1, Math.min(next, timelineDuration))
-      ontrimchange?.('end', clamped)
-      seek(clamped)
+    const res = computeTrimDrag({
+      handle: trimDrag.handle,
+      initial: trimDrag.initial,
+      startX: trimDrag.startX,
+      clientX: e.clientX,
+      trackWidth: trimTrackEl?.offsetWidth,
+      total: timelineDuration,
+      currentStart: start,
+      currentEnd: end,
+    })
+    ontrimchange?.(res.field, res.value)
+    seek(res.value)
+  }
+
+  function onTrimHandleKeydown(handle, e) {
+    if (
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowDown' ||
+      e.key === 'ArrowRight' ||
+      e.key === 'ArrowUp' ||
+      e.key === 'Home' ||
+      e.key === 'End'
+    ) {
+      e.preventDefault()
+      const delta = e.shiftKey ? 10 : 1
+      let step = 0
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') step = -delta
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') step = delta
+
+      if (e.key === 'Home') {
+        const target = handle === 'start' ? 0 : start + 1
+        onbegintrim?.()
+        ontrimchange?.(handle, target)
+        seek(target)
+        onendtrim?.()
+        return
+      }
+      if (e.key === 'End') {
+        const target = handle === 'start' ? end - 1 : timelineDuration
+        onbegintrim?.()
+        ontrimchange?.(handle, target)
+        seek(target)
+        onendtrim?.()
+        return
+      }
+
+      const res = nudgeTrim({
+        handle,
+        currentStart: start,
+        currentEnd: end,
+        total: timelineDuration,
+        deltaSec: step,
+      })
+      onbegintrim?.()
+      ontrimchange?.(res.field, res.value)
+      seek(res.value)
+      onendtrim?.()
     }
   }
 
@@ -240,21 +287,33 @@
       ></div>
       <button
         type="button"
+        role="slider"
         aria-label="Overlay start"
+        aria-valuemin={0}
+        aria-valuemax={end - 1}
+        aria-valuenow={start}
+        aria-valuetext={formatTime(start)}
         onpointerdown={(e) => beginTrimDrag('start', e)}
+        onkeydown={(e) => onTrimHandleKeydown('start', e)}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
-         hover:scale-125 transition-transform shadow z-10"
+         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow z-10"
         style="left: {trimStartPct}%"
         title="Overlay start: {formatTime(start)}"
       ></button>
       <button
         type="button"
+        role="slider"
         aria-label="Overlay end"
+        aria-valuemin={start + 1}
+        aria-valuemax={timelineDuration}
+        aria-valuenow={end}
+        aria-valuetext={formatTime(end)}
         onpointerdown={(e) => beginTrimDrag('end', e)}
+        onkeydown={(e) => onTrimHandleKeydown('end', e)}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
-         hover:scale-125 transition-transform shadow z-10"
+         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow z-10"
         style="left: {trimEndPct}%"
         title="Overlay end: {formatTime(end)}"
       ></button>

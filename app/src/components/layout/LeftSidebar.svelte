@@ -4,6 +4,7 @@
   import ElementList from '../panels/ElementList.svelte'
   import OpacityControl from '../ui/OpacityControl.svelte'
   import Select from '../ui/Select.svelte'
+  import { computeTrimDrag, nudgeTrim } from '@/lib/trimDragMath.js'
 
   const app = getContext('app')
 
@@ -98,10 +99,6 @@
   let trackEl = $state(null)
   let drag = $state(null)
 
-  function clamp(v, lo, hi) {
-    return Math.min(hi, Math.max(lo, v))
-  }
-
   function beginDrag(handle, e) {
     if (!trackEl) return
     e.preventDefault()
@@ -116,16 +113,61 @@
 
   function onTrackPointerMove(e) {
     if (!drag || e.pointerId !== drag.pointerId) return
-    const total = Math.max(0.0001, app.timelineDuration ?? 0)
-    const w = trackEl?.offsetWidth ?? 1
-    const dxSec = ((e.clientX - drag.startX) / w) * total
-    const next = Math.round(drag.initial + dxSec)
-    const start = app.config?.scene?.start ?? 0
-    const end = app.config?.scene?.end ?? total
-    if (drag.handle === 'start') {
-      app.updateScene({ start: clamp(next, 0, end - 1) })
-    } else {
-      app.updateScene({ end: clamp(next, start + 1, total) })
+    const res = computeTrimDrag({
+      handle: drag.handle,
+      initial: drag.initial,
+      startX: drag.startX,
+      clientX: e.clientX,
+      trackWidth: trackEl?.offsetWidth,
+      total: app.timelineDuration,
+      currentStart: app.config?.scene?.start ?? 0,
+      currentEnd: app.config?.scene?.end ?? app.timelineDuration,
+    })
+    app.updateScene({ [res.field]: res.value })
+  }
+
+  function onSidebarHandleKeydown(handle, e) {
+    if (
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowDown' ||
+      e.key === 'ArrowRight' ||
+      e.key === 'ArrowUp' ||
+      e.key === 'Home' ||
+      e.key === 'End'
+    ) {
+      e.preventDefault()
+      const delta = e.shiftKey ? 10 : 1
+      let step = 0
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') step = -delta
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') step = delta
+
+      const total = app.timelineDuration
+      const start = app.config?.scene?.start ?? 0
+      const end = app.config?.scene?.end ?? total
+
+      if (e.key === 'Home') {
+        app.beginEditBatch?.()
+        app.updateScene({ [handle]: handle === 'start' ? 0 : start + 1 })
+        app.endEditBatch?.()
+        return
+      }
+      if (e.key === 'End') {
+        app.beginEditBatch?.()
+        app.updateScene({ [handle]: handle === 'start' ? end - 1 : total })
+        app.endEditBatch?.()
+        return
+      }
+
+      const res = nudgeTrim({
+        handle,
+        currentStart: start,
+        currentEnd: end,
+        total,
+        deltaSec: step,
+      })
+      app.beginEditBatch?.()
+      app.updateScene({ [res.field]: res.value })
+      app.endEditBatch?.()
     }
   }
 
@@ -200,20 +242,32 @@
                   ></div>
                   <button
                     type="button"
+                    role="slider"
                     aria-label="Overlay start"
+                    aria-valuemin={0}
+                    aria-valuemax={end - 1}
+                    aria-valuenow={start}
+                    aria-valuetext={secToTimecode(start)}
                     onpointerdown={(e) => beginDrag('start', e)}
+                    onkeydown={(e) => onSidebarHandleKeydown('start', e)}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
-                     hover:scale-110 transition-transform"
+                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform"
                     style="left: {startPct}%"
                   ></button>
                   <button
                     type="button"
+                    role="slider"
                     aria-label="Overlay end"
+                    aria-valuemin={start + 1}
+                    aria-valuemax={total}
+                    aria-valuenow={end}
+                    aria-valuetext={secToTimecode(end)}
                     onpointerdown={(e) => beginDrag('end', e)}
+                    onkeydown={(e) => onSidebarHandleKeydown('end', e)}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
-                     hover:scale-110 transition-transform"
+                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform"
                     style="left: {endPct}%"
                   ></button>
                 </div>
