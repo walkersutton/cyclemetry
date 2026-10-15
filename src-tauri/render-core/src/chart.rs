@@ -241,8 +241,12 @@ impl ChartCache {
             banding.as_ref(),
         );
 
-        // Load the point-label typeface once (None when no label configured).
-        let point_label = config.point_label.clone();
+        // Load the point-label typeface once (None when no label configured, or on course maps).
+        let point_label = if is_course {
+            None
+        } else {
+            config.point_label.clone()
+        };
         let label_typeface = point_label.as_ref().and_then(|pl| {
             let font = pl.font.as_deref().unwrap_or("Arial.ttf");
             crate::frame::load_typeface(font, fonts_dir)
@@ -724,39 +728,42 @@ fn render_chart_background(
     }
     let line_path = pb.snapshot();
 
-    // Draw fill under the curve
-    let usable_banding = banding.filter(|b| b.data.len() == x_data.len() && x_data.len() >= 2);
-    if let Some(b) = usable_banding.filter(|b| b.fill) {
-        // Banded fill defaults to fully opaque (TdF profiles are solid).
-        let alpha = config.fill_opacity().unwrap_or(1.0).clamp(0.0, 1.0);
-        if alpha > 0.0 {
-            draw_banded_fill(canvas, plot_bounds, x_data, y_data, b, &to_px, y_min, alpha);
-        }
-    } else if let Some(fill_opacity) = config.fill_opacity() {
-        let fill_color_str = config.fill_color();
-        let (r, g, b, _) = crate::color::parse_hex_color(&fill_color_str);
-        let alpha = (fill_opacity.clamp(0.0, 1.0) * 255.0) as u8;
-        let fill_color = Color::from_argb(alpha, r, g, b);
+    let is_course = geo.is_some();
 
-        let y_base = y_min;
-        if let (Some(&last_x), Some(&first_x)) = (x_data.last(), x_data.first()) {
-            let mut fb = PathBuilder::new_path(&line_path);
-            fb.line_to(to_px(last_x, y_base));
-            fb.line_to(to_px(first_x, y_base));
-            fb.close();
-            let fill_path = fb.snapshot();
+    // Draw fill under the curve (skipped for GPS course maps as geography has no area under curve)
+    if !is_course {
+        let usable_banding = banding.filter(|b| b.data.len() == x_data.len() && x_data.len() >= 2);
+        if let Some(b) = usable_banding.filter(|b| b.fill) {
+            // Banded fill defaults to fully opaque (TdF profiles are solid).
+            let alpha = config.fill_opacity().unwrap_or(1.0).clamp(0.0, 1.0);
+            if alpha > 0.0 {
+                draw_banded_fill(canvas, plot_bounds, x_data, y_data, b, &to_px, y_min, alpha);
+            }
+        } else if let Some(fill_opacity) = config.fill_opacity() {
+            let fill_color_str = config.fill_color();
+            let (r, g, b, _) = crate::color::parse_hex_color(&fill_color_str);
+            let alpha = (fill_opacity.clamp(0.0, 1.0) * 255.0) as u8;
+            let fill_color = Color::from_argb(alpha, r, g, b);
 
-            let mut paint = Paint::default();
-            paint.set_anti_alias(true);
-            paint.set_color(fill_color);
-            paint.set_style(PaintStyle::Fill);
-            canvas.draw_path(&fill_path, &paint);
+            let y_base = y_min;
+            if let (Some(&last_x), Some(&first_x)) = (x_data.last(), x_data.first()) {
+                let mut fb = PathBuilder::new_path(&line_path);
+                fb.line_to(to_px(last_x, y_base));
+                fb.line_to(to_px(first_x, y_base));
+                fb.close();
+                let fill_path = fb.snapshot();
+
+                let mut paint = Paint::default();
+                paint.set_anti_alias(true);
+                paint.set_color(fill_color);
+                paint.set_style(PaintStyle::Fill);
+                canvas.draw_path(&fill_path, &paint);
+            }
         }
     }
 
     // Draw the line. When split opacities are configured the background shows
     // the full route at future_opacity; the past segment is overdrawn per-frame.
-    let is_course = geo.is_some();
     let split_opacity = if is_course {
         config.line_future_opacity().or_else(|| {
             // past_opacity only → background at full opacity, past overdrawn per-frame
