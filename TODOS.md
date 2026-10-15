@@ -2,7 +2,7 @@
 
 ## Bugs (P0)
 
-- [x] **Pre-existing test failure: `render::frame::tests::layer_order_honors_explicit_ids_then_array_order`**: fixed: implemented flexible numeric deserialization for integer fields and isolated scene inheritance to styling attributes.
+- [x] **Pre-existing test failure: `render::frame::tests::layer_order_honors_explicit_ids_then_array_order`**: already resolved on main (stale entry).
 
 ## Later
 

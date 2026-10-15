@@ -21,102 +21,81 @@ where
     Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
 }
 
-/// Deserializes an i32 from either an integer or floating point number (rounded).
-pub fn deserialize_flexible_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum IntOrFloat {
-        Int(i64),
-        Float(f64),
-    }
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum IntOrFloat {
+    Int(i64),
+    Float(f64),
+}
 
-    match IntOrFloat::deserialize(deserializer)? {
-        IntOrFloat::Int(i) => i32::try_from(i).map_err(serde::de::Error::custom),
-        IntOrFloat::Float(f) => {
-            if f.is_finite() {
-                Ok(f.round() as i32)
-            } else {
-                Err(serde::de::Error::custom("expected finite number"))
+impl IntOrFloat {
+    fn to_i32<E: serde::de::Error>(&self) -> Result<i32, E> {
+        match *self {
+            IntOrFloat::Int(i) => i32::try_from(i).map_err(E::custom),
+            IntOrFloat::Float(f) => {
+                if !f.is_finite() {
+                    return Err(E::custom("expected finite number"));
+                }
+                let rounded = f.round();
+                if rounded < i32::MIN as f64 || rounded > i32::MAX as f64 {
+                    return Err(E::custom("value out of range for i32"));
+                }
+                Ok(rounded as i32)
             }
         }
     }
+
+    fn to_u32<E: serde::de::Error>(&self) -> Result<u32, E> {
+        match *self {
+            IntOrFloat::Int(i) => u32::try_from(i).map_err(E::custom),
+            IntOrFloat::Float(f) => {
+                if !f.is_finite() || f < 0.0 {
+                    return Err(E::custom("expected non-negative finite number"));
+                }
+                let rounded = f.round();
+                if rounded > u32::MAX as f64 {
+                    return Err(E::custom("value out of range for u32"));
+                }
+                Ok(rounded as u32)
+            }
+        }
+    }
+}
+
+/// Deserializes an i32 from either an integer or floating point number (rounded).
+pub(crate) fn deserialize_flexible_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    IntOrFloat::deserialize(deserializer)?.to_i32()
 }
 
 /// Deserializes a u32 from either an integer or floating point number (rounded).
-pub fn deserialize_flexible_u32<'de, D>(deserializer: D) -> Result<u32, D::Error>
+pub(crate) fn deserialize_flexible_u32<'de, D>(deserializer: D) -> Result<u32, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum IntOrFloat {
-        Int(i64),
-        Float(f64),
-    }
-
-    match IntOrFloat::deserialize(deserializer)? {
-        IntOrFloat::Int(i) => u32::try_from(i).map_err(serde::de::Error::custom),
-        IntOrFloat::Float(f) => {
-            if f.is_finite() && f >= 0.0 {
-                Ok(f.round() as u32)
-            } else {
-                Err(serde::de::Error::custom("expected non-negative finite number"))
-            }
-        }
-    }
+    IntOrFloat::deserialize(deserializer)?.to_u32()
 }
 
 /// Deserializes an Option<i32> from either an integer or floating point number (rounded).
-pub fn deserialize_flexible_opt_i32<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+pub(crate) fn deserialize_flexible_opt_i32<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum IntOrFloat {
-        Int(i64),
-        Float(f64),
-    }
-
-    match Option::<IntOrFloat>::deserialize(deserializer)? {
-        Some(IntOrFloat::Int(i)) => i32::try_from(i).map(Some).map_err(serde::de::Error::custom),
-        Some(IntOrFloat::Float(f)) => {
-            if f.is_finite() {
-                Ok(Some(f.round() as i32))
-            } else {
-                Err(serde::de::Error::custom("expected finite number"))
-            }
-        }
-        None => Ok(None),
-    }
+    Option::<IntOrFloat>::deserialize(deserializer)?
+        .map(|v| v.to_i32())
+        .transpose()
 }
 
 /// Deserializes an Option<u32> from either an integer or floating point number (rounded).
-pub fn deserialize_flexible_opt_u32<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+pub(crate) fn deserialize_flexible_opt_u32<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum IntOrFloat {
-        Int(i64),
-        Float(f64),
-    }
-
-    match Option::<IntOrFloat>::deserialize(deserializer)? {
-        Some(IntOrFloat::Int(i)) => u32::try_from(i).map(Some).map_err(serde::de::Error::custom),
-        Some(IntOrFloat::Float(f)) => {
-            if f.is_finite() && f >= 0.0 {
-                Ok(Some(f.round() as u32))
-            } else {
-                Err(serde::de::Error::custom("expected non-negative finite number"))
-            }
-        }
-        None => Ok(None),
-    }
+    Option::<IntOrFloat>::deserialize(deserializer)?
+        .map(|v| v.to_u32())
+        .transpose()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -195,6 +174,7 @@ pub struct LapGateConfig {
     pub radius: Option<f64>,
     /// Total race laps for `laps_to_go` / `lap_fraction`. Absent = auto:
     /// every gate crossing between `start` and `end`.
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_u32")]
     pub total_laps: Option<u32>,
 }
 
@@ -1003,10 +983,9 @@ impl Template {
             }
         }
 
-        // Inherit scene-level defaults (font, color, opacity, …) into each
-        // element that doesn't set them explicitly. Generic — copies any
-        // absent scene key into the element object; element configs ignore
-        // keys they don't declare.
+        // Inherit scene-level defaults (font, color, opacity, etc.) into each
+        // element that doesn't set them explicitly. Restricted to
+        // INHERITABLE_SCENE_KEYS so scene layout keys do not leak into elements.
         let scene_snapshot = raw["scene"].clone();
         if let Some(items) = raw.get_mut("elements").and_then(|v| v.as_array_mut()) {
             for item in items.iter_mut() {
@@ -1216,6 +1195,10 @@ fn fill_scene_unit(metric: &str, unit: &mut Option<String>, system: &str) {
     }
 }
 
+/// Allowlist of scene-level keys that may be inherited by child elements when left unset.
+/// Restricting this to styling attributes prevents scene dimensions (`width`, `height`)
+/// from acting as an implicit fallback for missing element sizes, and keeps scene-only
+/// keys (like `start`, `end`, and `layers`) from leaking into element definitions.
 const INHERITABLE_SCENE_KEYS: &[&str] = &[
     "font",
     "color",
@@ -1306,6 +1289,40 @@ mod tests {
             }
             _ => panic!("expected label"),
         }
+    }
+
+    #[test]
+    fn missing_element_width_fails_without_scene_fallback() {
+        let raw = serde_json::json!({
+            "scene": {
+                "width": 1920,
+                "height": 1080
+            },
+            "elements": [
+                { "type": "rect", "id": "rect-0", "x": 10, "y": 20, "height": 100 }
+            ]
+        });
+        let result = Template::from_value(raw);
+        assert!(result.is_err(), "missing element width must fail rather than falling back to scene width");
+    }
+
+    #[test]
+    fn lap_gate_flexible_total_laps_deserializes() {
+        let raw = serde_json::json!({
+            "start": 10.0,
+            "total_laps": 5.0
+        });
+        let gate: LapGateConfig = serde_json::from_value(raw).expect("float total_laps should parse");
+        assert_eq!(gate.total_laps, Some(5));
+    }
+
+    #[test]
+    fn out_of_range_float_fails_deserialization() {
+        let raw = serde_json::json!({
+            "scene": { "width": 1e15, "height": 1080 }
+        });
+        let result = Template::from_value(raw);
+        assert!(result.is_err(), "out of range float should fail deserialization");
     }
 
     /// A `unit_of` label resolves to concrete unit text at load and follows
