@@ -16,7 +16,7 @@
   // Writable $derived: tracks the `value` prop but can be reassigned locally
   // for in-flight slider/number-input edits before `oninput` is committed.
   let currentValue = $derived(value ?? 1)
-  let inputDraft = $state(String(value ?? 1))
+  let inputDraft = $state('')
   let editingInput = $state(false)
 
   // Filled-track percentage. Drives a CSS variable on the input so the
@@ -72,6 +72,7 @@
 
   function beginTextEdit() {
     editingInput = true
+    inputDraft = String(currentValue)
     app?.beginEditBatch?.()
   }
 

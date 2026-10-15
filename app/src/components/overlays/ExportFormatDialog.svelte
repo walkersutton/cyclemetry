@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import { TriangleAlert } from 'lucide-svelte'
   import WindowDragStrip from './WindowDragStrip.svelte'
   import Switch from '../ui/Switch.svelte'
@@ -37,10 +37,11 @@
     oncancel,
   } = $props()
 
-  let selected = $state(initial)
+  // Snapshot initial props once per modal open (dialog is mounted conditionally via {#if}).
+  let selected = $state(untrack(() => initial))
   let selectedFormat = $derived(formats.find((f) => f.value === selected))
   // Sizing only applies to transparent overlays; stitched always fills the frame.
-  let fullFrame = $state(initialFullFrame)
+  let fullFrame = $state(untrack(() => initialFullFrame))
   let showSizing = $derived(!!selectedFormat?.transparent)
 
   // Warn when the estimated file wouldn't fit while keeping the renderer's

@@ -118,6 +118,8 @@
 </script>
 
 {#if src}
+  <!-- User footage shown as editing backdrop without embedded tracks -->
+  <!-- svelte-ignore a11y_media_has_caption -->
   <video
     bind:this={videoEl}
     {src}
