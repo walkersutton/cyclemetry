@@ -20,6 +20,9 @@ pub const ATTR_REAR_GEAR: &str = "rear_gear";
 pub const ATTR_SPEED: &str = "speed";
 pub const ATTR_TIME: &str = "time";
 pub const ATTR_TEMPERATURE: &str = "temperature";
+/// Cumulative energy expenditure series in kilocalories (kcal burned so far).
+/// Stored as a running total rather than per-sample burn rate, so aggregate
+/// values use span rather than mean.
 pub const ATTR_CALORIES: &str = "calories";
 
 // ─── Summary (aggregate) metrics ───────────────────────────────────────────
@@ -517,7 +520,7 @@ impl Activity {
                             "cadence" => cadence = fit_f64(field.value()),
                             "power" => power = fit_f64(field.value()),
                             "temperature" => temperature = fit_f64(field.value()),
-                            "calories" | "total_calories" => calories = fit_f64(field.value()),
+                            "calories" => calories = fit_f64(field.value()),
                             "speed" => speed = fit_f64(field.value()),
                             "enhanced_speed" => enhanced_speed = fit_f64(field.value()),
                             "front_gear" => {
@@ -663,7 +666,9 @@ impl Activity {
                             "Watts" | "PowerInWatts" if in_extensions => {
                                 pt.power = current_text.parse().ok();
                             }
-                            "Calories" | "calories" => {
+                            // Standard TCX schema places <Calories> on <Lap>; per-point calories
+                            // are only read from extension fields where a device writes them.
+                            "Calories" | "calories" if in_extensions => {
                                 pt.calories = current_text.parse().ok();
                             }
                             "Speed" if in_extensions => {
@@ -860,6 +865,8 @@ impl Activity {
                                 pt.speed =
                                     current_text.parse::<f64>().ok().filter(|v| v.is_finite());
                             }
+                            // GPX schema has no standard point calorie field; per-point calories
+                            // are only read from extension fields where a device writes them.
                             "calories" | "Calories" => {
                                 pt.calories = current_text.parse().ok();
                             }
@@ -1017,6 +1024,7 @@ impl Activity {
         let mut raw_gradient: Vec<f64> = Vec::with_capacity(n);
         let mut cum_dist = 0.0f64;
         let mut speed_derived = false;
+        let mut last_calories = 0.0f64;
 
         for (i, pt) in points.iter().enumerate() {
             activity.course.push((pt.lat, pt.lon));
@@ -1026,7 +1034,12 @@ impl Activity {
             activity.cadence.push(pt.cadence.unwrap_or(0.0));
             activity.power.push(pt.power.unwrap_or(0.0));
             activity.temperature.push(pt.temperature.unwrap_or(0.0));
-            activity.calories.push(pt.calories.unwrap_or(0.0));
+            // Cumulative metric: forward-fill missing samples with the last known
+            // total so intermediate gaps do not drop to 0 and span at the end is stable.
+            if let Some(cal) = pt.calories {
+                last_calories = cal;
+            }
+            activity.calories.push(last_calories);
             activity.front_gear.push(pt.front_gear.unwrap_or(0.0));
             activity.rear_gear.push(pt.rear_gear.unwrap_or(0.0));
             activity.gear.push(
@@ -2380,6 +2393,46 @@ mod tests {
         assert!(a.has_summary(SUM_TOTAL_DISTANCE));
         assert!(a.has_summary(SUM_TOTAL_CALORIES));
         assert!(!a.has_summary(SUM_AVG_POWER)); // power not in valid_attributes
+    }
+
+    #[test]
+    fn calories_forward_fill_gaps() {
+        let points = vec![
+            // Leading gap: starts at 0.0
+            TrackPoint {
+                time_str: Some("2026-06-01T12:00:00Z".to_string()),
+                ..Default::default()
+            },
+            // First recorded calorie reading
+            TrackPoint {
+                time_str: Some("2026-06-01T12:00:01Z".to_string()),
+                calories: Some(50.0),
+                ..Default::default()
+            },
+            // Gap in the middle: forward-filled with 50.0
+            TrackPoint {
+                time_str: Some("2026-06-01T12:00:02Z".to_string()),
+                ..Default::default()
+            },
+            // Second reading
+            TrackPoint {
+                time_str: Some("2026-06-01T12:00:03Z".to_string()),
+                calories: Some(120.0),
+                ..Default::default()
+            },
+            // Gap at the end: forward-filled with 120.0
+            TrackPoint {
+                time_str: Some("2026-06-01T12:00:04Z".to_string()),
+                ..Default::default()
+            },
+        ];
+
+        let activity = Activity::build_from_points(points).expect("build should succeed");
+        assert_eq!(activity.calories, vec![0.0, 50.0, 50.0, 120.0, 120.0]);
+        assert_eq!(
+            activity.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            120.0
+        );
     }
 
     /// Synthetic crit track: each entry is (lat, cumulative distance m); the
