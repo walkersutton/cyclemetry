@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::fmt;
 
+use serde::de::{self, Visitor};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,7 +14,7 @@ pub struct Template {
 /// `#[serde(default)]` covers a missing key but NOT an explicit `null`
 /// (which errors with "invalid type: null, expected a sequence").
 /// Templates are user-editable / community-sourced, so treat an explicit
-/// `null` array the same as absent → empty.
+/// `null` array the same as absent -> empty.
 fn null_seq_as_default<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -21,11 +23,143 @@ where
     Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
 }
 
+struct FlexibleI32Visitor;
+
+impl<'de> Visitor<'de> for FlexibleI32Visitor {
+    type Value = i32;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("an integer or finite floating point number within i32 range")
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        i32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        i32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if !v.is_finite() {
+            return Err(E::custom("expected finite number"));
+        }
+        let rounded = v.round();
+        if rounded < i32::MIN as f64 || rounded > i32::MAX as f64 {
+            return Err(E::custom("value out of range for i32"));
+        }
+        Ok(rounded as i32)
+    }
+}
+
+struct FlexibleU32Visitor;
+
+impl<'de> Visitor<'de> for FlexibleU32Visitor {
+    type Value = u32;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a non-negative integer or finite floating point number within u32 range")
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        u32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        u32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if !v.is_finite() || v < 0.0 {
+            return Err(E::custom("expected non-negative finite number"));
+        }
+        let rounded = v.round();
+        if rounded > u32::MAX as f64 {
+            return Err(E::custom("value out of range for u32"));
+        }
+        Ok(rounded as u32)
+    }
+}
+
+struct FlexibleI32(i32);
+
+impl<'de> Deserialize<'de> for FlexibleI32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(FlexibleI32Visitor).map(FlexibleI32)
+    }
+}
+
+struct FlexibleU32(u32);
+
+impl<'de> Deserialize<'de> for FlexibleU32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(FlexibleU32Visitor).map(FlexibleU32)
+    }
+}
+
+/// Deserializes an i32 from either an integer or floating point number (rounded).
+pub(crate) fn deserialize_flexible_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    deserializer.deserialize_any(FlexibleI32Visitor)
+}
+
+/// Deserializes a u32 from either an integer or floating point number (rounded).
+pub(crate) fn deserialize_flexible_u32<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    deserializer.deserialize_any(FlexibleU32Visitor)
+}
+
+/// Deserializes an Option<i32> from either an integer or floating point number (rounded).
+pub(crate) fn deserialize_flexible_opt_i32<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<FlexibleI32>::deserialize(deserializer)?.map(|v| v.0))
+}
+
+/// Deserializes an Option<u32> from either an integer or floating point number (rounded).
+pub(crate) fn deserialize_flexible_opt_u32<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<FlexibleU32>::deserialize(deserializer)?.map(|v| v.0))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SceneConfig {
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub width: u32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub height: u32,
-    #[serde(default = "default_fps")]
+    #[serde(default = "default_fps", deserialize_with = "deserialize_flexible_u32")]
     pub fps: u32,
     pub font_size: Option<f32>,
     pub font: Option<String>,
@@ -38,6 +172,7 @@ pub struct SceneConfig {
     /// Absent = real time (output length equals the window). Ignored on
     /// stitched exports, where the footage can't be sped up to match.
     pub target_duration: Option<f64>,
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_i32")]
     pub decimal_rounding: Option<i32>,
     pub color: Option<String>,
     pub opacity: Option<f32>,
@@ -94,6 +229,7 @@ pub struct LapGateConfig {
     pub radius: Option<f64>,
     /// Total race laps for `laps_to_go` / `lap_fraction`. Absent = auto:
     /// every gate crossing between `start` and `end`.
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_u32")]
     pub total_laps: Option<u32>,
 }
 
@@ -329,7 +465,9 @@ pub struct LabelConfig {
     /// `apply_unit_labels` fills it from the active unit system at load.
     #[serde(default)]
     pub text: String,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub x: i32,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub y: i32,
     pub font_size: Option<f32>,
     /// Additional tracking between characters in px. Default 0.
@@ -338,6 +476,7 @@ pub struct LabelConfig {
     pub italic: Option<bool>,
     pub color: Option<String>,
     pub opacity: Option<f32>,
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_i32")]
     pub decimal_rounding: Option<i32>,
     /// Horizontal alignment relative to x. "left" (default) | "center" | "right".
     pub text_align: Option<String>,
@@ -363,7 +502,9 @@ pub struct LabelConfig {
 pub struct ValueConfig {
     pub id: String,
     pub value: String,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub x: i32,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub y: i32,
     pub font_size: Option<f32>,
     pub font: Option<String>,
@@ -388,6 +529,7 @@ pub struct ValueConfig {
     /// put. Non-digit glyphs keep their natural width. Default false (proportional
     /// figures), so existing templates are unchanged.
     pub tabular_figures: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_i32")]
     pub decimal_rounding: Option<i32>,
     pub hours_offset: Option<f32>,
     pub time_format: Option<String>,
@@ -429,9 +571,13 @@ pub struct ValueConfig {
 pub struct PlotConfig {
     pub id: String,
     pub value: String,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub x: i32,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub y: i32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub width: u32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub height: u32,
     pub dpi: Option<f32>,
     pub color: Option<String>,
@@ -592,6 +738,7 @@ pub struct PointLabelConfig {
     /// Compound-unit style, filled from `scene.compact_units` by
     /// `apply_compact_units` (see [`SceneConfig::compact_units`]).
     pub compact_units: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_i32")]
     pub decimal_rounding: Option<i32>,
 }
 
@@ -615,9 +762,13 @@ pub enum RangeKeyword {
 pub struct MeterConfig {
     pub id: String,
     pub value: String,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub x: i32,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub y: i32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub width: u32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub height: u32,
     pub min: RangeBound,
     pub max: RangeBound,
@@ -643,6 +794,7 @@ pub struct MeterConfig {
     pub radius: Option<f32>,
     /// When >= 1, render as that many discrete segments instead of one
     /// continuous fill. Segments light up proportionally to the value.
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_u32")]
     pub segments: Option<u32>,
     /// Gap in px between segments (only used when `segments` is set).
     pub gap: Option<f32>,
@@ -672,6 +824,7 @@ pub struct MeterConfig {
     /// Optional suffix appended to every tick label (e.g. "mph").
     pub scale_suffix: Option<String>,
     /// Number of evenly-spaced unlabeled tick marks to draw across the full bar range.
+    #[serde(default, deserialize_with = "deserialize_flexible_opt_u32")]
     pub scale_ticks: Option<u32>,
 }
 
@@ -682,9 +835,13 @@ pub struct MeterConfig {
 pub struct GaugeConfig {
     pub id: String,
     pub value: String,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub x: i32,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub y: i32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub width: u32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub height: u32,
     pub min: RangeBound,
     pub max: RangeBound,
@@ -727,9 +884,13 @@ pub struct GaugeConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RectConfig {
     pub id: String,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub x: i32,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub y: i32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub width: u32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub height: u32,
     /// Fill color. Default white.
     pub color: Option<String>,
@@ -760,9 +921,13 @@ pub struct ImageConfig {
     /// Asset filename (e.g. "bolt.svg") resolved via the assets search path,
     /// or an absolute filesystem path.
     pub file: String,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub x: i32,
+    #[serde(deserialize_with = "deserialize_flexible_i32")]
     pub y: i32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub width: u32,
+    #[serde(deserialize_with = "deserialize_flexible_u32")]
     pub height: u32,
     /// Master opacity (0–1). Default 1.
     pub opacity: Option<f32>,
@@ -873,14 +1038,14 @@ impl Template {
             }
         }
 
-        // Inherit scene-level defaults (font, color, opacity, …) into each
-        // element that doesn't set them explicitly. Generic — copies any
-        // absent scene key into the element object; element configs ignore
-        // keys they don't declare.
+        // Inherit scene-level defaults (font, color, opacity, etc.) into each
+        // element that doesn't set them explicitly. Restricted to
+        // INHERITABLE_SCENE_KEYS so scene layout keys do not leak into elements.
         let scene_snapshot = raw["scene"].clone();
         if let Some(items) = raw.get_mut("elements").and_then(|v| v.as_array_mut()) {
             for item in items.iter_mut() {
                 merge_scene_into_item(&scene_snapshot, item);
+                migrate_legacy_element_dimensions(&scene_snapshot, item);
             }
         }
 
@@ -1086,17 +1251,215 @@ fn fill_scene_unit(metric: &str, unit: &mut Option<String>, system: &str) {
     }
 }
 
+/// Allowlist of scene-level keys that may be inherited by child elements when left unset.
+/// Restricting this to styling attributes prevents scene dimensions (`width`, `height`)
+/// from acting as an implicit fallback for missing element sizes, and keeps scene-only
+/// keys (like `start`, `end`, and `layers`) from leaking into element definitions.
+const INHERITABLE_SCENE_KEYS: &[&str] = &[
+    "font",
+    "color",
+    "opacity",
+    "font_size",
+    "decimal_rounding",
+];
+
 fn merge_scene_into_item(scene: &serde_json::Value, item: &mut serde_json::Value) {
     if let (Some(scene_obj), Some(item_obj)) = (scene.as_object(), item.as_object_mut()) {
-        for (k, v) in scene_obj {
-            item_obj.entry(k).or_insert_with(|| v.clone());
+        for &k in INHERITABLE_SCENE_KEYS {
+            if let Some(v) = scene_obj.get(k) {
+                item_obj.entry(k).or_insert_with(|| v.clone());
+            }
         }
+    }
+}
+
+/// Fill missing width and height on legacy box elements from scene dimensions.
+/// Preserves backward compatibility for existing user and AI-generated templates
+/// (such as full-canvas background rects) that omit explicit element dimensions.
+fn migrate_legacy_element_dimensions(scene: &serde_json::Value, item: &mut serde_json::Value) {
+    let Some(item_type) = item.get("type").and_then(|t| t.as_str()) else {
+        return;
+    };
+    match item_type {
+        "rect" | "plot" | "meter" | "gauge" | "image" => {
+            if let Some(item_obj) = item.as_object_mut() {
+                if !item_obj.contains_key("width") {
+                    if let Some(sw) = scene.get("width") {
+                        item_obj.insert("width".to_string(), sw.clone());
+                    }
+                }
+                if !item_obj.contains_key("height") {
+                    if let Some(sh) = scene.get("height") {
+                        item_obj.insert("height".to_string(), sh.clone());
+                    }
+                }
+            }
+        }
+        _ => {}
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn template_parses_with_float_dimensions_and_coordinates() {
+        let raw = serde_json::json!({
+            "scene": { "width": 1920.0, "height": 1080.0, "fps": 30.0, "decimal_rounding": 1.0 },
+            "elements": [
+                { "type": "label", "id": "label-0", "text": "Speed", "x": 10.0, "y": 20.4, "decimal_rounding": 2.0 },
+                { "type": "value", "id": "value-0", "value": "speed", "x": 100.0, "y": 200.7 },
+                { "type": "plot", "id": "plot-0", "value": "elevation", "x": 0.0, "y": 500.0, "width": 400.0, "height": 120.0 },
+                { "type": "meter", "id": "meter-0", "value": "power", "x": 50.0, "y": 50.0, "width": 30.0, "height": 200.0, "min": 0.0, "max": 400.0 },
+                { "type": "rect", "id": "rect-0", "x": 0.0, "y": 0.0, "width": 100.0, "height": 80.0 },
+                { "type": "gauge", "id": "gauge-0", "value": "cadence", "x": 12.0, "y": 34.0, "width": 150.0, "height": 150.0, "min": 0.0, "max": 120.0 },
+                { "type": "image", "id": "image-0", "file": "logo.png", "x": 5.0, "y": 15.0, "width": 64.0, "height": 64.0 }
+            ]
+        });
+        let t = Template::from_value(raw).expect("template with float coordinates and dimensions must parse");
+        assert_eq!(t.scene.width, 1920);
+        assert_eq!(t.scene.height, 1080);
+        assert_eq!(t.scene.fps, 30);
+        assert_eq!(t.scene.decimal_rounding, Some(1));
+
+        match &t.elements[0] {
+            Element::Label(c) => {
+                assert_eq!(c.x, 10);
+                assert_eq!(c.y, 20);
+                assert_eq!(c.decimal_rounding, Some(2));
+            }
+            _ => panic!("expected label"),
+        }
+        match &t.elements[1] {
+            Element::Value(c) => {
+                assert_eq!(c.x, 100);
+                assert_eq!(c.y, 201);
+            }
+            _ => panic!("expected value"),
+        }
+        match &t.elements[2] {
+            Element::Plot(c) => {
+                assert_eq!(c.x, 0);
+                assert_eq!(c.y, 500);
+                assert_eq!(c.width, 400);
+                assert_eq!(c.height, 120);
+            }
+            _ => panic!("expected plot"),
+        }
+        match &t.elements[3] {
+            Element::Meter(c) => {
+                assert_eq!(c.x, 50);
+                assert_eq!(c.y, 50);
+                assert_eq!(c.width, 30);
+                assert_eq!(c.height, 200);
+            }
+            _ => panic!("expected meter"),
+        }
+        match &t.elements[4] {
+            Element::Rect(c) => {
+                assert_eq!(c.x, 0);
+                assert_eq!(c.y, 0);
+                assert_eq!(c.width, 100);
+                assert_eq!(c.height, 80);
+            }
+            _ => panic!("expected rect"),
+        }
+        match &t.elements[5] {
+            Element::Gauge(c) => {
+                assert_eq!(c.x, 12);
+                assert_eq!(c.y, 34);
+                assert_eq!(c.width, 150);
+                assert_eq!(c.height, 150);
+            }
+            _ => panic!("expected gauge"),
+        }
+        match &t.elements[6] {
+            Element::Image(c) => {
+                assert_eq!(c.x, 5);
+                assert_eq!(c.y, 15);
+                assert_eq!(c.width, 64);
+                assert_eq!(c.height, 64);
+            }
+            _ => panic!("expected image"),
+        }
+    }
+
+    #[test]
+    fn scene_inheritance_does_not_leak_scene_metadata() {
+        let scene = serde_json::json!({
+            "width": 1920,
+            "height": 1080,
+            "color": "#ffffff",
+            "font": "Geist.ttf",
+            "layers": ["label-0"],
+            "start": 10.0,
+            "end": 60.0,
+            "fps": 30,
+            "groups": [{"id": "g1", "name": "Group 1", "element_ids": ["label-0"]}],
+            "vars": {"accent": "#ff0000"}
+        });
+        let mut item = serde_json::json!({
+            "type": "label",
+            "id": "label-0",
+            "text": "Test",
+            "x": 10,
+            "y": 20
+        });
+        merge_scene_into_item(&scene, &mut item);
+
+        assert_eq!(item.get("color").and_then(|v| v.as_str()), Some("#ffffff"));
+        assert_eq!(item.get("font").and_then(|v| v.as_str()), Some("Geist.ttf"));
+
+        assert!(item.get("layers").is_none(), "layers must not leak into item");
+        assert!(item.get("start").is_none(), "start must not leak into item");
+        assert!(item.get("end").is_none(), "end must not leak into item");
+        assert!(item.get("fps").is_none(), "fps must not leak into item");
+        assert!(item.get("groups").is_none(), "groups must not leak into item");
+        assert!(item.get("vars").is_none(), "vars must not leak into item");
+        assert!(item.get("width").is_none(), "width must not leak into item from styling inheritance");
+        assert!(item.get("height").is_none(), "height must not leak into item from styling inheritance");
+    }
+
+    #[test]
+    fn legacy_element_without_dimensions_migrates_scene_dimensions() {
+        let raw = serde_json::json!({
+            "scene": {
+                "width": 1920,
+                "height": 1080
+            },
+            "elements": [
+                { "type": "rect", "id": "rect-0", "x": 0, "y": 0 }
+            ]
+        });
+        let t = Template::from_value(raw).expect("legacy element without dimensions should migrate scene dimensions");
+        match &t.elements[0] {
+            Element::Rect(c) => {
+                assert_eq!(c.width, 1920);
+                assert_eq!(c.height, 1080);
+            }
+            _ => panic!("expected rect"),
+        }
+    }
+
+    #[test]
+    fn lap_gate_flexible_total_laps_deserializes() {
+        let raw = serde_json::json!({
+            "start": 10.0,
+            "total_laps": 5.0
+        });
+        let gate: LapGateConfig = serde_json::from_value(raw).expect("float total_laps should parse");
+        assert_eq!(gate.total_laps, Some(5));
+    }
+
+    #[test]
+    fn out_of_range_float_fails_deserialization() {
+        let raw = serde_json::json!({
+            "scene": { "width": 1e15, "height": 1080 }
+        });
+        let result = Template::from_value(raw);
+        assert!(result.is_err(), "out of range float should fail deserialization");
+    }
 
     /// A `unit_of` label resolves to concrete unit text at load and follows
     /// the scene unit system: metric default renders "km/h"/"km", and flipping
