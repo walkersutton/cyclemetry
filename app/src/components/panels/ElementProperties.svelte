@@ -942,6 +942,22 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
     decimal_rounding: 0,
   }
 
+  function onPlotMetricChange(metric) {
+    const s = selected()
+    if (!s) return
+    if (metric === 'course') {
+      app.beginEditBatch?.()
+      app.updateElement(s.id, {
+        value: metric,
+        fill: undefined,
+        point_label: undefined,
+      })
+      app.endEditBatch?.()
+    } else {
+      update('value', metric)
+    }
+  }
+
   function togglePointLabel(enabled) {
     const s = selected()
     if (!s) return
@@ -1089,11 +1105,7 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
     }
     const isCourse = s.item.value === 'course'
     const fillOpacity = s.item.fill?.opacity
-    if (
-      !isCourse &&
-      typeof fillOpacity === 'number' &&
-      fillOpacity < 1
-    ) {
+    if (!isCourse && typeof fillOpacity === 'number' && fillOpacity < 1) {
       patch.fill = { ...s.item.fill, opacity: 1 }
     }
     app.updateElement(s.id, patch)
@@ -2036,7 +2048,7 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
             value: m,
             label: m === 'course' ? 'course (map)' : metricLabel(m),
           }))}
-          onchange={(v) => update('value', v)}
+          onchange={onPlotMetricChange}
         />
       </section>
 
@@ -2219,7 +2231,9 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
         <!-- Fill -->
         {#if !isCourse}
           <section class="mb-4 space-y-2">
-            <p class="text-[10px] uppercase tracking-wider text-zinc-600">Fill</p>
+            <p class="text-[10px] uppercase tracking-wider text-zinc-600">
+              Fill
+            </p>
             <label class="space-y-1 block">
               <span class="text-xs text-zinc-500">Color</span>
               <ColorInput

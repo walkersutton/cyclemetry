@@ -242,11 +242,7 @@ impl ChartCache {
         );
 
         // Load the point-label typeface once (None when no label configured, or on course maps).
-        let point_label = if is_course {
-            None
-        } else {
-            config.point_label.clone()
-        };
+        let point_label = config.effective_point_label().cloned();
         let label_typeface = point_label.as_ref().and_then(|pl| {
             let font = pl.font.as_deref().unwrap_or("Arial.ttf");
             crate::frame::load_typeface(font, fonts_dir)
@@ -729,36 +725,37 @@ fn render_chart_background(
     let line_path = pb.snapshot();
 
     let is_course = geo.is_some();
+    let usable_banding = banding.filter(|b| b.data.len() == x_data.len() && x_data.len() >= 2);
 
-    // Draw fill under the curve (skipped for GPS course maps as geography has no area under curve)
-    if !is_course {
-        let usable_banding = banding.filter(|b| b.data.len() == x_data.len() && x_data.len() >= 2);
-        if let Some(b) = usable_banding.filter(|b| b.fill) {
-            // Banded fill defaults to fully opaque (TdF profiles are solid).
-            let alpha = config.fill_opacity().unwrap_or(1.0).clamp(0.0, 1.0);
-            if alpha > 0.0 {
-                draw_banded_fill(canvas, plot_bounds, x_data, y_data, b, &to_px, y_min, alpha);
-            }
-        } else if let Some(fill_opacity) = config.fill_opacity() {
-            let fill_color_str = config.fill_color();
-            let (r, g, b, _) = crate::color::parse_hex_color(&fill_color_str);
-            let alpha = (fill_opacity.clamp(0.0, 1.0) * 255.0) as u8;
-            let fill_color = Color::from_argb(alpha, r, g, b);
+    // Draw fill under the curve.
+    // Course maps have no fill because:
+    // 1) b.fill is always false for course maps (ColorBy::color_fill(is_course) is false).
+    // 2) config.fill_opacity() returns None for course maps via PlotConfig::effective_fill().
+    if let Some(b) = usable_banding.filter(|b| b.fill) {
+        // Banded fill defaults to fully opaque (TdF profiles are solid).
+        let alpha = config.fill_opacity().unwrap_or(1.0).clamp(0.0, 1.0);
+        if alpha > 0.0 {
+            draw_banded_fill(canvas, plot_bounds, x_data, y_data, b, &to_px, y_min, alpha);
+        }
+    } else if let Some(fill_opacity) = config.fill_opacity() {
+        let fill_color_str = config.fill_color();
+        let (r, g, b, _) = crate::color::parse_hex_color(&fill_color_str);
+        let alpha = (fill_opacity.clamp(0.0, 1.0) * 255.0) as u8;
+        let fill_color = Color::from_argb(alpha, r, g, b);
 
-            let y_base = y_min;
-            if let (Some(&last_x), Some(&first_x)) = (x_data.last(), x_data.first()) {
-                let mut fb = PathBuilder::new_path(&line_path);
-                fb.line_to(to_px(last_x, y_base));
-                fb.line_to(to_px(first_x, y_base));
-                fb.close();
-                let fill_path = fb.snapshot();
+        let y_base = y_min;
+        if let (Some(&last_x), Some(&first_x)) = (x_data.last(), x_data.first()) {
+            let mut fb = PathBuilder::new_path(&line_path);
+            fb.line_to(to_px(last_x, y_base));
+            fb.line_to(to_px(first_x, y_base));
+            fb.close();
+            let fill_path = fb.snapshot();
 
-                let mut paint = Paint::default();
-                paint.set_anti_alias(true);
-                paint.set_color(fill_color);
-                paint.set_style(PaintStyle::Fill);
-                canvas.draw_path(&fill_path, &paint);
-            }
+            let mut paint = Paint::default();
+            paint.set_anti_alias(true);
+            paint.set_color(fill_color);
+            paint.set_style(PaintStyle::Fill);
+            canvas.draw_path(&fill_path, &paint);
         }
     }
 
@@ -963,6 +960,7 @@ fn draw_banded_polyline(
 #[cfg(test)]
 mod tests {
     use super::{ChartCache, band_index, draw_banded_polyline, format_point_label};
+    use crate::template::{FillConfig, PlotConfig, PointLabelConfig};
     use skia_safe::{Color, ISize, ImageInfo, Point, Rect};
 
     fn bands() -> Vec<(f64, String)> {
@@ -1207,5 +1205,60 @@ mod tests {
             format_point_label(5000.0, "distance", "km", 0, true),
             "5 KM"
         );
+    }
+
+    #[test]
+    fn course_chart_ignores_fill_and_point_label() {
+        let config = PlotConfig {
+            id: "course-1".to_string(),
+            value: "course".to_string(),
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 200,
+            dpi: None,
+            color: Some("#ffffff".to_string()),
+            opacity: None,
+            line: None,
+            fill: Some(FillConfig {
+                opacity: Some(0.8),
+                color: Some("#ff0000".to_string()),
+            }),
+            color_by: None,
+            margin: None,
+            point: None,
+            points: None,
+            markers: None,
+            point_label: Some(PointLabelConfig {
+                font_size: Some(14.0),
+                color: Some("#ffffff".to_string()),
+                font: None,
+                italic: None,
+                x_offset: None,
+                y_offset: None,
+                units: None,
+                compact_units: None,
+                decimal_rounding: None,
+            }),
+            rotation: None,
+            x_axis: None,
+        };
+
+        assert!(config.effective_fill().is_none());
+        assert!(config.fill_opacity().is_none());
+        assert!(config.effective_point_label().is_none());
+
+        let cache = ChartCache::build(
+            &config,
+            vec![1.0, 2.0, 3.0],
+            vec![1.0, 2.0, 3.0],
+            vec![0.0, 10.0, 20.0],
+            vec![0.0, 10.0, 20.0],
+            vec![1.0, 2.0, 3.0],
+            "/nonexistent/fonts",
+        );
+        let cache = cache.expect("course chart cache should build");
+        assert!(cache.point_label.is_none());
+        assert!(cache.label_typeface.is_none());
     }
 }
