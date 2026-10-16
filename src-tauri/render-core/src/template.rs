@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::fmt;
 
+use serde::de::{self, Visitor};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,7 +14,7 @@ pub struct Template {
 /// `#[serde(default)]` covers a missing key but NOT an explicit `null`
 /// (which errors with "invalid type: null, expected a sequence").
 /// Templates are user-editable / community-sourced, so treat an explicit
-/// `null` array the same as absent → empty.
+/// `null` array the same as absent -> empty.
 fn null_seq_as_default<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -21,44 +23,101 @@ where
     Ok(Option::<Vec<T>>::deserialize(deserializer)?.unwrap_or_default())
 }
 
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum IntOrFloat {
-    Int(i64),
-    Float(f64),
-}
+struct FlexibleI32Visitor;
 
-impl IntOrFloat {
-    fn to_i32<E: serde::de::Error>(&self) -> Result<i32, E> {
-        match *self {
-            IntOrFloat::Int(i) => i32::try_from(i).map_err(E::custom),
-            IntOrFloat::Float(f) => {
-                if !f.is_finite() {
-                    return Err(E::custom("expected finite number"));
-                }
-                let rounded = f.round();
-                if rounded < i32::MIN as f64 || rounded > i32::MAX as f64 {
-                    return Err(E::custom("value out of range for i32"));
-                }
-                Ok(rounded as i32)
-            }
-        }
+impl<'de> Visitor<'de> for FlexibleI32Visitor {
+    type Value = i32;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("an integer or finite floating point number within i32 range")
     }
 
-    fn to_u32<E: serde::de::Error>(&self) -> Result<u32, E> {
-        match *self {
-            IntOrFloat::Int(i) => u32::try_from(i).map_err(E::custom),
-            IntOrFloat::Float(f) => {
-                if !f.is_finite() || f < 0.0 {
-                    return Err(E::custom("expected non-negative finite number"));
-                }
-                let rounded = f.round();
-                if rounded > u32::MAX as f64 {
-                    return Err(E::custom("value out of range for u32"));
-                }
-                Ok(rounded as u32)
-            }
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        i32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        i32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if !v.is_finite() {
+            return Err(E::custom("expected finite number"));
         }
+        let rounded = v.round();
+        if rounded < i32::MIN as f64 || rounded > i32::MAX as f64 {
+            return Err(E::custom("value out of range for i32"));
+        }
+        Ok(rounded as i32)
+    }
+}
+
+struct FlexibleU32Visitor;
+
+impl<'de> Visitor<'de> for FlexibleU32Visitor {
+    type Value = u32;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a non-negative integer or finite floating point number within u32 range")
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        u32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        u32::try_from(v).map_err(E::custom)
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if !v.is_finite() || v < 0.0 {
+            return Err(E::custom("expected non-negative finite number"));
+        }
+        let rounded = v.round();
+        if rounded > u32::MAX as f64 {
+            return Err(E::custom("value out of range for u32"));
+        }
+        Ok(rounded as u32)
+    }
+}
+
+struct FlexibleI32(i32);
+
+impl<'de> Deserialize<'de> for FlexibleI32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(FlexibleI32Visitor).map(FlexibleI32)
+    }
+}
+
+struct FlexibleU32(u32);
+
+impl<'de> Deserialize<'de> for FlexibleU32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(FlexibleU32Visitor).map(FlexibleU32)
     }
 }
 
@@ -67,7 +126,7 @@ pub(crate) fn deserialize_flexible_i32<'de, D>(deserializer: D) -> Result<i32, D
 where
     D: serde::Deserializer<'de>,
 {
-    IntOrFloat::deserialize(deserializer)?.to_i32()
+    deserializer.deserialize_any(FlexibleI32Visitor)
 }
 
 /// Deserializes a u32 from either an integer or floating point number (rounded).
@@ -75,7 +134,7 @@ pub(crate) fn deserialize_flexible_u32<'de, D>(deserializer: D) -> Result<u32, D
 where
     D: serde::Deserializer<'de>,
 {
-    IntOrFloat::deserialize(deserializer)?.to_u32()
+    deserializer.deserialize_any(FlexibleU32Visitor)
 }
 
 /// Deserializes an Option<i32> from either an integer or floating point number (rounded).
@@ -83,9 +142,7 @@ pub(crate) fn deserialize_flexible_opt_i32<'de, D>(deserializer: D) -> Result<Op
 where
     D: serde::Deserializer<'de>,
 {
-    Option::<IntOrFloat>::deserialize(deserializer)?
-        .map(|v| v.to_i32())
-        .transpose()
+    Ok(Option::<FlexibleI32>::deserialize(deserializer)?.map(|v| v.0))
 }
 
 /// Deserializes an Option<u32> from either an integer or floating point number (rounded).
@@ -93,9 +150,7 @@ pub(crate) fn deserialize_flexible_opt_u32<'de, D>(deserializer: D) -> Result<Op
 where
     D: serde::Deserializer<'de>,
 {
-    Option::<IntOrFloat>::deserialize(deserializer)?
-        .map(|v| v.to_u32())
-        .transpose()
+    Ok(Option::<FlexibleU32>::deserialize(deserializer)?.map(|v| v.0))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -990,6 +1045,7 @@ impl Template {
         if let Some(items) = raw.get_mut("elements").and_then(|v| v.as_array_mut()) {
             for item in items.iter_mut() {
                 merge_scene_into_item(&scene_snapshot, item);
+                migrate_legacy_element_dimensions(&scene_snapshot, item);
             }
         }
 
@@ -1217,6 +1273,32 @@ fn merge_scene_into_item(scene: &serde_json::Value, item: &mut serde_json::Value
     }
 }
 
+/// Fill missing width and height on legacy box elements from scene dimensions.
+/// Preserves backward compatibility for existing user and AI-generated templates
+/// (such as full-canvas background rects) that omit explicit element dimensions.
+fn migrate_legacy_element_dimensions(scene: &serde_json::Value, item: &mut serde_json::Value) {
+    let Some(item_type) = item.get("type").and_then(|t| t.as_str()) else {
+        return;
+    };
+    match item_type {
+        "rect" | "plot" | "meter" | "gauge" | "image" => {
+            if let Some(item_obj) = item.as_object_mut() {
+                if !item_obj.contains_key("width") {
+                    if let Some(sw) = scene.get("width") {
+                        item_obj.insert("width".to_string(), sw.clone());
+                    }
+                }
+                if !item_obj.contains_key("height") {
+                    if let Some(sh) = scene.get("height") {
+                        item_obj.insert("height".to_string(), sh.clone());
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1230,7 +1312,9 @@ mod tests {
                 { "type": "value", "id": "value-0", "value": "speed", "x": 100.0, "y": 200.7 },
                 { "type": "plot", "id": "plot-0", "value": "elevation", "x": 0.0, "y": 500.0, "width": 400.0, "height": 120.0 },
                 { "type": "meter", "id": "meter-0", "value": "power", "x": 50.0, "y": 50.0, "width": 30.0, "height": 200.0, "min": 0.0, "max": 400.0 },
-                { "type": "rect", "id": "rect-0", "x": 0.0, "y": 0.0, "width": 100.0, "height": 80.0 }
+                { "type": "rect", "id": "rect-0", "x": 0.0, "y": 0.0, "width": 100.0, "height": 80.0 },
+                { "type": "gauge", "id": "gauge-0", "value": "cadence", "x": 12.0, "y": 34.0, "width": 150.0, "height": 150.0, "min": 0.0, "max": 120.0 },
+                { "type": "image", "id": "image-0", "file": "logo.png", "x": 5.0, "y": 15.0, "width": 64.0, "height": 64.0 }
             ]
         });
         let t = Template::from_value(raw).expect("template with float coordinates and dimensions must parse");
@@ -1263,47 +1347,99 @@ mod tests {
             }
             _ => panic!("expected plot"),
         }
-    }
-
-    #[test]
-    fn scene_inheritance_does_not_leak_scene_metadata() {
-        let raw = serde_json::json!({
-            "scene": {
-                "width": 1920,
-                "height": 1080,
-                "color": "#ffffff",
-                "font": "Geist.ttf",
-                "layers": ["label-0"],
-                "start": 10.0,
-                "end": 60.0
-            },
-            "elements": [
-                { "type": "label", "id": "label-0", "text": "Test", "x": 10, "y": 20 }
-            ]
-        });
-        let t = Template::from_value(raw).unwrap();
-        match &t.elements[0] {
-            Element::Label(c) => {
-                assert_eq!(c.color.as_deref(), Some("#ffffff"));
-                assert_eq!(c.font.as_deref(), Some("Geist.ttf"));
+        match &t.elements[3] {
+            Element::Meter(c) => {
+                assert_eq!(c.x, 50);
+                assert_eq!(c.y, 50);
+                assert_eq!(c.width, 30);
+                assert_eq!(c.height, 200);
             }
-            _ => panic!("expected label"),
+            _ => panic!("expected meter"),
+        }
+        match &t.elements[4] {
+            Element::Rect(c) => {
+                assert_eq!(c.x, 0);
+                assert_eq!(c.y, 0);
+                assert_eq!(c.width, 100);
+                assert_eq!(c.height, 80);
+            }
+            _ => panic!("expected rect"),
+        }
+        match &t.elements[5] {
+            Element::Gauge(c) => {
+                assert_eq!(c.x, 12);
+                assert_eq!(c.y, 34);
+                assert_eq!(c.width, 150);
+                assert_eq!(c.height, 150);
+            }
+            _ => panic!("expected gauge"),
+        }
+        match &t.elements[6] {
+            Element::Image(c) => {
+                assert_eq!(c.x, 5);
+                assert_eq!(c.y, 15);
+                assert_eq!(c.width, 64);
+                assert_eq!(c.height, 64);
+            }
+            _ => panic!("expected image"),
         }
     }
 
     #[test]
-    fn missing_element_width_fails_without_scene_fallback() {
+    fn scene_inheritance_does_not_leak_scene_metadata() {
+        let scene = serde_json::json!({
+            "width": 1920,
+            "height": 1080,
+            "color": "#ffffff",
+            "font": "Geist.ttf",
+            "layers": ["label-0"],
+            "start": 10.0,
+            "end": 60.0,
+            "fps": 30,
+            "groups": [{"id": "g1", "name": "Group 1", "element_ids": ["label-0"]}],
+            "vars": {"accent": "#ff0000"}
+        });
+        let mut item = serde_json::json!({
+            "type": "label",
+            "id": "label-0",
+            "text": "Test",
+            "x": 10,
+            "y": 20
+        });
+        merge_scene_into_item(&scene, &mut item);
+
+        assert_eq!(item.get("color").and_then(|v| v.as_str()), Some("#ffffff"));
+        assert_eq!(item.get("font").and_then(|v| v.as_str()), Some("Geist.ttf"));
+
+        assert!(item.get("layers").is_none(), "layers must not leak into item");
+        assert!(item.get("start").is_none(), "start must not leak into item");
+        assert!(item.get("end").is_none(), "end must not leak into item");
+        assert!(item.get("fps").is_none(), "fps must not leak into item");
+        assert!(item.get("groups").is_none(), "groups must not leak into item");
+        assert!(item.get("vars").is_none(), "vars must not leak into item");
+        assert!(item.get("width").is_none(), "width must not leak into item from styling inheritance");
+        assert!(item.get("height").is_none(), "height must not leak into item from styling inheritance");
+    }
+
+    #[test]
+    fn legacy_element_without_dimensions_migrates_scene_dimensions() {
         let raw = serde_json::json!({
             "scene": {
                 "width": 1920,
                 "height": 1080
             },
             "elements": [
-                { "type": "rect", "id": "rect-0", "x": 10, "y": 20, "height": 100 }
+                { "type": "rect", "id": "rect-0", "x": 0, "y": 0 }
             ]
         });
-        let result = Template::from_value(raw);
-        assert!(result.is_err(), "missing element width must fail rather than falling back to scene width");
+        let t = Template::from_value(raw).expect("legacy element without dimensions should migrate scene dimensions");
+        match &t.elements[0] {
+            Element::Rect(c) => {
+                assert_eq!(c.width, 1920);
+                assert_eq!(c.height, 1080);
+            }
+            _ => panic!("expected rect"),
+        }
     }
 
     #[test]

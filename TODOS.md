@@ -2,7 +2,7 @@
 
 ## Bugs (P0)
 
-- [x] **Pre-existing test failure: `render::frame::tests::layer_order_honors_explicit_ids_then_array_order`**: already resolved on main (stale entry).
+- [x] **Pre-existing test failure: `render::frame::tests::layer_order_honors_explicit_ids_then_array_order`**: verified passing on main (stale entry); hardened template deserialization for floating point numbers across coordinates and dimensions so float inputs do not trigger serde parse failures.
 
 ## Later
 
