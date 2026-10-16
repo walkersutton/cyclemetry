@@ -385,6 +385,10 @@ pub struct Activity {
     /// the alignment timeline to map activity time → wall-clock for matching
     /// against a video's container `creation_time`.
     pub start_time_ms: Option<i64>,
+    /// Total energy expenditure in kcal recorded on a session (FIT) or lap
+    /// (TCX) aggregate, preserved across trims and used as the source for
+    /// [`SUM_TOTAL_CALORIES`] when per-point readings are absent.
+    pub session_total_calories: Option<f64>,
     /// Aggregate metrics over the full activity (before overlay trimming).
     /// Preserved through `resample_wall_clock` so whole-ride totals stay
     /// available even when only a clip is rendered.
@@ -439,6 +443,7 @@ impl Activity {
         let mut points: Vec<TrackPoint> = Vec::new();
         let mut cur_front_gear: Option<f64> = None;
         let mut cur_rear_gear: Option<f64> = None;
+        let mut session_total_calories: Option<f64> = None;
 
         for record in records {
             match record.kind() {
@@ -586,6 +591,13 @@ impl Activity {
                         });
                     }
                 }
+                MesgNum::Session => {
+                    for field in record.fields() {
+                        if field.name() == "total_calories" {
+                            session_total_calories = fit_f64(field.value());
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -596,7 +608,7 @@ impl Activity {
                 .to_string());
         }
 
-        Self::build_from_points(points)
+        Self::build_from_points(points, session_total_calories)
     }
 
     pub fn parse_tcx(content: &str) -> Result<Self, String> {
@@ -605,6 +617,8 @@ impl Activity {
 
         let mut points: Vec<TrackPoint> = Vec::new();
         let mut current: Option<TrackPoint> = None;
+        let mut lap_calories_total: f64 = 0.0;
+        let mut has_lap_calories = false;
         let mut in_trackpoint = false;
         let mut in_position = false;
         let mut in_heartrate = false;
@@ -698,6 +712,11 @@ impl Activity {
                             }
                             _ => {}
                         }
+                    } else if local == "Calories" {
+                        if let Ok(cal) = current_text.parse::<f64>() {
+                            lap_calories_total += cal;
+                            has_lap_calories = true;
+                        }
                     }
                     current_text.clear();
                 }
@@ -712,7 +731,12 @@ impl Activity {
             return Err("No track points found in TCX file".to_string());
         }
 
-        Self::build_from_points(points)
+        let session_total_calories = if has_lap_calories {
+            Some(lap_calories_total)
+        } else {
+            None
+        };
+        Self::build_from_points(points, session_total_calories)
     }
 
     /// Plausible sample ride used for the WYSIWYG preview when no GPX is
@@ -867,7 +891,7 @@ impl Activity {
                             }
                             // GPX schema has no standard point calorie field; per-point calories
                             // are only read from extension fields where a device writes them.
-                            "calories" | "Calories" => {
+                            "calories" | "Calories" if in_extensions => {
                                 pt.calories = current_text.parse().ok();
                             }
                             "TrackPointExtension" => {
@@ -915,10 +939,13 @@ impl Activity {
             return Err("No track points found in GPX file".to_string());
         }
 
-        Self::build_from_points(points)
+        Self::build_from_points(points, None)
     }
 
-    fn build_from_points(points: Vec<TrackPoint>) -> Result<Self, String> {
+    fn build_from_points(
+        points: Vec<TrackPoint>,
+        session_total_calories: Option<f64>,
+    ) -> Result<Self, String> {
         let n = points.len();
         let mut activity = Activity::default();
 
@@ -954,7 +981,8 @@ impl Activity {
         if points.iter().any(|p| p.temperature.is_some()) {
             valid.insert(ATTR_TEMPERATURE.into());
         }
-        if points.iter().any(|p| p.calories.is_some()) {
+        let has_point_calories = points.iter().any(|p| p.calories.is_some());
+        if has_point_calories || session_total_calories.is_some() {
             valid.insert(ATTR_CALORIES.into());
         }
         if points.iter().any(|p| p.front_gear.is_some()) {
@@ -1024,7 +1052,8 @@ impl Activity {
         let mut raw_gradient: Vec<f64> = Vec::with_capacity(n);
         let mut cum_dist = 0.0f64;
         let mut speed_derived = false;
-        let mut last_calories = 0.0f64;
+        let first_known_calories = points.iter().find_map(|p| p.calories).unwrap_or(0.0);
+        let mut last_calories = first_known_calories;
 
         for (i, pt) in points.iter().enumerate() {
             activity.course.push((pt.lat, pt.lon));
@@ -1133,6 +1162,7 @@ impl Activity {
 
         activity.total_activity_distance = cum_dist;
         activity.total_activity_elapsed = activity.elapsed_seconds.last().copied().unwrap_or(0.0);
+        activity.session_total_calories = session_total_calories;
         activity.activity_summary = activity.compute_summary();
         activity.overlay_summary = activity.activity_summary.clone();
         Ok(activity)
@@ -1307,6 +1337,7 @@ impl Activity {
             // from the trimmed series below.
             activity_summary: self.activity_summary.clone(),
             total_laps: self.total_laps,
+            session_total_calories: self.session_total_calories,
             ..Activity::default()
         };
 
@@ -1546,7 +1577,11 @@ impl Activity {
             avg_heartrate: mean_of(&self.heartrate),
             max_heartrate: max_of(&self.heartrate),
             avg_cadence: mean_of(&self.cadence),
-            total_calories: span(&self.calories),
+            total_calories: if span(&self.calories) > 0.0 {
+                span(&self.calories)
+            } else {
+                self.session_total_calories.unwrap_or(0.0)
+            },
         }
     }
 
@@ -2398,7 +2433,7 @@ mod tests {
     #[test]
     fn calories_forward_fill_gaps() {
         let points = vec![
-            // Leading gap: starts at 0.0
+            // Leading gap: initialized to first known reading (50.0)
             TrackPoint {
                 time_str: Some("2026-06-01T12:00:00Z".to_string()),
                 ..Default::default()
@@ -2427,11 +2462,11 @@ mod tests {
             },
         ];
 
-        let activity = Activity::build_from_points(points).expect("build should succeed");
-        assert_eq!(activity.calories, vec![0.0, 50.0, 50.0, 120.0, 120.0]);
+        let activity = Activity::build_from_points(points, None).expect("build should succeed");
+        assert_eq!(activity.calories, vec![50.0, 50.0, 50.0, 120.0, 120.0]);
         assert_eq!(
             activity.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
-            120.0
+            70.0
         );
     }
 
@@ -2799,6 +2834,183 @@ mod tests {
             speed_of(&[("speed", 8.5), ("enhanced_speed", 9.25)]),
             vec![9.25]
         );
+    }
+
+    #[test]
+    fn fit_calories_record_and_session() {
+        use fitparser::profile::MesgNum;
+        use fitparser::{FitDataField, FitDataRecord, Value};
+        const FIELD_NUM_UNUSED: u8 = 0;
+
+        // Record calories are parsed into per-sample series
+        let mut rec1 = FitDataRecord::new(MesgNum::Record);
+        rec1.push(FitDataField::new(
+            "position_lat".into(),
+            FIELD_NUM_UNUSED,
+            Value::SInt32(0),
+            "semicircles".into(),
+        ));
+        rec1.push(FitDataField::new(
+            "position_long".into(),
+            FIELD_NUM_UNUSED,
+            Value::SInt32(0),
+            "semicircles".into(),
+        ));
+        rec1.push(FitDataField::new(
+            "calories".into(),
+            FIELD_NUM_UNUSED,
+            Value::Float64(45.0),
+            "kcal".into(),
+        ));
+
+        let mut rec2 = FitDataRecord::new(MesgNum::Record);
+        rec2.push(FitDataField::new(
+            "position_lat".into(),
+            FIELD_NUM_UNUSED,
+            Value::SInt32(100),
+            "semicircles".into(),
+        ));
+        rec2.push(FitDataField::new(
+            "position_long".into(),
+            FIELD_NUM_UNUSED,
+            Value::SInt32(100),
+            "semicircles".into(),
+        ));
+        rec2.push(FitDataField::new(
+            "calories".into(),
+            FIELD_NUM_UNUSED,
+            Value::Float64(95.0),
+            "kcal".into(),
+        ));
+
+        let act = Activity::from_fit_records(vec![rec1, rec2]).expect("fit records parse");
+        assert_eq!(act.calories, vec![45.0, 95.0]);
+        assert!(act.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert_eq!(act.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 50.0);
+
+        // Session total_calories serves as summary when no record calories exist
+        let mut rec_pos = FitDataRecord::new(MesgNum::Record);
+        rec_pos.push(FitDataField::new(
+            "position_lat".into(),
+            FIELD_NUM_UNUSED,
+            Value::SInt32(0),
+            "semicircles".into(),
+        ));
+        rec_pos.push(FitDataField::new(
+            "position_long".into(),
+            FIELD_NUM_UNUSED,
+            Value::SInt32(0),
+            "semicircles".into(),
+        ));
+
+        let mut sess = FitDataRecord::new(MesgNum::Session);
+        sess.push(FitDataField::new(
+            "total_calories".into(),
+            FIELD_NUM_UNUSED,
+            Value::Float64(520.0),
+            "kcal".into(),
+        ));
+
+        let act_sess = Activity::from_fit_records(vec![rec_pos, sess]).expect("fit session parses");
+        assert!(act_sess.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert_eq!(act_sess.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 520.0);
+    }
+
+    #[test]
+    fn tcx_calories_extensions_and_lap_totals() {
+        // Trackpoint extension calories are parsed into per-sample series
+        let tcx_ext = r#"
+        <TrainingCenterDatabase>
+          <Activities><Activity><Lap><Track>
+            <Trackpoint>
+              <Time>2026-01-01T00:00:00Z</Time>
+              <Position><LatitudeDegrees>1</LatitudeDegrees><LongitudeDegrees>2</LongitudeDegrees></Position>
+              <Extensions><Calories>10.0</Calories></Extensions>
+            </Trackpoint>
+            <Trackpoint>
+              <Time>2026-01-01T00:00:01Z</Time>
+              <Position><LatitudeDegrees>1</LatitudeDegrees><LongitudeDegrees>2</LongitudeDegrees></Position>
+              <Extensions><Calories>25.0</Calories></Extensions>
+            </Trackpoint>
+          </Track></Lap></Activity></Activities>
+        </TrainingCenterDatabase>
+        "#;
+        let act_ext = Activity::parse_tcx(tcx_ext).expect("tcx parses");
+        assert_eq!(act_ext.calories, vec![10.0, 25.0]);
+        assert!(act_ext.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert_eq!(act_ext.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 15.0);
+
+        // Standard TCX puts <Calories> on <Lap>, not inside <Trackpoint>.
+        // Check that lap calories are summed into total_calories and not attached to trackpoints.
+        let tcx_lap = r#"
+        <TrainingCenterDatabase>
+          <Activities><Activity>
+            <Lap>
+              <Calories>150.0</Calories>
+              <Track>
+                <Trackpoint>
+                  <Time>2026-01-01T00:00:00Z</Time>
+                  <Position><LatitudeDegrees>1</LatitudeDegrees><LongitudeDegrees>2</LongitudeDegrees></Position>
+                </Trackpoint>
+              </Track>
+            </Lap>
+            <Lap>
+              <Calories>200.0</Calories>
+              <Track>
+                <Trackpoint>
+                  <Time>2026-01-01T00:00:01Z</Time>
+                  <Position><LatitudeDegrees>1.001</LatitudeDegrees><LongitudeDegrees>2.001</LongitudeDegrees></Position>
+                </Trackpoint>
+              </Track>
+            </Lap>
+          </Activity></Activities>
+        </TrainingCenterDatabase>
+        "#;
+        let act_lap = Activity::parse_tcx(tcx_lap).expect("tcx parses");
+        assert!(act_lap.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert_eq!(act_lap.calories, vec![0.0, 0.0]);
+        assert_eq!(act_lap.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 350.0);
+    }
+
+    #[test]
+    fn gpx_calories_extensions_guard() {
+        // Calories inside <extensions> are parsed into per-sample series
+        let gpx_valid = r#"
+        <gpx>
+          <trk><trkseg>
+            <trkpt lat="1" lon="2">
+              <time>2026-01-01T00:00:00Z</time>
+              <extensions><calories>30.0</calories></extensions>
+            </trkpt>
+            <trkpt lat="1" lon="2">
+              <time>2026-01-01T00:00:01Z</time>
+              <extensions><calories>75.0</calories></extensions>
+            </trkpt>
+          </trkseg></trk>
+        </gpx>
+        "#;
+        let act_valid = Activity::parse_gpx(gpx_valid).expect("gpx parses");
+        assert_eq!(act_valid.calories, vec![30.0, 75.0]);
+        assert!(act_valid.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert_eq!(act_valid.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 45.0);
+
+        // Stray <calories> outside <extensions> must be ignored
+        let gpx_stray = r#"
+        <gpx>
+          <trk><trkseg>
+            <trkpt lat="1" lon="2">
+              <time>2026-01-01T00:00:00Z</time>
+              <calories>30.0</calories>
+            </trkpt>
+            <trkpt lat="1" lon="2">
+              <time>2026-01-01T00:00:01Z</time>
+              <calories>75.0</calories>
+            </trkpt>
+          </trkseg></trk>
+        </gpx>
+        "#;
+        let act_stray = Activity::parse_gpx(gpx_stray).expect("gpx parses");
+        assert!(!act_stray.valid_attributes.contains(&ATTR_CALORIES.to_string()));
     }
 
     // ─── Custom source fields ──────────────────────────────────────────────
