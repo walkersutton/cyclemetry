@@ -2,7 +2,7 @@
   import { formatTime, TOOLTIP_DELAY } from '@/lib/utils.js'
   import { Play, Pause, SkipBack, SkipForward } from 'lucide-svelte'
   import Tooltip from '@/components/ui/Tooltip.svelte'
-  import { computeTrimDrag, nudgeTrim } from '@/lib/trimDragMath.js'
+  import { computeTrimDrag, trimFromKey } from '@/lib/trimDragMath.js'
 
   let {
     playhead = $bindable(0),
@@ -26,7 +26,7 @@
     onmarkerdistancechange,
     // Race window for lap counting: { start, end } in ride seconds, or null
     // when no lap-metric element is selected. Rendered as a second playback
-    // bar with two handles — race start (green) and race finish (checkered).
+    // bar with two handles: race start (green) and race finish (checkered).
     lapGate = null,
     onlapgatechange,
     // Full activity timeline duration in seconds for overlay trim brackets
@@ -36,10 +36,10 @@
     onendtrim,
   } = $props()
 
-  // Scrubbing is bounded to the overlay render window — the bar's left
-  // edge IS sceneStart, right edge IS sceneEnd. Visualizing the overlay's
-  // position within the broader activity happens on the LeftSidebar mini
-  // GPX track and the VideoAlignmentBar.
+  // Scrubbing is bounded to the overlay render window (start to end).
+  // The broader activity context and overlay window are visualized on the
+  // activity trim track above the scrub bar, as well as in the LeftSidebar
+  // and VideoAlignmentBar.
   function seek(s) {
     playhead = Math.max(start, Math.min(s, end))
     onseek?.(playhead)
@@ -187,7 +187,13 @@
     trimTrackEl.setPointerCapture(e.pointerId)
     onbegintrim?.()
     const initial = handle === 'start' ? start : end
-    trimDrag = { handle, pointerId: e.pointerId, startX: e.clientX, initial }
+    trimDrag = {
+      handle,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      initial,
+      lastValue: initial,
+    }
   }
 
   function onTrimPointerMove(e) {
@@ -202,52 +208,35 @@
       currentStart: start,
       currentEnd: end,
     })
+    if (res.value === trimDrag.lastValue) return
+    trimDrag.lastValue = res.value
     ontrimchange?.(res.field, res.value)
     seek(res.value)
   }
 
+  let isTrimKeyBatch = false
   function onTrimHandleKeydown(handle, e) {
-    if (
-      e.key === 'ArrowLeft' ||
-      e.key === 'ArrowDown' ||
-      e.key === 'ArrowRight' ||
-      e.key === 'ArrowUp' ||
-      e.key === 'Home' ||
-      e.key === 'End'
-    ) {
-      e.preventDefault()
-      const delta = e.shiftKey ? 10 : 1
-      let step = 0
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') step = -delta
-      else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') step = delta
-
-      if (e.key === 'Home') {
-        const target = handle === 'start' ? 0 : start + 1
-        onbegintrim?.()
-        ontrimchange?.(handle, target)
-        seek(target)
-        onendtrim?.()
-        return
-      }
-      if (e.key === 'End') {
-        const target = handle === 'start' ? end - 1 : timelineDuration
-        onbegintrim?.()
-        ontrimchange?.(handle, target)
-        seek(target)
-        onendtrim?.()
-        return
-      }
-
-      const res = nudgeTrim({
-        handle,
-        currentStart: start,
-        currentEnd: end,
-        total: timelineDuration,
-        deltaSec: step,
-      })
+    const res = trimFromKey({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      handle,
+      start,
+      end,
+      total: timelineDuration,
+    })
+    if (!res) return
+    e.preventDefault()
+    if (!isTrimKeyBatch) {
+      isTrimKeyBatch = true
       onbegintrim?.()
-      ontrimchange?.(res.field, res.value)
-      seek(res.value)
+    }
+    ontrimchange?.(res.field, res.value)
+    seek(res.value)
+  }
+
+  function onTrimHandleKeyup() {
+    if (isTrimKeyBatch) {
+      isTrimKeyBatch = false
       onendtrim?.()
     }
   }
@@ -272,7 +261,9 @@
       onpointermove={onTrimPointerMove}
       onpointerup={endTrimDrag}
       onpointercancel={endTrimDrag}
-      title="Overlay trim range: {formatTime(start)} → {formatTime(end)} ({formatTime(timelineDuration)} total)"
+      title="Overlay trim range: {formatTime(start)} → {formatTime(
+        end,
+      )} ({formatTime(timelineDuration)} total)"
     >
       <div
         class="absolute inset-x-0 top-1.5 h-1 rounded-full bg-[var(--panel3)]"
@@ -295,6 +286,8 @@
         aria-valuetext={formatTime(start)}
         onpointerdown={(e) => beginTrimDrag('start', e)}
         onkeydown={(e) => onTrimHandleKeydown('start', e)}
+        onkeyup={onTrimHandleKeyup}
+        onblur={onTrimHandleKeyup}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
          hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow z-10"
@@ -311,6 +304,8 @@
         aria-valuetext={formatTime(end)}
         onpointerdown={(e) => beginTrimDrag('end', e)}
         onkeydown={(e) => onTrimHandleKeydown('end', e)}
+        onkeyup={onTrimHandleKeyup}
+        onblur={onTrimHandleKeyup}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
          hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow z-10"

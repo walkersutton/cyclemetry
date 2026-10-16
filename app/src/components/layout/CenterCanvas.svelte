@@ -1228,8 +1228,8 @@
       end={sceneEnd}
       timelineDuration={app.timelineDuration}
       ontrimchange={(field, val) => app.updateScene({ [field]: val })}
-      onbegintrim={() => app.beginEditBatch?.()}
-      onendtrim={() => app.endEditBatch?.()}
+      onbegintrim={() => app.beginEditBatch()}
+      onendtrim={() => app.endEditBatch()}
       bind:playing
       buffered={bufferedSeconds}
       outputDuration={playbackSpeedup > 1

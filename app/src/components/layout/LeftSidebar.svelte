@@ -4,7 +4,7 @@
   import ElementList from '../panels/ElementList.svelte'
   import OpacityControl from '../ui/OpacityControl.svelte'
   import Select from '../ui/Select.svelte'
-  import { computeTrimDrag, nudgeTrim } from '@/lib/trimDragMath.js'
+  import { computeTrimDrag, trimFromKey } from '@/lib/trimDragMath.js'
 
   const app = getContext('app')
 
@@ -103,12 +103,18 @@
     if (!trackEl) return
     e.preventDefault()
     trackEl.setPointerCapture(e.pointerId)
-    app.beginEditBatch?.()
+    app.beginEditBatch()
     const initial =
       handle === 'start'
         ? (app.config?.scene?.start ?? 0)
         : (app.config?.scene?.end ?? app.timelineDuration)
-    drag = { handle, pointerId: e.pointerId, startX: e.clientX, initial }
+    drag = {
+      handle,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      initial,
+      lastValue: initial,
+    }
   }
 
   function onTrackPointerMove(e) {
@@ -123,51 +129,38 @@
       currentStart: app.config?.scene?.start ?? 0,
       currentEnd: app.config?.scene?.end ?? app.timelineDuration,
     })
+    if (res.value === drag.lastValue) return
+    drag.lastValue = res.value
     app.updateScene({ [res.field]: res.value })
   }
 
+  let isSidebarKeyBatch = false
   function onSidebarHandleKeydown(handle, e) {
-    if (
-      e.key === 'ArrowLeft' ||
-      e.key === 'ArrowDown' ||
-      e.key === 'ArrowRight' ||
-      e.key === 'ArrowUp' ||
-      e.key === 'Home' ||
-      e.key === 'End'
-    ) {
-      e.preventDefault()
-      const delta = e.shiftKey ? 10 : 1
-      let step = 0
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') step = -delta
-      else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') step = delta
+    const total = app.timelineDuration
+    const start = app.config?.scene?.start ?? 0
+    const end = app.config?.scene?.end ?? total
 
-      const total = app.timelineDuration
-      const start = app.config?.scene?.start ?? 0
-      const end = app.config?.scene?.end ?? total
+    const res = trimFromKey({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      handle,
+      start,
+      end,
+      total,
+    })
+    if (!res) return
+    e.preventDefault()
+    if (!isSidebarKeyBatch) {
+      isSidebarKeyBatch = true
+      app.beginEditBatch()
+    }
+    app.updateScene({ [res.field]: res.value })
+  }
 
-      if (e.key === 'Home') {
-        app.beginEditBatch?.()
-        app.updateScene({ [handle]: handle === 'start' ? 0 : start + 1 })
-        app.endEditBatch?.()
-        return
-      }
-      if (e.key === 'End') {
-        app.beginEditBatch?.()
-        app.updateScene({ [handle]: handle === 'start' ? end - 1 : total })
-        app.endEditBatch?.()
-        return
-      }
-
-      const res = nudgeTrim({
-        handle,
-        currentStart: start,
-        currentEnd: end,
-        total,
-        deltaSec: step,
-      })
-      app.beginEditBatch?.()
-      app.updateScene({ [res.field]: res.value })
-      app.endEditBatch?.()
+  function onSidebarHandleKeyup() {
+    if (isSidebarKeyBatch) {
+      isSidebarKeyBatch = false
+      app.endEditBatch()
     }
   }
 
@@ -176,7 +169,7 @@
     if (trackEl?.hasPointerCapture(e.pointerId)) {
       trackEl.releasePointerCapture(e.pointerId)
     }
-    app.endEditBatch?.()
+    app.endEditBatch()
     drag = null
   }
 </script>
@@ -250,6 +243,8 @@
                     aria-valuetext={secToTimecode(start)}
                     onpointerdown={(e) => beginDrag('start', e)}
                     onkeydown={(e) => onSidebarHandleKeydown('start', e)}
+                    onkeyup={onSidebarHandleKeyup}
+                    onblur={onSidebarHandleKeyup}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
                      hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform"
@@ -265,6 +260,8 @@
                     aria-valuetext={secToTimecode(end)}
                     onpointerdown={(e) => beginDrag('end', e)}
                     onkeydown={(e) => onSidebarHandleKeydown('end', e)}
+                    onkeyup={onSidebarHandleKeyup}
+                    onblur={onSidebarHandleKeyup}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
                      hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform"
