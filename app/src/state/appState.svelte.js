@@ -97,6 +97,11 @@ export function createAppState() {
   let activityMetrics = $state(
     storedGpxFilename ? (parseLocalStorage('activityMetrics') ?? null) : null,
   )
+  let hasSessionCalories = $state(
+    storedGpxFilename
+      ? localStorage.getItem('hasSessionCalories') === 'true'
+      : false,
+  )
   let selectedSecond = $state(
     parseInt(localStorage.getItem('selectedSecond') ?? '0'),
   )
@@ -234,6 +239,11 @@ export function createAppState() {
     if (activityMetrics)
       localStorage.setItem('activityMetrics', JSON.stringify(activityMetrics))
     else localStorage.removeItem('activityMetrics')
+  })
+  $effect(() => {
+    if (hasSessionCalories)
+      localStorage.setItem('hasSessionCalories', 'true')
+    else localStorage.removeItem('hasSessionCalories')
   })
   $effect(() => {
     localStorage.setItem('selectedSecond', String(selectedSecond))
@@ -866,38 +876,22 @@ export function createAppState() {
         current = { ...rest, point: current.point ?? current.points[0] }
       }
       // Migrate legacy custom:calories and custom:total_calories to built-in metrics
-      if (
-        current.value === 'custom:calories' ||
-        current.value === 'custom:total_calories'
-      ) {
-        current = {
-          ...current,
-          value:
-            current.value === 'custom:calories' ? 'calories' : 'total_calories',
+      const calRenames = {
+        'custom:calories': 'calories',
+        'custom:total_calories': 'total_calories',
+      }
+      for (const key of ['value', 'bottom_value', 'unit_of']) {
+        if (calRenames[current[key]]) {
+          current = { ...current, [key]: calRenames[current[key]] }
         }
       }
-      if (
-        current.bottom_value === 'custom:calories' ||
-        current.bottom_value === 'custom:total_calories'
-      ) {
+      if (current.color_by?.value && calRenames[current.color_by.value]) {
         current = {
           ...current,
-          bottom_value:
-            current.bottom_value === 'custom:calories'
-              ? 'calories'
-              : 'total_calories',
-        }
-      }
-      if (
-        current.unit_of === 'custom:calories' ||
-        current.unit_of === 'custom:total_calories'
-      ) {
-        current = {
-          ...current,
-          unit_of:
-            current.unit_of === 'custom:calories'
-              ? 'calories'
-              : 'total_calories',
+          color_by: {
+            ...current.color_by,
+            value: calRenames[current.color_by.value],
+          },
         }
       }
       return current
@@ -1508,6 +1502,12 @@ export function createAppState() {
     },
     set activityMetrics(v) {
       activityMetrics = v
+    },
+    get hasSessionCalories() {
+      return hasSessionCalories
+    },
+    set hasSessionCalories(v) {
+      hasSessionCalories = !!v
     },
     get hasActivity() {
       return !!gpxFilename && activityDuration > 0

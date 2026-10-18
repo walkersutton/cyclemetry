@@ -223,11 +223,14 @@
   }
 
   // Summary metrics are available when their base telemetry attribute is
-  // present in the loaded activity.
+  // present in the loaded activity, or when a file-level summary was recorded.
   function filterSummary(list) {
     const valid = app.activityMetrics
     if (!valid) return list
-    return list.filter((m) => valid.includes(SUMMARY_BASE[m]))
+    return list.filter((m) => {
+      if (m === 'total_calories' && app.hasSessionCalories) return true
+      return valid.includes(SUMMARY_BASE[m])
+    })
   }
 
   // Running metrics are available when their base telemetry attribute is

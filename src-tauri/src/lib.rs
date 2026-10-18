@@ -1279,6 +1279,7 @@ fn gpx_metadata_response(filename: &str, path: &str) -> Result<String, String> {
         "has_data": duration > 0.0,
         "start_time": start_time,
         "valid_attributes": activity.valid_attributes,
+        "has_session_calories": activity.session_total_calories.is_some(),
     })
     .to_string())
 }

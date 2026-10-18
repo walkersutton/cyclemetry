@@ -594,7 +594,9 @@ impl Activity {
                 MesgNum::Session => {
                     for field in record.fields() {
                         if field.name() == "total_calories" {
-                            session_total_calories = fit_f64(field.value());
+                            if let Some(c) = fit_f64(field.value()) {
+                                *session_total_calories.get_or_insert(0.0) += c;
+                            }
                         }
                     }
                 }
@@ -981,8 +983,7 @@ impl Activity {
         if points.iter().any(|p| p.temperature.is_some()) {
             valid.insert(ATTR_TEMPERATURE.into());
         }
-        let has_point_calories = points.iter().any(|p| p.calories.is_some());
-        if has_point_calories || session_total_calories.is_some() {
+        if points.iter().any(|p| p.calories.is_some()) {
             valid.insert(ATTR_CALORIES.into());
         }
         if points.iter().any(|p| p.front_gear.is_some()) {
@@ -1415,6 +1416,7 @@ impl Activity {
         out.cumulative_elevation_gain = gains;
         out.cumulative_elevation_loss = losses;
 
+        out.session_total_calories = None;
         out.overlay_summary = out.compute_summary();
         Ok(out)
     }
@@ -1553,6 +1555,7 @@ impl Activity {
 
         let total_distance = span(&self.distance);
         let total_time = span(&self.elapsed_seconds);
+        let cal_span = span(&self.calories);
         let (elevation_gain, elevation_loss) =
             elevation_gain_loss(&self.elevation, ELEVATION_NOISE_THRESHOLD_M);
 
@@ -1577,8 +1580,8 @@ impl Activity {
             avg_heartrate: mean_of(&self.heartrate),
             max_heartrate: max_of(&self.heartrate),
             avg_cadence: mean_of(&self.cadence),
-            total_calories: if span(&self.calories) > 0.0 {
-                span(&self.calories)
+            total_calories: if cal_span > 0.0 {
+                cal_span
             } else {
                 self.session_total_calories.unwrap_or(0.0)
             },
@@ -1612,8 +1615,13 @@ impl Activity {
     }
 
     /// Whether a summary metric can be shown — true when its base telemetry
-    /// attribute is present in the source file.
+    /// attribute is present in the source file, or when a file-level summary
+    /// (such as FIT session / TCX lap total calories) was provided.
     pub fn has_summary(&self, name: &str) -> bool {
+        if name == SUM_TOTAL_CALORIES {
+            return self.session_total_calories.is_some()
+                || self.valid_attributes.iter().any(|a| a == ATTR_CALORIES);
+        }
         match summary_base_metric(name) {
             Some(base) => self.valid_attributes.iter().any(|a| a == base),
             None => false,
@@ -2911,9 +2919,23 @@ mod tests {
             "kcal".into(),
         ));
 
-        let act_sess = Activity::from_fit_records(vec![rec_pos, sess]).expect("fit session parses");
-        assert!(act_sess.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        let act_sess = Activity::from_fit_records(vec![rec_pos.clone(), sess.clone()]).expect("fit session parses");
+        assert!(!act_sess.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert!(act_sess.has_summary(SUM_TOTAL_CALORIES));
         assert_eq!(act_sess.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 520.0);
+
+        // Multiple sessions accumulate total_calories
+        let mut sess2 = FitDataRecord::new(MesgNum::Session);
+        sess2.push(FitDataField::new(
+            "total_calories".into(),
+            FIELD_NUM_UNUSED,
+            Value::Float64(300.0),
+            "kcal".into(),
+        ));
+        let act_multi = Activity::from_fit_records(vec![rec_pos, sess, sess2]).expect("fit multi-session parses");
+        assert_eq!(act_multi.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 820.0);
+        assert!(!act_multi.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert!(act_multi.has_summary(SUM_TOTAL_CALORIES));
     }
 
     #[test]
@@ -2967,9 +2989,18 @@ mod tests {
         </TrainingCenterDatabase>
         "#;
         let act_lap = Activity::parse_tcx(tcx_lap).expect("tcx parses");
-        assert!(act_lap.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert!(!act_lap.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert!(act_lap.has_summary(SUM_TOTAL_CALORIES));
         assert_eq!(act_lap.calories, vec![0.0, 0.0]);
         assert_eq!(act_lap.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 350.0);
+
+        let resampled_lap = act_lap.resample_wall_clock(0.0, Some(1.0), 30, None, false).unwrap();
+        assert_eq!(resampled_lap.summary_value(SUM_TOTAL_CALORIES, Some("overlay")), 0.0);
+        assert_eq!(resampled_lap.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 350.0);
+
+        let resampled_ext = act_ext.resample_wall_clock(0.0, Some(1.0), 30, None, false).unwrap();
+        assert_eq!(resampled_ext.summary_value(SUM_TOTAL_CALORIES, Some("overlay")), 15.0);
+        assert_eq!(resampled_ext.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 15.0);
     }
 
     #[test]

@@ -86,7 +86,7 @@ const RANGE_LIMITS = {
   calories: {
     defaultUnit: '',
     units: {
-      '': { min: 0, max: 5000, label: '0-5,000 kcal' },
+      '': { min: 0, max: 20000, label: '0-20,000 kcal' },
     },
   },
 }

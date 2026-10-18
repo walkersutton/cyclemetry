@@ -1202,6 +1202,15 @@ fn migrate_custom_calories(item: &mut serde_json::Value) {
                 }
             }
         }
+        if let Some(color_by) = obj.get_mut("color_by").and_then(|cb| cb.as_object_mut()) {
+            if let Some(v) = color_by.get("value").and_then(|val| val.as_str()) {
+                if v == "custom:calories" {
+                    color_by.insert("value".to_string(), serde_json::json!("calories"));
+                } else if v == "custom:total_calories" {
+                    color_by.insert("value".to_string(), serde_json::json!("total_calories"));
+                }
+            }
+        }
     }
 }
 
@@ -1537,7 +1546,8 @@ mod tests {
                 { "type": "value", "id": "v1", "x": 10, "y": 20, "value": "custom:calories" },
                 { "type": "value", "id": "v2", "x": 10, "y": 40, "value": "custom:total_calories" },
                 { "type": "label", "id": "l1", "x": 10, "y": 60, "unit_of": "custom:calories" },
-                { "type": "plot", "id": "p1", "x": 0, "y": 0, "width": 100, "height": 100, "value": "custom:calories", "bottom_value": "custom:total_calories" }
+                { "type": "plot", "id": "p1", "x": 0, "y": 0, "width": 100, "height": 100, "value": "custom:calories", "bottom_value": "custom:total_calories" },
+                { "type": "plot", "id": "p2", "x": 0, "y": 0, "width": 100, "height": 100, "value": "speed", "color_by": { "value": "custom:calories" } }
             ]
         });
         let template = Template::from_value(json).expect("template parses");
@@ -1557,6 +1567,15 @@ mod tests {
             Element::Plot(c) => {
                 assert_eq!(c.value, "calories");
                 assert_eq!(c.bottom_value.as_deref(), Some("total_calories"));
+            }
+            _ => panic!("expected Plot"),
+        }
+        match &template.elements[4] {
+            Element::Plot(c) => {
+                assert_eq!(
+                    c.color_by.as_ref().and_then(|cb| cb.value.as_deref()),
+                    Some("calories")
+                );
             }
             _ => panic!("expected Plot"),
         }
