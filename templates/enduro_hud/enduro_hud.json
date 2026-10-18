@@ -243,9 +243,6 @@
     },
     {
       "color": "$accent",
-      "fill": {
-        "opacity": 0
-      },
       "height": 260,
       "id": "plot-course",
       "line": {

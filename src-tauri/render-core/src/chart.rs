@@ -166,7 +166,7 @@ impl ChartCache {
         }
 
         let margin = config.margin_fraction();
-        let is_course = config.value == crate::activity::ATTR_COURSE;
+        let is_course = config.is_course();
         // Course plots keep the margin inset so the route line and position dot
         // don't clip at the surface edge. Non-course plots (elevation, etc.) go
         // edge-to-edge so their bounding box aligns exactly with the rendered pixels.
@@ -193,7 +193,6 @@ impl ChartCache {
         let y_max = y_data.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
 
         // Course plots use geographic aspect-ratio correction; all others get vertical padding.
-        let is_course = config.value == crate::activity::ATTR_COURSE;
         let geo = if is_course {
             GeoMapping::build(x_min, x_max, y_min, y_max, &plot_bounds)
         } else {
@@ -960,7 +959,7 @@ fn draw_banded_polyline(
 #[cfg(test)]
 mod tests {
     use super::{ChartCache, band_index, draw_banded_polyline, format_point_label};
-    use crate::template::{FillConfig, PlotConfig, PointLabelConfig};
+    use crate::template::PlotConfig;
     use skia_safe::{Color, ISize, ImageInfo, Point, Rect};
 
     fn bands() -> Vec<(f64, String)> {
@@ -1209,40 +1208,24 @@ mod tests {
 
     #[test]
     fn course_chart_ignores_fill_and_point_label() {
-        let config = PlotConfig {
-            id: "course-1".to_string(),
-            value: "course".to_string(),
-            x: 0,
-            y: 0,
-            width: 200,
-            height: 200,
-            dpi: None,
-            color: Some("#ffffff".to_string()),
-            opacity: None,
-            line: None,
-            fill: Some(FillConfig {
-                opacity: Some(0.8),
-                color: Some("#ff0000".to_string()),
-            }),
-            color_by: None,
-            margin: None,
-            point: None,
-            points: None,
-            markers: None,
-            point_label: Some(PointLabelConfig {
-                font_size: Some(14.0),
-                color: Some("#ffffff".to_string()),
-                font: None,
-                italic: None,
-                x_offset: None,
-                y_offset: None,
-                units: None,
-                compact_units: None,
-                decimal_rounding: None,
-            }),
-            rotation: None,
-            x_axis: None,
-        };
+        let config: PlotConfig = serde_json::from_value(serde_json::json!({
+            "id": "course-1",
+            "value": "course",
+            "x": 0,
+            "y": 0,
+            "width": 200,
+            "height": 200,
+            "color": "#ffffff",
+            "fill": {
+                "opacity": 0.8,
+                "color": "#ff0000"
+            },
+            "point_label": {
+                "font_size": 14.0,
+                "color": "#ffffff"
+            }
+        }))
+        .unwrap();
 
         assert!(config.effective_fill().is_none());
         assert!(config.fill_opacity().is_none());

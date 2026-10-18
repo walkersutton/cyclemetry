@@ -904,7 +904,7 @@ impl PlotConfig {
     }
 
     pub fn is_course(&self) -> bool {
-        self.value == "course"
+        self.value == crate::activity::ATTR_COURSE
     }
 
     /// Course plots (GPS maps) have no area under a curve, so fill is not applicable.
@@ -1024,17 +1024,6 @@ impl Template {
                 template.scene.font_size = template.scene.font_size.map(|s| s * factor as f32);
                 for el in &mut template.elements {
                     el.scale(factor);
-                }
-            }
-        }
-
-        // Strip irrelevant fill and point_label from course plots on load.
-        // GPS routes have no area under a curve and coordinates are not scalar metrics.
-        for el in &mut template.elements {
-            if let Element::Plot(c) = el {
-                if c.is_course() {
-                    c.fill = None;
-                    c.point_label = None;
                 }
             }
         }
@@ -1548,7 +1537,7 @@ mod tests {
     }
 
     #[test]
-    fn course_plots_strip_fill_and_point_label_on_template_load() {
+    fn course_plots_ignore_fill_and_point_label() {
         let raw = serde_json::json!({
             "scene": { "width": 100, "height": 100 },
             "elements": [
@@ -1579,8 +1568,8 @@ mod tests {
                 _ => None,
             })
             .unwrap();
-        assert!(map_el.fill.is_none());
-        assert!(map_el.point_label.is_none());
+        assert!(map_el.fill.is_some());
+        assert!(map_el.point_label.is_some());
         assert!(map_el.effective_fill().is_none());
         assert!(map_el.effective_point_label().is_none());
 

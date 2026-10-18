@@ -30,7 +30,7 @@
 - [ ] **Drop `natural_width`/`natural_height` from image elements.** These are captured at insert time and persisted, but are derivable from the image file at load time. Remove from the schema and resolve dimensions lazily in the Rust renderer via `imagesize` or equivalent. Currently present in aaron (1 image) and jeff (4 images).
 
 - [ ] **Element properties audit.**
-  - [x] Course maps: stripped irrelevant fill and point label controls in both UI and chart renderer (PR #57).
+  - [x] Course maps: hid irrelevant fill and point label controls in UI and ignored them in chart renderer (PR #57).
   - [ ] Full pass for other element types:
     1. **Basic vs. advanced categorization**: verify properties are in the correct bucket (basic vs. advanced).
     2. **Per-element property sets**: remove properties that do not apply to specific element types.

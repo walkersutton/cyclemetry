@@ -942,21 +942,6 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
     decimal_rounding: 0,
   }
 
-  function onPlotMetricChange(metric) {
-    const s = selected()
-    if (!s) return
-    if (metric === 'course') {
-      app.beginEditBatch?.()
-      app.updateElement(s.id, {
-        value: metric,
-        fill: undefined,
-        point_label: undefined,
-      })
-      app.endEditBatch?.()
-    } else {
-      update('value', metric)
-    }
-  }
 
   function togglePointLabel(enabled) {
     const s = selected()
@@ -2048,7 +2033,7 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
             value: m,
             label: m === 'course' ? 'course (map)' : metricLabel(m),
           }))}
-          onchange={onPlotMetricChange}
+          onchange={(v) => update('value', v)}
         />
       </section>
 
