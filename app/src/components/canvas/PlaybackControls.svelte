@@ -2,7 +2,12 @@
   import { formatTime, TOOLTIP_DELAY } from '@/lib/utils.js'
   import { Play, Pause, SkipBack, SkipForward } from 'lucide-svelte'
   import Tooltip from '@/components/ui/Tooltip.svelte'
-  import { computeTrimDrag, trimFromKey } from '@/lib/trimDragMath.js'
+  import {
+    computeTrimDrag,
+    isTrimKey,
+    resolveTrimHandle,
+    trimFromKey,
+  } from '@/lib/trimDragMath.js'
 
   let {
     playhead = $bindable(0),
@@ -181,14 +186,38 @@
       : 0,
   )
 
+  let hoveredTrimHandle = $state(null)
+
+  function updateHoveredTrimHandle(clientX) {
+    if (!trimTrackEl || trimDrag) return
+    const rect = trimTrackEl.getBoundingClientRect()
+    hoveredTrimHandle = resolveTrimHandle({
+      handle: null,
+      clientX,
+      trackRect: rect,
+      start,
+      end,
+      total: timelineDuration,
+    })
+  }
+
   function beginTrimDrag(handle, e) {
     if (!trimTrackEl) return
     e.preventDefault()
     trimTrackEl.setPointerCapture(e.pointerId)
     onbegintrim?.()
-    const initial = handle === 'start' ? start : end
-    trimDrag = {
+    const rect = trimTrackEl.getBoundingClientRect()
+    const activeHandle = resolveTrimHandle({
       handle,
+      clientX: e.clientX,
+      trackRect: rect,
+      start,
+      end,
+      total: timelineDuration,
+    })
+    const initial = activeHandle === 'start' ? start : end
+    trimDrag = {
+      handle: activeHandle,
       pointerId: e.pointerId,
       startX: e.clientX,
       initial,
@@ -234,7 +263,8 @@
     seek(res.value)
   }
 
-  function onTrimHandleKeyup() {
+  function onTrimHandleKeyup(e) {
+    if (e?.key && !isTrimKey(e.key)) return
     if (isTrimKeyBatch) {
       isTrimKeyBatch = false
       onendtrim?.()
@@ -258,7 +288,13 @@
     <div
       bind:this={trimTrackEl}
       class="relative h-4 select-none flex items-center"
-      onpointermove={onTrimPointerMove}
+      onpointermove={(e) => {
+        onTrimPointerMove(e)
+        updateHoveredTrimHandle(e.clientX)
+      }}
+      onpointerleave={() => {
+        hoveredTrimHandle = null
+      }}
       onpointerup={endTrimDrag}
       onpointercancel={endTrimDrag}
       title="Overlay trim range: {formatTime(start)} → {formatTime(
@@ -290,7 +326,7 @@
         onblur={onTrimHandleKeyup}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
-         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow z-10"
+         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow {trimDrag?.handle === 'start' ? 'z-30' : hoveredTrimHandle === 'start' ? 'z-20' : 'z-10'}"
         style="left: {trimStartPct}%"
         title="Overlay start: {formatTime(start)}"
       ></button>
@@ -308,7 +344,7 @@
         onblur={onTrimHandleKeyup}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
-         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow z-10"
+         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow {trimDrag?.handle === 'end' ? 'z-30' : hoveredTrimHandle === 'end' ? 'z-20' : 'z-10'}"
         style="left: {trimEndPct}%"
         title="Overlay end: {formatTime(end)}"
       ></button>

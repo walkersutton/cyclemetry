@@ -4,7 +4,12 @@
   import ElementList from '../panels/ElementList.svelte'
   import OpacityControl from '../ui/OpacityControl.svelte'
   import Select from '../ui/Select.svelte'
-  import { computeTrimDrag, trimFromKey } from '@/lib/trimDragMath.js'
+  import {
+    computeTrimDrag,
+    isTrimKey,
+    resolveTrimHandle,
+    trimFromKey,
+  } from '@/lib/trimDragMath.js'
 
   const app = getContext('app')
 
@@ -98,18 +103,41 @@
   // ── Mini GPX track (overlay-start / overlay-end handles) ────────────────
   let trackEl = $state(null)
   let drag = $state(null)
+  let hoveredSidebarHandle = $state(null)
+
+  function updateHoveredSidebarHandle(clientX) {
+    if (!trackEl || drag) return
+    const rect = trackEl.getBoundingClientRect()
+    hoveredSidebarHandle = resolveTrimHandle({
+      handle: null,
+      clientX,
+      trackRect: rect,
+      start: app.config?.scene?.start ?? 0,
+      end: app.config?.scene?.end ?? app.timelineDuration,
+      total: app.timelineDuration,
+    })
+  }
 
   function beginDrag(handle, e) {
     if (!trackEl) return
     e.preventDefault()
     trackEl.setPointerCapture(e.pointerId)
     app.beginEditBatch()
+    const rect = trackEl.getBoundingClientRect()
+    const activeHandle = resolveTrimHandle({
+      handle,
+      clientX: e.clientX,
+      trackRect: rect,
+      start: app.config?.scene?.start ?? 0,
+      end: app.config?.scene?.end ?? app.timelineDuration,
+      total: app.timelineDuration,
+    })
     const initial =
-      handle === 'start'
+      activeHandle === 'start'
         ? (app.config?.scene?.start ?? 0)
         : (app.config?.scene?.end ?? app.timelineDuration)
     drag = {
-      handle,
+      handle: activeHandle,
       pointerId: e.pointerId,
       startX: e.clientX,
       initial,
@@ -157,7 +185,8 @@
     app.updateScene({ [res.field]: res.value })
   }
 
-  function onSidebarHandleKeyup() {
+  function onSidebarHandleKeyup(e) {
+    if (e?.key && !isTrimKey(e.key)) return
     if (isSidebarKeyBatch) {
       isSidebarKeyBatch = false
       app.endEditBatch()
@@ -222,7 +251,13 @@
                 <div
                   bind:this={trackEl}
                   class="relative h-5 select-none"
-                  onpointermove={onTrackPointerMove}
+                  onpointermove={(e) => {
+                    onTrackPointerMove(e)
+                    updateHoveredSidebarHandle(e.clientX)
+                  }}
+                  onpointerleave={() => {
+                    hoveredSidebarHandle = null
+                  }}
                   onpointerup={endTrackDrag}
                   onpointercancel={endTrackDrag}
                 >
@@ -247,7 +282,7 @@
                     onblur={onSidebarHandleKeyup}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
-                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform"
+                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform {drag?.handle === 'start' ? 'z-30' : hoveredSidebarHandle === 'start' ? 'z-20' : 'z-10'}"
                     style="left: {startPct}%"
                   ></button>
                   <button
@@ -264,7 +299,7 @@
                     onblur={onSidebarHandleKeyup}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
-                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform"
+                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform {drag?.handle === 'end' ? 'z-30' : hoveredSidebarHandle === 'end' ? 'z-20' : 'z-10'}"
                     style="left: {endPct}%"
                   ></button>
                 </div>
