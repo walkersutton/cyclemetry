@@ -143,6 +143,7 @@
     "editor": {
       "groups": [
         {
+          "composite": true,
           "element_ids": [
             "gauge-0",
             "value-0"
@@ -151,6 +152,7 @@
           "name": "speed group"
         },
         {
+          "composite": true,
           "element_ids": [
             "value-3",
             "meter-0"
@@ -159,6 +161,7 @@
           "name": "power group"
         },
         {
+          "composite": true,
           "element_ids": [
             "image-0",
             "value-1"

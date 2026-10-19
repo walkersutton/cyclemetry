@@ -67,6 +67,7 @@
  * @property {string} id
  * @property {string} name
  * @property {string[]} element_ids
+ * @property {boolean} [composite] Edit as one widget (see lib/composites.js)
  */
 
 /**

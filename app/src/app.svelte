@@ -349,7 +349,7 @@
       !e.shiftKey &&
       (e.key === 'v' || e.key === 'V')
     ) {
-      if (inField || blocked || !app.copiedElement) return
+      if (inField || blocked || !app.clipboard) return
       e.preventDefault()
       app.pasteElement()
       return
@@ -404,7 +404,7 @@
           if (app.selectedElementId) app.copyElement()
         }),
         listen('menu_paste', () => {
-          if (app.copiedElement) app.pasteElement()
+          if (app.clipboard) app.pasteElement()
         }),
         listen('menu_show_template_dialog', () => {
           openTemplatePicker()
