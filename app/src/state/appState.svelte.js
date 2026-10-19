@@ -97,6 +97,11 @@ export function createAppState() {
   let activityMetrics = $state(
     storedGpxFilename ? (parseLocalStorage('activityMetrics') ?? null) : null,
   )
+  let hasSessionCalories = $state(
+    storedGpxFilename
+      ? localStorage.getItem('hasSessionCalories') === 'true'
+      : false,
+  )
   let selectedSecond = $state(
     parseInt(localStorage.getItem('selectedSecond') ?? '0'),
   )
@@ -234,6 +239,10 @@ export function createAppState() {
     if (activityMetrics)
       localStorage.setItem('activityMetrics', JSON.stringify(activityMetrics))
     else localStorage.removeItem('activityMetrics')
+  })
+  $effect(() => {
+    if (hasSessionCalories) localStorage.setItem('hasSessionCalories', 'true')
+    else localStorage.removeItem('hasSessionCalories')
   })
   $effect(() => {
     localStorage.setItem('selectedSecond', String(selectedSecond))
@@ -851,19 +860,40 @@ export function createAppState() {
       const withoutLocked = Object.fromEntries(
         Object.entries(withoutBbox).filter(([k]) => k !== 'locked'),
       )
-      const base = isLocked ? { ...withoutLocked, locked: true } : withoutLocked
-      // Migrate legacy points: [{...}] → point: {...} for plot elements.
+      let current = isLocked
+        ? { ...withoutLocked, locked: true }
+        : withoutLocked
+      // Migrate legacy points: [{...}] -> point: {...} for plot elements.
       // Only the first entry is ever used; the array form was pure nesting noise.
       if (
-        base.type === 'plot' &&
-        Array.isArray(base.points) &&
-        base.points.length > 0
+        current.type === 'plot' &&
+        Array.isArray(current.points) &&
+        current.points.length > 0
       ) {
         // eslint-disable-next-line no-unused-vars
-        const { points: _pts, ...rest } = base
-        return { ...rest, point: base.point ?? base.points[0] }
+        const { points: _pts, ...rest } = current
+        current = { ...rest, point: current.point ?? current.points[0] }
       }
-      return base
+      // Migrate legacy custom:calories and custom:total_calories to built-in metrics
+      const calRenames = {
+        'custom:calories': 'calories',
+        'custom:total_calories': 'total_calories',
+      }
+      for (const key of ['value', 'unit_of']) {
+        if (calRenames[current[key]]) {
+          current = { ...current, [key]: calRenames[current[key]] }
+        }
+      }
+      if (current.color_by?.value && calRenames[current.color_by.value]) {
+        current = {
+          ...current,
+          color_by: {
+            ...current.color_by,
+            value: calRenames[current.color_by.value],
+          },
+        }
+      }
+      return current
     })
 
     // units and compact_units moved to app-level preferences (see `units` /
@@ -1471,6 +1501,12 @@ export function createAppState() {
     },
     set activityMetrics(v) {
       activityMetrics = v
+    },
+    get hasSessionCalories() {
+      return hasSessionCalories
+    },
+    set hasSessionCalories(v) {
+      hasSessionCalories = !!v
     },
     get hasActivity() {
       return !!gpxFilename && activityDuration > 0

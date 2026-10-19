@@ -83,6 +83,12 @@ const RANGE_LIMITS = {
       '': { min: 0, max: 172800, label: '0-172,800 s' },
     },
   },
+  calories: {
+    defaultUnit: '',
+    units: {
+      '': { min: 0, max: 20000, label: '0-20,000 kcal' },
+    },
+  },
 }
 
 const UNIT_ALIASES = {

@@ -454,6 +454,7 @@
       app.gpxStartTime = result.start_time ?? null
       app.activityDuration = result.duration_seconds
       app.activityMetrics = result.valid_attributes ?? null
+      app.hasSessionCalories = result.has_session_calories ?? false
       app.selectedSecond = 0
       if (app.config?.scene) {
         app.updateScene({ start: 0, end: app.timelineDuration })
