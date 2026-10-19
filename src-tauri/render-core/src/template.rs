@@ -179,6 +179,10 @@ pub struct GroupConfig {
     pub id: String,
     pub name: String,
     pub element_ids: Vec<String>,
+    /// Editor-only: present the group as one widget (a composite) with a
+    /// compact panel instead of its individual elements. Rendering ignores it.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub composite: bool,
 }
 
 /// Pins an element's position to a point on another element's bounding box.
@@ -254,7 +258,9 @@ impl Element {
     /// Scale every spatial field by `factor`. Each variant owns the knowledge
     /// of which of its fields are spatial — non-spatial fields (colors, fonts,
     /// opacity, units, decimal_rounding, fractional margins) are
-    /// resolution-independent and left untouched.
+    /// resolution-independent and left untouched. The editor's composite Size
+    /// control mirrors this field list (`SPATIAL` in app/src/lib/composites.js)
+    /// — keep the two in sync.
     pub fn scale(&mut self, factor: f64) {
         let f32f = factor as f32;
         match self {

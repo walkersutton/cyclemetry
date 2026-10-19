@@ -10,6 +10,7 @@
     AlignHorizontalJustifyCenter,
     AlignVerticalJustifyCenter,
     BarChart2,
+    Component,
     Folder,
     FolderOpen,
     Gauge as GaugeIcon,
@@ -31,7 +32,9 @@
   import ColorInput from '../ui/ColorInput.svelte'
   import RiderWeightPrompt from '../ui/RiderWeightPrompt.svelte'
   import AssetPicker from '../overlays/AssetPicker.svelte'
+  import CompositeProperties from './CompositeProperties.svelte'
   import * as backend from '../../api/backend.js'
+  import { isComposite } from '../../lib/composites.js'
   import {
     defaultColorBands,
     elementMeta,
@@ -291,6 +294,18 @@
     ...filterMetrics(ALL_METER_METRICS),
     ...CUSTOM_METRICS,
   ])
+  // Per-type metric choices for the composite panel, which offers only the
+  // metrics every member reading it can display.
+  const compositeMetricOptions = $derived.by(() => {
+    const opts = (list) =>
+      list.map((m) => ({ value: m, label: metricLabel(m) }))
+    return {
+      value: VALUE_METRIC_OPTIONS,
+      meter: opts(METER_METRICS),
+      gauge: opts(METER_METRICS),
+      plot: opts(PLOT_METRICS.filter((m) => m !== 'course')),
+    }
+  })
   const METER_DIRECTIONS = [
     { value: 'up', label: 'Fill upward' },
     { value: 'down', label: 'Fill downward' },
@@ -1378,7 +1393,13 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
     {@const group = (app.config?.scene?.groups ?? []).find(
       (g) => g.id === app.selectedGroupId,
     )}
-    {#if group}
+    {#if isComposite(group)}
+      <CompositeProperties
+        {group}
+        metricOptions={compositeMetricOptions}
+        vars={sceneVars}
+      />
+    {:else if group}
       <div class="mb-3 flex items-center gap-2">
         <Folder size={13} class="shrink-0 text-zinc-400" />
         <p
@@ -1418,6 +1439,14 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
           Drag any element in this group on the canvas to move them all
           together.
         </p>
+        <button
+          onclick={() => app.setGroupComposite(group.id, true)}
+          class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-[6px] bg-[var(--panel2)] px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-[var(--panel3)] hover:text-zinc-100"
+          title="Edit this group as one widget with simplified controls"
+        >
+          <Component size={12} />
+          Convert to composite
+        </button>
       </div>
     {/if}
   {:else if !selected()}

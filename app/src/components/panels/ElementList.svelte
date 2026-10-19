@@ -7,6 +7,7 @@
     BarChart2,
     ChevronDown,
     ChevronRight,
+    Component,
     Folder,
     FolderPlus,
     Gauge,
@@ -24,6 +25,12 @@
 
   import * as backend from '../../api/backend.js'
   import { ADD_PRESETS, elementMeta } from '../../lib/elementTypes.js'
+  import {
+    buildComposite,
+    COMPOSITE_PRESETS,
+    compositeIcon,
+    isComposite,
+  } from '../../lib/composites.js'
   import { metricRangeIssues } from '../../lib/metricLimits.js'
   import AssetPicker from '../overlays/AssetPicker.svelte'
 
@@ -106,39 +113,54 @@
         seenGroups.add(gid)
         const group = groupById.get(gid)
         const groupEls = els.filter((e) => elementToGroup.get(e.id) === gid)
+        const composite = isComposite(group)
         items.push({
           kind: 'group',
           id: gid,
           name: group?.name ?? gid,
           elements: groupEls,
+          composite,
+          // Composites list as one widget row, iconed by their main part.
+          icon: composite
+            ? compositeIcon(
+                app.config.elements.filter((e) =>
+                  group.element_ids.includes(e.id),
+                ),
+              )
+            : null,
         })
       }
     }
     return items
   })
 
-  async function defaultsForPreset(preset) {
-    const defaults = preset.defaults(app.config?.scene)
-    if (preset.type !== 'meter' || !app.gpxFilename || !app.config?.scene)
-      return defaults
-    const metric = defaults.value ?? 'speed'
+  // The loaded activity's min/max for `metric` over the overlay window, or
+  // null when there's no activity or the computed range looks unrealistic.
+  async function activityRange(metric, unit) {
+    if (!app.gpxFilename || !app.config?.scene) return null
     const start = app.config.scene.start ?? 0
     const end = app.config.scene.end ?? app.timelineDuration
     try {
       const range = await backend.getActivityMetricRange(
         app.gpxFilename,
         metric,
-        defaults.unit,
+        unit,
         start,
         end,
       )
-      const issues = metricRangeIssues(metric, defaults.unit, range)
-      if (issues.min || issues.max) return defaults
-      return { ...defaults, min: range.min, max: range.max }
+      const issues = metricRangeIssues(metric, unit, range)
+      return issues.min || issues.max ? null : range
     } catch (err) {
-      console.debug('Could not initialize meter range from activity:', err)
-      return defaults
+      console.debug('Could not initialize range from activity:', err)
+      return null
     }
+  }
+
+  async function defaultsForPreset(preset) {
+    const defaults = preset.defaults(app.config?.scene)
+    if (preset.type !== 'meter') return defaults
+    const range = await activityRange(defaults.value ?? 'speed', defaults.unit)
+    return range ? { ...defaults, min: range.min, max: range.max } : defaults
   }
 
   async function addPreset(preset) {
@@ -148,6 +170,21 @@
       return
     }
     app.addElement(preset.type, await defaultsForPreset(preset))
+  }
+
+  async function addCompositePreset(preset) {
+    addMenuOpen = false
+    const metric = 'speed'
+    // The dial/bar is left on Auto units, so read the range in the app's
+    // unit system — the one it will actually render in.
+    const units = app.units === 'imperial' ? 'imperial' : 'metric'
+    const range = preset.rangeMetric ? await activityRange(metric, units) : null
+    const { name, elements } = buildComposite(preset.key, {
+      scene: app.config?.scene,
+      metric,
+      range,
+    })
+    app.addComposite(name, elements)
   }
 
   async function onImageSelected(filename) {
@@ -517,11 +554,11 @@
       Elements
     </p>
     <div class="flex items-center gap-1">
-      {#if (app.selectedElementIds?.length ?? 0) >= 2}
+      {#if (app.selectedElementIds?.length ?? 0) >= 2 && !app.selectedGroupId}
         <button
           onclick={groupSelectedElements}
           title="Group selected elements"
-          class="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-[var(--panel2)] transition-colors"
+          class="cursor-pointer p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-[var(--panel2)] transition-colors"
         >
           <FolderPlus size={13} />
         </button>
@@ -548,7 +585,65 @@
   {:else}
     <ul class="space-y-0.5 pb-3">
       {#each listItems() as item (item.kind + (item.id ?? item.name))}
-        {#if item.kind === 'group'}
+        {#if item.kind === 'group' && item.composite}
+          <!-- Composite: one row for the whole widget. Its parts are edited
+               through the composite panel; Expand turns it back into a group. -->
+          {@const selected = app.selectedGroupId === item.id}
+          {@const Icon = ICONS[item.icon] ?? Component}
+          {@const listIdx = listItems().findIndex(
+            (it) => it.id === item.id && it.kind === 'group',
+          )}
+          <li
+            data-list-item={listIdx}
+            onpointerdown={(e) => onRowPointerDown(e, item.id, 'group')}
+            class={`relative group/el rounded-[6px]
+              ${draggingId === item.id ? 'opacity-45' : ''}
+              ${dropIndex === listIdx && draggingId !== item.id ? 'before:absolute before:left-0 before:right-0 before:-top-0.5 before:h-px before:bg-primary' : ''}
+              ${dropIndex === listIdx + 1 && draggingId !== item.id ? 'after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-px after:bg-primary' : ''}`}
+          >
+            <button
+              onclick={() => handleGroupClick(item.id)}
+              class={`w-full flex items-center gap-2 px-2.5 py-2 pr-12 rounded-[6px] text-left text-sm transition-colors
+                cursor-grab active:cursor-grabbing
+                ${
+                  selected
+                    ? 'bg-primary/10 text-primary border border-primary/30'
+                    : 'text-zinc-300 hover:bg-[var(--panel2)] hover:text-zinc-100'
+                }`}
+            >
+              <Icon size={12} class="shrink-0 opacity-60" />
+              <span class="truncate text-xs font-medium">{item.name}</span>
+              <span
+                class="shrink-0 text-[var(--dim)]"
+                title="Composite of {item.elements.length} elements"
+              >
+                <Component size={10} />
+              </span>
+              {#if item.elements.some((e) => missingRiderWeight(e.metric))}
+                <span
+                  class="shrink-0 text-[var(--ds-warning)]"
+                  title="Rider weight not set — this W/kg readout renders as 0"
+                >
+                  <TriangleAlert size={11} />
+                </span>
+              {/if}
+            </button>
+            <div
+              class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/el:opacity-100 transition-opacity"
+            >
+              <button
+                data-layer-action
+                onclick={(e) => {
+                  e.stopPropagation()
+                  app.deleteGroupAndElements(item.id)
+                }}
+                class="p-1 rounded text-zinc-600 cursor-pointer hover:text-destructive transition-colors"
+                title="Remove"
+                tabindex="-1"><Trash2 size={11} /></button
+              >
+            </div>
+          </li>
+        {:else if item.kind === 'group'}
           {@const groupSelected = app.selectedGroupId === item.id}
           {@const collapsed = collapsedGroups.has(item.id)}
           {@const listIdx = listItems().findIndex(
@@ -889,6 +984,39 @@
             </span>
           </button>
         {/each}
+      </div>
+
+      <div class="border-t border-white/[0.06] px-3 pb-3 pt-2.5">
+        <p
+          class="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500"
+        >
+          Composites
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          {#each COMPOSITE_PRESETS as preset (preset.key)}
+            {@const Icon = ICONS[preset.icon]}
+            <button
+              onclick={() => addCompositePreset(preset)}
+              class="group flex min-h-16 cursor-pointer items-center gap-3 rounded-[8px] bg-[var(--panel2)] px-3 py-2 text-left transition-colors hover:bg-[var(--panel3)]"
+              title={`Add ${preset.title.toLowerCase()} — edited as one widget`}
+            >
+              <span
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] bg-[var(--panel3)] text-zinc-400 transition-colors group-hover:text-zinc-100"
+              >
+                <Icon size={15} />
+              </span>
+              <span class="min-w-0">
+                <span
+                  class="block truncate text-xs font-medium leading-4 text-zinc-200"
+                  >{preset.title}</span
+                >
+                <span class="block truncate text-[10px] leading-4 text-zinc-500"
+                  >{preset.hint}</span
+                >
+              </span>
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
   </div>

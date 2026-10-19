@@ -6,6 +6,13 @@ import {
   exportBitsPerPixelSecond,
 } from '../lib/utils.js'
 import { elementTypeName } from '../lib/elementTypes.js'
+import {
+  assignIds,
+  cloneComposite,
+  compositeGroupOf,
+  groupMembers,
+  isComposite,
+} from '../lib/composites.js'
 import { stripDefaults } from '../lib/stripDefaults.js'
 import { normalizeElementUpdates } from '../lib/templateSchema.js'
 import {
@@ -177,7 +184,9 @@ export function createAppState() {
   )
 
   // ── Transient ────────────────────────────────────────────────────────────────
-  let copiedElement = $state(null) // the copied element object — in-memory clipboard
+  // In-memory clipboard: { element } for a single element, or
+  // { composite: { name, elements } } for a whole composite.
+  let clipboard = $state(null)
   // Preview frame rate is fully automatic — the CenterCanvas tuner adapts it to
   // measured render throughput (balancing preview smoothness against resource
   // use). Persisted only as a sensible starting point; it's re-tuned each session.
@@ -573,8 +582,19 @@ export function createAppState() {
   // ── Selection ─────────────────────────────────────────────────────────────
   // selectedElementId is the "primary" element (drives the properties panel);
   // selectedElementIds is the full set for shift-click multi-select + group drag.
+  // A composite is atomic: selecting any member selects the whole composite.
+
+  // The ids `id` selects as a unit — its composite's members, or just itself.
+  function selectionUnit(id) {
+    return compositeGroupOf(config?.scene?.groups, id)?.element_ids ?? [id]
+  }
 
   function selectOnly(id) {
+    const composite = id ? compositeGroupOf(config?.scene?.groups, id) : null
+    if (composite) {
+      selectGroup(composite.id)
+      return
+    }
     selectedGroupId = null
     selectedCourseMarkerId = null
     selectedElementId = id
@@ -582,21 +602,34 @@ export function createAppState() {
   }
 
   function setSelectedElements(ids) {
+    const expanded = ids
+      .flatMap(selectionUnit)
+      .filter((id, i, all) => all.indexOf(id) === i)
+    // A marquee that caught exactly one composite selects it as such.
+    const composite = compositeGroupOf(config?.scene?.groups, expanded[0])
+    if (composite && composite.element_ids.length === expanded.length) {
+      selectGroup(composite.id)
+      return
+    }
     selectedGroupId = null
     selectedCourseMarkerId = null
-    selectedElementIds = [...ids]
+    selectedElementIds = expanded
     selectedElementId = ids.length ? ids[ids.length - 1] : null
   }
 
   function toggleElementSelection(id) {
+    const unit = selectionUnit(id)
     if (selectedElementIds.includes(id)) {
-      selectedElementIds = selectedElementIds.filter((x) => x !== id)
-      if (selectedElementId === id) {
+      selectedElementIds = selectedElementIds.filter((x) => !unit.includes(x))
+      if (unit.includes(selectedElementId)) {
         selectedElementId =
           selectedElementIds[selectedElementIds.length - 1] ?? null
       }
     } else {
-      selectedElementIds = [...selectedElementIds, id]
+      selectedElementIds = [
+        ...selectedElementIds.filter((x) => !unit.includes(x)),
+        ...unit,
+      ]
       selectedElementId = id
     }
     selectedGroupId = null
@@ -715,6 +748,21 @@ export function createAppState() {
 
   function updateElementPos(id, x, y) {
     updateElement(id, { x: Math.round(x), y: Math.round(y) })
+  }
+
+  // Apply partial updates to several elements as ONE edit (one undo step).
+  // updatesById: { [id]: partialElement } — composite panel edits fan out
+  // across members this way.
+  function updateElements(updatesById) {
+    if (!config?.elements) return
+    let touched = false
+    const elements = config.elements.map((el) => {
+      const u = updatesById[el.id]
+      if (!u) return el
+      touched = true
+      return { ...el, ...normalizeElementUpdates(u) }
+    })
+    if (touched) commitConfig({ ...config, elements })
   }
 
   // Apply position moves to a config, returning the next config (same ref if
@@ -993,10 +1041,14 @@ export function createAppState() {
     if (elements.length === config.elements.length) return
     elements = detachAnchorsToRemoved(elements, ids)
 
-    const groups = (config.scene?.groups ?? []).map((g) => ({
-      ...g,
-      element_ids: g.element_ids.filter((eid) => !ids.includes(eid)),
-    }))
+    // A group this removal empties goes with it (deleting a composite
+    // removes the widget, not just its parts).
+    const groups = (config.scene?.groups ?? []).flatMap((g) => {
+      const element_ids = g.element_ids.filter((eid) => !ids.includes(eid))
+      return element_ids.length === 0 && g.element_ids.length > 0
+        ? []
+        : [{ ...g, element_ids }]
+    })
     commitConfig({ ...config, elements, scene: { ...config.scene, groups } })
 
     if (selectedElementIds.some((id) => ids.includes(id))) {
@@ -1128,6 +1180,54 @@ export function createAppState() {
     commitConfig({ ...config, scene: { ...config.scene, groups } })
   }
 
+  // ── Composites ────────────────────────────────────────────────────────────
+  // A composite is a group flagged `composite: true` (see lib/composites.js).
+
+  // Insert a composite's elements and its group as one undo step, then select
+  // it. Ids are reassigned against the live config (anchors rewired), so
+  // callers can pass preset output or a clipboard copy as-is.
+  function addComposite(name, elements) {
+    if (!config?.scene || elements.length === 0) return null
+    const fresh = assignIds(elements, allElementIds())
+    const id = newGroupId()
+    const group = {
+      id,
+      name,
+      element_ids: fresh.map((e) => e.id),
+      composite: true,
+    }
+    commitConfig({
+      ...config,
+      elements: [...(config.elements ?? []), ...fresh],
+      scene: {
+        ...config.scene,
+        groups: [...(config.scene.groups ?? []), group],
+      },
+    })
+    selectGroup(id)
+    return id
+  }
+
+  // Flag a group as a composite, or "expand" one back into a plain group.
+  // Non-destructive both ways: only the flag changes, never the elements.
+  function setGroupComposite(groupId, on) {
+    if (!config?.scene?.groups) return
+    const groups = config.scene.groups.map((g) => {
+      if (g.id !== groupId) return g
+      if (on) return { ...g, composite: true }
+      const rest = { ...g }
+      delete rest.composite
+      return rest
+    })
+    commitConfig({ ...config, scene: { ...config.scene, groups } })
+  }
+
+  // Delete a group AND its elements (vs deleteGroup, which only ungroups).
+  function deleteGroupAndElements(groupId) {
+    const group = (config?.scene?.groups ?? []).find((g) => g.id === groupId)
+    if (group) removeElements(group.element_ids)
+  }
+
   function parseSelectedElement() {
     if (!selectedElementId || !config) return null
     const found = findElement(selectedElementId)
@@ -1154,14 +1254,31 @@ export function createAppState() {
   }
 
   function copyElement() {
+    const group = (config?.scene?.groups ?? []).find(
+      (g) => g.id === selectedGroupId,
+    )
+    if (isComposite(group)) {
+      clipboard = {
+        composite: {
+          name: group.name,
+          elements: groupMembers(group, config.elements),
+        },
+      }
+      return
+    }
     const s = parseSelectedElement()
     if (!s) return
-    copiedElement = s.item
+    clipboard = { element: s.item }
   }
 
   function pasteElement() {
-    if (!copiedElement) return
-    const rest = { ...copiedElement }
+    if (clipboard?.composite) {
+      const { name, elements } = clipboard.composite
+      addComposite(name, cloneComposite(elements, allElementIds(), 20, 20))
+      return
+    }
+    if (!clipboard?.element) return
+    const rest = { ...clipboard.element }
     const type = rest.type
     delete rest.id
     delete rest.type
@@ -1692,6 +1809,9 @@ export function createAppState() {
     removeElementFromGroups,
     removeFromGroupAndReorder,
     addElementToGroup,
+    addComposite,
+    setGroupComposite,
+    deleteGroupAndElements,
     get canUndo() {
       return history.length > 0 || !!editBatch?.before
     },
@@ -1720,6 +1840,7 @@ export function createAppState() {
     updateLapGate,
     updateElement,
     updateElementPos,
+    updateElements,
     updateElementPositions,
     moveElementPositionsLive,
     commitElementPositions,
@@ -1730,8 +1851,9 @@ export function createAppState() {
     addElement,
     removeElement,
     deleteSelectedElement,
-    get copiedElement() {
-      return copiedElement
+    // Truthy when there is something to paste (an element or a composite).
+    get clipboard() {
+      return clipboard
     },
     copyElement,
     pasteElement,
