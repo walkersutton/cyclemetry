@@ -131,6 +131,7 @@
     "editor": {
       "groups": [
         {
+          "composite": true,
           "element_ids": [
             "value-0",
             "label-3"
@@ -139,6 +140,7 @@
           "name": "speed [MPH]"
         },
         {
+          "composite": true,
           "element_ids": [
             "value-1",
             "label-0"
@@ -147,6 +149,7 @@
           "name": "speed [KMH]"
         },
         {
+          "composite": true,
           "element_ids": [
             "value-3",
             "label-1"

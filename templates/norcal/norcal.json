@@ -227,6 +227,7 @@
     "editor": {
       "groups": [
         {
+          "composite": true,
           "element_ids": [
             "gauge-speed",
             "label-mph",
@@ -236,6 +237,7 @@
           "name": "speed group"
         },
         {
+          "composite": true,
           "element_ids": [
             "rect-power-fill",
             "meter-power",
@@ -247,6 +249,7 @@
           "name": "power fill"
         },
         {
+          "composite": true,
           "element_ids": [
             "rect-heartrate-fill",
             "meter-heartrate",
@@ -258,6 +261,7 @@
           "name": "heartrate fill"
         },
         {
+          "composite": true,
           "element_ids": [
             "rect-distance-to-go",
             "value-distance-to-go",

@@ -198,6 +198,7 @@
           "name": "heartrate fill"
         },
         {
+          "composite": true,
           "element_ids": [
             "rect-0",
             "meter-0",
@@ -209,6 +210,7 @@
           "name": "heartrate group"
         },
         {
+          "composite": true,
           "element_ids": [
             "label-1",
             "rect-1",
@@ -219,6 +221,7 @@
           "name": "power group"
         },
         {
+          "composite": true,
           "element_ids": [
             "gauge-0",
             "value-3",
@@ -228,6 +231,7 @@
           "name": "speed group"
         },
         {
+          "composite": true,
           "element_ids": [
             "label-2",
             "value-2"
