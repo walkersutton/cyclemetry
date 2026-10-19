@@ -854,17 +854,16 @@ export function createAppState() {
       const base = isLocked ? { ...withoutLocked, locked: true } : withoutLocked
       // Migrate legacy points: [{...}] → point: {...} for plot elements.
       // Only the first entry is ever used; the array form was pure nesting noise.
-      let plotBase = base
       if (
-        plotBase.type === 'plot' &&
-        Array.isArray(plotBase.points) &&
-        plotBase.points.length > 0
+        base.type === 'plot' &&
+        Array.isArray(base.points) &&
+        base.points.length > 0
       ) {
         // eslint-disable-next-line no-unused-vars
-        const { points: _pts, ...rest } = plotBase
-        plotBase = { ...rest, point: plotBase.point ?? plotBase.points[0] }
+        const { points: _pts, ...rest } = base
+        return { ...rest, point: base.point ?? base.points[0] }
       }
-      return plotBase
+      return base
     })
 
     // units and compact_units moved to app-level preferences (see `units` /

@@ -942,7 +942,6 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
     decimal_rounding: 0,
   }
 
-
   function togglePointLabel(enabled) {
     const s = selected()
     if (!s) return
