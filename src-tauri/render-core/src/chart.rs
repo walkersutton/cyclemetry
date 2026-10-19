@@ -166,7 +166,7 @@ impl ChartCache {
         }
 
         let margin = config.margin_fraction();
-        let is_course = config.value == crate::activity::ATTR_COURSE;
+        let is_course = config.is_course();
         // Course plots keep the margin inset so the route line and position dot
         // don't clip at the surface edge. Non-course plots (elevation, etc.) go
         // edge-to-edge so their bounding box aligns exactly with the rendered pixels.
@@ -193,7 +193,6 @@ impl ChartCache {
         let y_max = y_data.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
 
         // Course plots use geographic aspect-ratio correction; all others get vertical padding.
-        let is_course = config.value == crate::activity::ATTR_COURSE;
         let geo = if is_course {
             GeoMapping::build(x_min, x_max, y_min, y_max, &plot_bounds)
         } else {
@@ -241,8 +240,8 @@ impl ChartCache {
             banding.as_ref(),
         );
 
-        // Load the point-label typeface once (None when no label configured).
-        let point_label = config.point_label.clone();
+        // Load the point-label typeface once (None when no label configured, or on course maps).
+        let point_label = config.effective_point_label().cloned();
         let label_typeface = point_label.as_ref().and_then(|pl| {
             let font = pl.font.as_deref().unwrap_or("Arial.ttf");
             crate::frame::load_typeface(font, fonts_dir)
@@ -724,8 +723,13 @@ fn render_chart_background(
     }
     let line_path = pb.snapshot();
 
-    // Draw fill under the curve
+    let is_course = geo.is_some();
     let usable_banding = banding.filter(|b| b.data.len() == x_data.len() && x_data.len() >= 2);
+
+    // Draw fill under the curve.
+    // Course maps have no fill because:
+    // 1) b.fill is always false for course maps (ColorBy::color_fill(is_course) is false).
+    // 2) config.fill_opacity() returns None for course maps via PlotConfig::effective_fill().
     if let Some(b) = usable_banding.filter(|b| b.fill) {
         // Banded fill defaults to fully opaque (TdF profiles are solid).
         let alpha = config.fill_opacity().unwrap_or(1.0).clamp(0.0, 1.0);
@@ -756,7 +760,6 @@ fn render_chart_background(
 
     // Draw the line. When split opacities are configured the background shows
     // the full route at future_opacity; the past segment is overdrawn per-frame.
-    let is_course = geo.is_some();
     let split_opacity = if is_course {
         config.line_future_opacity().or_else(|| {
             // past_opacity only → background at full opacity, past overdrawn per-frame
@@ -956,6 +959,7 @@ fn draw_banded_polyline(
 #[cfg(test)]
 mod tests {
     use super::{ChartCache, band_index, draw_banded_polyline, format_point_label};
+    use crate::template::PlotConfig;
     use skia_safe::{Color, ISize, ImageInfo, Point, Rect};
 
     fn bands() -> Vec<(f64, String)> {
@@ -1200,5 +1204,44 @@ mod tests {
             format_point_label(5000.0, "distance", "km", 0, true),
             "5 KM"
         );
+    }
+
+    #[test]
+    fn course_chart_ignores_fill_and_point_label() {
+        let config: PlotConfig = serde_json::from_value(serde_json::json!({
+            "id": "course-1",
+            "value": "course",
+            "x": 0,
+            "y": 0,
+            "width": 200,
+            "height": 200,
+            "color": "#ffffff",
+            "fill": {
+                "opacity": 0.8,
+                "color": "#ff0000"
+            },
+            "point_label": {
+                "font_size": 14.0,
+                "color": "#ffffff"
+            }
+        }))
+        .unwrap();
+
+        assert!(config.effective_fill().is_none());
+        assert!(config.fill_opacity().is_none());
+        assert!(config.effective_point_label().is_none());
+
+        let cache = ChartCache::build(
+            &config,
+            vec![1.0, 2.0, 3.0],
+            vec![1.0, 2.0, 3.0],
+            vec![0.0, 10.0, 20.0],
+            vec![0.0, 10.0, 20.0],
+            vec![1.0, 2.0, 3.0],
+            "/nonexistent/fonts",
+        );
+        let cache = cache.expect("course chart cache should build");
+        assert!(cache.point_label.is_none());
+        assert!(cache.label_typeface.is_none());
     }
 }

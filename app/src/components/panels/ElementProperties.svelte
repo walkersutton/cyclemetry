@@ -1060,13 +1060,18 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
     if (!s) return
     if (s.type === 'plot') {
       const it = s.item
+      const isCourse = it.value === 'course'
       const patch = {
         color: raw,
         line: { ...(it.line ?? {}), color: raw },
-        fill: { ...(it.fill ?? {}), color: raw },
+      }
+      if (!isCourse) {
+        patch.fill = { ...(it.fill ?? {}), color: raw }
       }
       if (it.point) patch.point = { ...it.point, color: raw }
-      if (it.point_label) patch.point_label = { ...it.point_label, color: raw }
+      if (!isCourse && it.point_label) {
+        patch.point_label = { ...it.point_label, color: raw }
+      }
       app.updateElement(s.id, patch)
     } else {
       app.updateElement(s.id, { color: raw })
@@ -1091,12 +1096,9 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
     const patch = {
       color_by: { value: 'gradient', bands: defaultColorBands('gradient') },
     }
+    const isCourse = s.item.value === 'course'
     const fillOpacity = s.item.fill?.opacity
-    if (
-      s.item.value !== 'course' &&
-      typeof fillOpacity === 'number' &&
-      fillOpacity < 1
-    ) {
+    if (!isCourse && typeof fillOpacity === 'number' && fillOpacity < 1) {
       patch.fill = { ...s.item.fill, opacity: 1 }
     }
     app.updateElement(s.id, patch)
@@ -2030,6 +2032,7 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
 
     <!-- ═══ PLOT ═══ -->
     {#if type === 'plot'}
+      {@const isCourse = item.value === 'course'}
       <section class="mb-4 space-y-2">
         <p class="text-[10px] uppercase tracking-wider text-zinc-600">Metric</p>
         <Select
@@ -2122,7 +2125,7 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
               onchange={setColorByMetric}
             />
           </label>
-          {#if item.value === 'course'}
+          {#if isCourse}
             <p class="text-[10px] text-zinc-600 italic">
               Colors the route line.
             </p>
@@ -2197,7 +2200,7 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
         <!-- X-axis basis: time (sample index) vs distance travelled. A course
              plots geography and `distance` is already the axis, so neither
              offers the choice. -->
-        {#if item.value !== 'course' && item.value !== 'distance'}
+        {#if !isCourse && item.value !== 'distance'}
           <section class="mb-4 space-y-2">
             <p class="text-[10px] uppercase tracking-wider text-zinc-600">
               X-Axis
@@ -2219,26 +2222,30 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
           </section>
         {/if}
         <!-- Fill -->
-        <section class="mb-4 space-y-2">
-          <p class="text-[10px] uppercase tracking-wider text-zinc-600">Fill</p>
-          <label class="space-y-1 block">
-            <span class="text-xs text-zinc-500">Color</span>
-            <ColorInput
-              value={colorRow('fill', 'color')}
-              vars={sceneVars}
-              onchange={(v) => updateNested('fill', 'color', v)}
-            />
-          </label>
-          <label class="space-y-1 block">
-            <span class="text-xs text-zinc-500">Opacity (0–1)</span>
-            <OpacityControl
-              value={item.fill?.opacity ?? 0}
-              oninput={(e) => updateNested('fill', 'opacity', e.target.value)}
-            />
-          </label>
-        </section>
+        {#if !isCourse}
+          <section class="mb-4 space-y-2">
+            <p class="text-[10px] uppercase tracking-wider text-zinc-600">
+              Fill
+            </p>
+            <label class="space-y-1 block">
+              <span class="text-xs text-zinc-500">Color</span>
+              <ColorInput
+                value={colorRow('fill', 'color')}
+                vars={sceneVars}
+                onchange={(v) => updateNested('fill', 'color', v)}
+              />
+            </label>
+            <label class="space-y-1 block">
+              <span class="text-xs text-zinc-500">Opacity (0–1)</span>
+              <OpacityControl
+                value={item.fill?.opacity ?? 0}
+                oninput={(e) => updateNested('fill', 'opacity', e.target.value)}
+              />
+            </label>
+          </section>
+        {/if}
 
-        {#if item.value === 'course'}
+        {#if isCourse}
           <!-- Course map: traveled / ahead opacity -->
           <section class="mb-4 space-y-2">
             <p class="text-[10px] uppercase tracking-wider text-zinc-600">
@@ -2310,106 +2317,108 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
         </section>
 
         <!-- Point label -->
-        {@const pl = item.point_label}
-        <section class="mb-4 space-y-2">
-          <p class="text-[10px] uppercase tracking-wider text-zinc-600">
-            Point Label
-          </p>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={pl != null}
-              onchange={(e) => togglePointLabel(e.target.checked)}
-              class="accent-primary"
-            />
-            <span class="text-xs text-zinc-400">Show value at marker</span>
-          </label>
-          {#if pl != null}
-            <div class="flex gap-4">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={(pl.units ?? []).includes('metric')}
-                  onchange={(e) => toggleUnit('metric', e.target.checked)}
-                  class="accent-primary"
+        {#if !isCourse}
+          {@const pl = item.point_label}
+          <section class="mb-4 space-y-2">
+            <p class="text-[10px] uppercase tracking-wider text-zinc-600">
+              Point Label
+            </p>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={pl != null}
+                onchange={(e) => togglePointLabel(e.target.checked)}
+                class="accent-primary"
+              />
+              <span class="text-xs text-zinc-400">Show value at marker</span>
+            </label>
+            {#if pl != null}
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={(pl.units ?? []).includes('metric')}
+                    onchange={(e) => toggleUnit('metric', e.target.checked)}
+                    class="accent-primary"
+                  />
+                  <span class="text-xs text-zinc-400">Metric</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={(pl.units ?? []).includes('imperial')}
+                    onchange={(e) => toggleUnit('imperial', e.target.checked)}
+                    class="accent-primary"
+                  />
+                  <span class="text-xs text-zinc-400">Imperial</span>
+                </label>
+              </div>
+              <label class="space-y-1 block">
+                <span class="text-xs text-zinc-500">Font</span>
+                <Select
+                  value={pl.font ?? 'Furore.otf'}
+                  options={fontOpts(false)}
+                  onchange={(v) => updatePL('font', v)}
                 />
-                <span class="text-xs text-zinc-400">Metric</span>
               </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={(pl.units ?? []).includes('imperial')}
-                  onchange={(e) => toggleUnit('imperial', e.target.checked)}
-                  class="accent-primary"
-                />
-                <span class="text-xs text-zinc-400">Imperial</span>
-              </label>
-            </div>
-            <label class="space-y-1 block">
-              <span class="text-xs text-zinc-500">Font</span>
-              <Select
-                value={pl.font ?? 'Furore.otf'}
-                options={fontOpts(false)}
-                onchange={(v) => updatePL('font', v)}
-              />
-            </label>
-            <label class="space-y-1 block">
-              <span class="text-xs text-zinc-500">Size</span>
-              <Input
-                type="number"
-                value={pl.font_size ?? 64}
-                min={1}
-                oninput={(e) => updatePL('font_size', e.target.value)}
-              />
-            </label>
-            <label
-              class="flex items-center justify-between gap-3 rounded-[6px] border border-transparent bg-[var(--panel2)] px-2.5 py-2"
-            >
-              <span class="text-xs text-zinc-500">Italic</span>
-              <Switch
-                checked={pl.italic ?? false}
-                ariaLabel="Italic point label"
-                onchange={(v) => updatePL('italic', v ? true : undefined)}
-              />
-            </label>
-            <label class="space-y-1 block">
-              <span class="text-xs text-zinc-500">Color</span>
-              <ColorInput
-                value={pl.color ?? '#ffffffc8'}
-                vars={sceneVars}
-                onchange={(v) => updatePL('color', v)}
-              />
-            </label>
-            <div class="grid grid-cols-2 gap-2">
-              <label class="space-y-1">
-                <span class="text-xs text-zinc-500">X offset</span>
+              <label class="space-y-1 block">
+                <span class="text-xs text-zinc-500">Size</span>
                 <Input
                   type="number"
-                  value={pl.x_offset ?? 0}
-                  oninput={(e) => updatePL('x_offset', e.target.value)}
+                  value={pl.font_size ?? 64}
+                  min={1}
+                  oninput={(e) => updatePL('font_size', e.target.value)}
                 />
               </label>
-              <label class="space-y-1">
-                <span class="text-xs text-zinc-500">Y offset</span>
+              <label
+                class="flex items-center justify-between gap-3 rounded-[6px] border border-transparent bg-[var(--panel2)] px-2.5 py-2"
+              >
+                <span class="text-xs text-zinc-500">Italic</span>
+                <Switch
+                  checked={pl.italic ?? false}
+                  ariaLabel="Italic point label"
+                  onchange={(v) => updatePL('italic', v ? true : undefined)}
+                />
+              </label>
+              <label class="space-y-1 block">
+                <span class="text-xs text-zinc-500">Color</span>
+                <ColorInput
+                  value={pl.color ?? '#ffffffc8'}
+                  vars={sceneVars}
+                  onchange={(v) => updatePL('color', v)}
+                />
+              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="space-y-1">
+                  <span class="text-xs text-zinc-500">X offset</span>
+                  <Input
+                    type="number"
+                    value={pl.x_offset ?? 0}
+                    oninput={(e) => updatePL('x_offset', e.target.value)}
+                  />
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-zinc-500">Y offset</span>
+                  <Input
+                    type="number"
+                    value={pl.y_offset ?? 0}
+                    oninput={(e) => updatePL('y_offset', e.target.value)}
+                  />
+                </label>
+              </div>
+              <label class="space-y-1 block">
+                <span class="text-xs text-zinc-500">Decimal places</span>
                 <Input
                   type="number"
-                  value={pl.y_offset ?? 0}
-                  oninput={(e) => updatePL('y_offset', e.target.value)}
+                  value={pl.decimal_rounding ?? 0}
+                  min={0}
+                  step={1}
+                  oninput={(e) => updatePL('decimal_rounding', e.target.value)}
                 />
               </label>
-            </div>
-            <label class="space-y-1 block">
-              <span class="text-xs text-zinc-500">Decimal places</span>
-              <Input
-                type="number"
-                value={pl.decimal_rounding ?? 0}
-                min={0}
-                step={1}
-                oninput={(e) => updatePL('decimal_rounding', e.target.value)}
-              />
-            </label>
-          {/if}
-        </section>
+            {/if}
+          </section>
+        {/if}
 
         <!-- Size + rotation -->
         <section class="mb-4 space-y-2">
@@ -2448,8 +2457,8 @@ Looks unrealistic for ${item.value} (expected ${issue.expected}). Enter a manual
         </section>
       {/if}
 
-      <!-- Course Markers — always visible when metric is course -->
-      {#if item.value === 'course'}
+      <!-- Course Markers: always visible when metric is course -->
+      {#if isCourse}
         <section class="mb-4 space-y-2">
           <div class="flex items-center justify-between">
             <p class="text-[10px] uppercase tracking-wider text-zinc-600">

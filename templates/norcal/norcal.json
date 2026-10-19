@@ -2,9 +2,6 @@
   "elements": [
     {
       "color": "$primary",
-      "fill": {
-        "opacity": 0
-      },
       "height": 800,
       "id": "plot-course",
       "line": {
