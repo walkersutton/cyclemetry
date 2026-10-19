@@ -282,7 +282,12 @@
                     onblur={onSidebarHandleKeyup}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
-                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform {drag?.handle === 'start' ? 'z-30' : hoveredSidebarHandle === 'start' ? 'z-20' : 'z-10'}"
+                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform {drag?.handle ===
+                    'start'
+                      ? 'z-30'
+                      : hoveredSidebarHandle === 'start'
+                        ? 'z-20'
+                        : 'z-10'}"
                     style="left: {startPct}%"
                   ></button>
                   <button
@@ -299,7 +304,12 @@
                     onblur={onSidebarHandleKeyup}
                     class="absolute top-0 -translate-x-1/2 h-5 w-3 rounded-sm
                      bg-primary border border-zinc-950 cursor-ew-resize
-                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform {drag?.handle === 'end' ? 'z-30' : hoveredSidebarHandle === 'end' ? 'z-20' : 'z-10'}"
+                     hover:scale-110 focus:outline-none focus:ring-1 focus:ring-white transition-transform {drag?.handle ===
+                    'end'
+                      ? 'z-30'
+                      : hoveredSidebarHandle === 'end'
+                        ? 'z-20'
+                        : 'z-10'}"
                     style="left: {endPct}%"
                   ></button>
                 </div>

@@ -240,7 +240,16 @@
     if (res.value === trimDrag.lastValue) return
     trimDrag.lastValue = res.value
     ontrimchange?.(res.field, res.value)
-    seek(res.value)
+    seekToTrimEdge(res.value)
+  }
+
+  // Follow the dragged edge with the preview. `seek` clamps to the start/end
+  // props, which still hold the pre-change window until the parent re-renders,
+  // so widening the window would leave the playhead one step behind.
+  // `res.value` is already inside the new window by construction.
+  function seekToTrimEdge(value) {
+    playhead = value
+    onseek?.(value)
   }
 
   let isTrimKeyBatch = false
@@ -260,7 +269,7 @@
       onbegintrim?.()
     }
     ontrimchange?.(res.field, res.value)
-    seek(res.value)
+    seekToTrimEdge(res.value)
   }
 
   function onTrimHandleKeyup(e) {
@@ -326,7 +335,12 @@
         onblur={onTrimHandleKeyup}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
-         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow {trimDrag?.handle === 'start' ? 'z-30' : hoveredTrimHandle === 'start' ? 'z-20' : 'z-10'}"
+         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow {trimDrag?.handle ===
+        'start'
+          ? 'z-30'
+          : hoveredTrimHandle === 'start'
+            ? 'z-20'
+            : 'z-10'}"
         style="left: {trimStartPct}%"
         title="Overlay start: {formatTime(start)}"
       ></button>
@@ -344,7 +358,12 @@
         onblur={onTrimHandleKeyup}
         class="absolute top-0 -translate-x-1/2 h-4 w-2.5 rounded-sm
          bg-primary border border-zinc-950 cursor-ew-resize
-         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow {trimDrag?.handle === 'end' ? 'z-30' : hoveredTrimHandle === 'end' ? 'z-20' : 'z-10'}"
+         hover:scale-125 focus:outline-none focus:ring-1 focus:ring-white transition-transform shadow {trimDrag?.handle ===
+        'end'
+          ? 'z-30'
+          : hoveredTrimHandle === 'end'
+            ? 'z-20'
+            : 'z-10'}"
         style="left: {trimEndPct}%"
         title="Overlay end: {formatTime(end)}"
       ></button>
