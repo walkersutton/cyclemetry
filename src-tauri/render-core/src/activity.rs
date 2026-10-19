@@ -593,10 +593,11 @@ impl Activity {
                 }
                 MesgNum::Session => {
                     for field in record.fields() {
-                        if field.name() == "total_calories" {
-                            if let Some(c) = fit_f64(field.value()) {
-                                *session_total_calories.get_or_insert(0.0) += c;
-                            }
+                        if field.name() == "total_calories"
+                            && let Some(c) = fit_f64(field.value())
+                            && c > 0.0
+                        {
+                            *session_total_calories.get_or_insert(0.0) += c;
                         }
                     }
                 }
@@ -715,7 +716,11 @@ impl Activity {
                             _ => {}
                         }
                     } else if local == "Calories" {
-                        if let Ok(cal) = current_text.parse::<f64>() {
+                        // Some exporters write <Calories>0</Calories> on every lap; only a
+                        // positive reading counts as a recorded total.
+                        if let Ok(cal) = current_text.parse::<f64>()
+                            && cal > 0.0
+                        {
                             lap_calories_total += cal;
                             has_lap_calories = true;
                         }
@@ -2894,7 +2899,10 @@ mod tests {
         let act = Activity::from_fit_records(vec![rec1, rec2]).expect("fit records parse");
         assert_eq!(act.calories, vec![45.0, 95.0]);
         assert!(act.valid_attributes.contains(&ATTR_CALORIES.to_string()));
-        assert_eq!(act.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 50.0);
+        assert_eq!(
+            act.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            50.0
+        );
 
         // Session total_calories serves as summary when no record calories exist
         let mut rec_pos = FitDataRecord::new(MesgNum::Record);
@@ -2919,10 +2927,18 @@ mod tests {
             "kcal".into(),
         ));
 
-        let act_sess = Activity::from_fit_records(vec![rec_pos.clone(), sess.clone()]).expect("fit session parses");
-        assert!(!act_sess.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        let act_sess = Activity::from_fit_records(vec![rec_pos.clone(), sess.clone()])
+            .expect("fit session parses");
+        assert!(
+            !act_sess
+                .valid_attributes
+                .contains(&ATTR_CALORIES.to_string())
+        );
         assert!(act_sess.has_summary(SUM_TOTAL_CALORIES));
-        assert_eq!(act_sess.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 520.0);
+        assert_eq!(
+            act_sess.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            520.0
+        );
 
         // Multiple sessions accumulate total_calories
         let mut sess2 = FitDataRecord::new(MesgNum::Session);
@@ -2932,9 +2948,17 @@ mod tests {
             Value::Float64(300.0),
             "kcal".into(),
         ));
-        let act_multi = Activity::from_fit_records(vec![rec_pos, sess, sess2]).expect("fit multi-session parses");
-        assert_eq!(act_multi.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 820.0);
-        assert!(!act_multi.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        let act_multi = Activity::from_fit_records(vec![rec_pos, sess, sess2])
+            .expect("fit multi-session parses");
+        assert_eq!(
+            act_multi.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            820.0
+        );
+        assert!(
+            !act_multi
+                .valid_attributes
+                .contains(&ATTR_CALORIES.to_string())
+        );
         assert!(act_multi.has_summary(SUM_TOTAL_CALORIES));
     }
 
@@ -2959,8 +2983,15 @@ mod tests {
         "#;
         let act_ext = Activity::parse_tcx(tcx_ext).expect("tcx parses");
         assert_eq!(act_ext.calories, vec![10.0, 25.0]);
-        assert!(act_ext.valid_attributes.contains(&ATTR_CALORIES.to_string()));
-        assert_eq!(act_ext.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 15.0);
+        assert!(
+            act_ext
+                .valid_attributes
+                .contains(&ATTR_CALORIES.to_string())
+        );
+        assert_eq!(
+            act_ext.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            15.0
+        );
 
         // Standard TCX puts <Calories> on <Lap>, not inside <Trackpoint>.
         // Check that lap calories are summed into total_calories and not attached to trackpoints.
@@ -2989,18 +3020,48 @@ mod tests {
         </TrainingCenterDatabase>
         "#;
         let act_lap = Activity::parse_tcx(tcx_lap).expect("tcx parses");
-        assert!(!act_lap.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert!(
+            !act_lap
+                .valid_attributes
+                .contains(&ATTR_CALORIES.to_string())
+        );
         assert!(act_lap.has_summary(SUM_TOTAL_CALORIES));
         assert_eq!(act_lap.calories, vec![0.0, 0.0]);
-        assert_eq!(act_lap.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 350.0);
+        assert_eq!(
+            act_lap.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            350.0
+        );
 
-        let resampled_lap = act_lap.resample_wall_clock(0.0, Some(1.0), 30, None, false).unwrap();
-        assert_eq!(resampled_lap.summary_value(SUM_TOTAL_CALORIES, Some("overlay")), 0.0);
-        assert_eq!(resampled_lap.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 350.0);
+        // Zero-valued lap calories are exporter filler, not a recorded total.
+        let tcx_zero = tcx_lap.replace("150.0", "0").replace("200.0", "0");
+        let act_zero = Activity::parse_tcx(&tcx_zero).expect("tcx parses");
+        assert!(!act_zero.has_summary(SUM_TOTAL_CALORIES));
 
-        let resampled_ext = act_ext.resample_wall_clock(0.0, Some(1.0), 30, None, false).unwrap();
-        assert_eq!(resampled_ext.summary_value(SUM_TOTAL_CALORIES, Some("overlay")), 15.0);
-        assert_eq!(resampled_ext.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 15.0);
+        let resampled_lap = act_lap
+            .resample_wall_clock(0.0, Some(1.0), 30, None, false)
+            .unwrap();
+        assert_eq!(
+            resampled_lap.summary_value(SUM_TOTAL_CALORIES, Some("overlay")),
+            0.0
+        );
+        assert_eq!(
+            resampled_lap.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            350.0
+        );
+
+        let resampled_ext = act_ext
+            .resample_wall_clock(0.0, Some(1.0), 30, None, false)
+            .unwrap();
+        // Frames are end-exclusive: the last of 30 lands at 29/30 s, where the
+        // interpolated reading is 24.5, so the overlay span is 14.5.
+        assert_eq!(
+            resampled_ext.summary_value(SUM_TOTAL_CALORIES, Some("overlay")),
+            14.5
+        );
+        assert_eq!(
+            resampled_ext.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            15.0
+        );
     }
 
     #[test]
@@ -3022,8 +3083,15 @@ mod tests {
         "#;
         let act_valid = Activity::parse_gpx(gpx_valid).expect("gpx parses");
         assert_eq!(act_valid.calories, vec![30.0, 75.0]);
-        assert!(act_valid.valid_attributes.contains(&ATTR_CALORIES.to_string()));
-        assert_eq!(act_valid.summary_value(SUM_TOTAL_CALORIES, Some("activity")), 45.0);
+        assert!(
+            act_valid
+                .valid_attributes
+                .contains(&ATTR_CALORIES.to_string())
+        );
+        assert_eq!(
+            act_valid.summary_value(SUM_TOTAL_CALORIES, Some("activity")),
+            45.0
+        );
 
         // Stray <calories> outside <extensions> must be ignored
         let gpx_stray = r#"
@@ -3041,7 +3109,11 @@ mod tests {
         </gpx>
         "#;
         let act_stray = Activity::parse_gpx(gpx_stray).expect("gpx parses");
-        assert!(!act_stray.valid_attributes.contains(&ATTR_CALORIES.to_string()));
+        assert!(
+            !act_stray
+                .valid_attributes
+                .contains(&ATTR_CALORIES.to_string())
+        );
     }
 
     // ─── Custom source fields ──────────────────────────────────────────────

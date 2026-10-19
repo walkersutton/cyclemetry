@@ -1193,7 +1193,7 @@ fn fill_scene_unit(metric: &str, unit: &mut Option<String>, system: &str) {
 
 fn migrate_custom_calories(item: &mut serde_json::Value) {
     if let Some(obj) = item.as_object_mut() {
-        for key in ["value", "bottom_value", "unit_of"] {
+        for key in ["value", "unit_of"] {
             if let Some(v) = obj.get(key).and_then(|val| val.as_str()) {
                 if v == "custom:calories" {
                     obj.insert(key.to_string(), serde_json::json!("calories"));
@@ -1546,7 +1546,7 @@ mod tests {
                 { "type": "value", "id": "v1", "x": 10, "y": 20, "value": "custom:calories" },
                 { "type": "value", "id": "v2", "x": 10, "y": 40, "value": "custom:total_calories" },
                 { "type": "label", "id": "l1", "x": 10, "y": 60, "unit_of": "custom:calories" },
-                { "type": "plot", "id": "p1", "x": 0, "y": 0, "width": 100, "height": 100, "value": "custom:calories", "bottom_value": "custom:total_calories" },
+                { "type": "plot", "id": "p1", "x": 0, "y": 0, "width": 100, "height": 100, "value": "custom:calories" },
                 { "type": "plot", "id": "p2", "x": 0, "y": 0, "width": 100, "height": 100, "value": "speed", "color_by": { "value": "custom:calories" } }
             ]
         });
@@ -1564,10 +1564,7 @@ mod tests {
             _ => panic!("expected Label"),
         }
         match &template.elements[3] {
-            Element::Plot(c) => {
-                assert_eq!(c.value, "calories");
-                assert_eq!(c.bottom_value.as_deref(), Some("total_calories"));
-            }
+            Element::Plot(c) => assert_eq!(c.value, "calories"),
             _ => panic!("expected Plot"),
         }
         match &template.elements[4] {

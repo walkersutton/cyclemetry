@@ -241,8 +241,7 @@ export function createAppState() {
     else localStorage.removeItem('activityMetrics')
   })
   $effect(() => {
-    if (hasSessionCalories)
-      localStorage.setItem('hasSessionCalories', 'true')
+    if (hasSessionCalories) localStorage.setItem('hasSessionCalories', 'true')
     else localStorage.removeItem('hasSessionCalories')
   })
   $effect(() => {
@@ -880,7 +879,7 @@ export function createAppState() {
         'custom:calories': 'calories',
         'custom:total_calories': 'total_calories',
       }
-      for (const key of ['value', 'bottom_value', 'unit_of']) {
+      for (const key of ['value', 'unit_of']) {
         if (calRenames[current[key]]) {
           current = { ...current, [key]: calRenames[current[key]] }
         }
