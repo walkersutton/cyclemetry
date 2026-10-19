@@ -33,6 +33,9 @@ function step(label) {
 step('frontend lint (ESLint)…')
 run('pnpm', ['-C', 'app', 'lint'])
 
+step('frontend tests…')
+run('pnpm', ['-C', 'app', 'test'])
+
 step('website build (Nextra)…')
 run('pnpm', ['-C', 'website', 'build'])
 
