@@ -1,6 +1,14 @@
 export default {
   index: {
     title: "Home",
+    theme: {
+      layout: "full",
+      toc: false,
+      breadcrumb: false,
+      copyPage: false,
+      timestamp: false,
+      pagination: false,
+    },
   },
   install: {
     title: "Install",

@@ -20,56 +20,71 @@ function extractYouTubeId(url) {
 // (e.g. Instagram reels) have no public thumbnail URL, so the entry carries a
 // `thumbnail` path to a still committed under public/videos/.
 function thumbnailFor(video) {
-  return video.thumbnail ?? `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`;
+  return (
+    video.thumbnail ?? `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`
+  );
 }
 
-const videoGrid = videos.map((video) => (
-  <div key={video.id} className="showcase-card">
-    <div
-      className={`showcase-card-video${video.vertical ? " showcase-card-video-vertical" : ""}`}
-    >
-      <a
-        href={video.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Watch ${video.title} by ${video.author}`}
+export function VideoCard({ video }) {
+  return (
+    <div className="showcase-card">
+      <div
+        className={`showcase-card-video${video.vertical ? " showcase-card-video-vertical" : ""}`}
       >
-        {/* Vertical videos keep the grid's 16:9 frame: the still is shown
+        <a
+          href={video.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Watch ${video.title} by ${video.author}`}
+        >
+          {/* Vertical videos keep the grid's 16:9 frame: the still is shown
             whole in the middle over a blurred copy of itself. */}
-        {video.vertical && (
+          {video.vertical && (
+            <img
+              className="showcase-thumb-backdrop"
+              src={thumbnailFor(video)}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+            />
+          )}
           <img
-            className="showcase-thumb-backdrop"
+            className={video.vertical ? "showcase-thumb-vertical" : undefined}
             src={thumbnailFor(video)}
-            alt=""
-            aria-hidden="true"
+            alt={`${video.title} by ${video.author}`}
             loading="lazy"
           />
-        )}
-        <img
-          className={video.vertical ? "showcase-thumb-vertical" : undefined}
-          src={thumbnailFor(video)}
-          alt={`${video.title} by ${video.author}`}
-          loading="lazy"
-        />
-        <div className="showcase-play-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </div>
-      </a>
+          <div className="showcase-play-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </a>
+      </div>
+      <div className="showcase-card-info">
+        <div className="showcase-card-title">{video.title}</div>
+        <div className="showcase-card-author">by {video.author}</div>
+      </div>
     </div>
-    <div className="showcase-card-info">
-      <div className="showcase-card-title">{video.title}</div>
-      <div className="showcase-card-author">by {video.author}</div>
+  );
+}
+
+// Newest entries sit at the top of videos.json, so `limit` shows the latest.
+export function VideoGrid({ limit }) {
+  return (
+    <div className="showcase-grid">
+      {videos.slice(0, limit).map((video) => (
+        <VideoCard key={video.id} video={video} />
+      ))}
     </div>
-  </div>
-));
+  );
+}
 
 export function Videos() {
   return (
@@ -84,7 +99,7 @@ export function Videos() {
         </p>
       </div>
 
-      <div className="showcase-grid">{videoGrid}</div>
+      <VideoGrid />
 
       <div className="showcase-submit-panel">
         <div>
